@@ -51,19 +51,9 @@ namespace trt {
     static string file_name(const string &path, bool include_suffix) {
         if (path.empty()) return "";
 
-        int p = path.rfind('/');
-        int e = path.rfind('\\');
-        p = std::max(p, e);
-        p += 1;
+        int p = std::max(path.rfind('/'), path.rfind('\\')) + 1;
 
-        // include suffix
-        if (include_suffix) return path.substr(p);
-
-        int u = path.rfind('.');
-        if (u == -1) return path.substr(p);
-
-        if (u <= p) u = path.size();
-        return path.substr(p, u - p);
+        return include_suffix ? path.substr(p) : path.substr(p, (path.rfind('.') <= p ? path.size() : path.rfind('.')) - p);
     }
 
     void __log_func(const char *file, int line, const char *fmt, ...) {
@@ -341,21 +331,16 @@ namespace trt {
                 return false;
             }
 
-            // 设置每个张量的内存地址
             for (int i = 0; i < nbBindings; ++i) {
-                const char *tensorName = engine->getIOTensorName(i);
-                if (!context->setTensorAddress(tensorName, bindings[i])) {
-                    // 处理错误：设置张量地址失败
+                if (!context->setTensorAddress(engine->getIOTensorName(i), bindings[i])) {
                     return false;
                 }
             }
 
-            // 设置输入已消耗事件（如果需要）
             if (input_consum_event) {
                 context->setInputConsumedEvent(static_cast<cudaEvent_t>(input_consum_event));
             }
 
-            // 执行推理
             return context->enqueueV3(static_cast<cudaStream_t>(stream));
         }
 
@@ -365,13 +350,8 @@ namespace trt {
         }
 
         virtual std::vector<int> run_dims(int ibinding) override {
-            // 获取张量名称
             std::string tensorName = this->context_->engine_->getIOTensorName(ibinding);
-
-            // 使用 c_str() 将 std::string 转换为 const char*
             auto dim = this->context_->engine_->getTensorShape(tensorName.c_str());
-
-            // 将维度信息转换为 std::vector<int>
             return std::vector<int>(dim.d, dim.d + dim.nbDims);
         }
 
@@ -392,8 +372,8 @@ namespace trt {
 
         virtual bool is_input(int ibinding) override {
             const char *tensorName = this->context_->engine_->getIOTensorName(ibinding);
-            nvinfer1::TensorIOMode ioMode = this->context_->engine_->getTensorIOMode(tensorName);
-            return ioMode == nvinfer1::TensorIOMode::kINPUT;
+            TensorIOMode ioMode = this->context_->engine_->getTensorIOMode(tensorName);
+            return ioMode == TensorIOMode::kINPUT;
         }
 
         virtual bool set_run_dims(const std::string &name, const std::vector<int> &dims) override {
@@ -402,30 +382,19 @@ namespace trt {
 
         virtual bool set_run_dims(int ibinding, const std::vector<int> &dims) override {
             const char *tensorName = this->context_->engine_->getIOTensorName(ibinding);
-            nvinfer1::Dims d;
+            Dims d{static_cast<int>(dims.size()), {}};
 
+            std::copy(dims.begin(), dims.end(), d.d);
 
-            d.nbDims = dims.size();
-
-            for (int i = 0; i < d.nbDims; ++i) {
-                d.d[i] = dims[i];
-            }
-
-            // 使用 setInputShape 设置维度
             return this->context_->context_->setInputShape(tensorName, d);
         }
-
 
         virtual int numel(const std::string &name) override { return numel(index(name)); }
 
         virtual int numel(int ibinding) override {
-            // 获取张量名称
             const char *tensorName = this->context_->engine_->getIOTensorName(ibinding);
-
-            // 使用 getTensorShape() 获取维度信息
             auto dim = this->context_->context_->getTensorShape(tensorName);
 
-            // 计算元素数量
             return std::accumulate(dim.d, dim.d + dim.nbDims, 1, std::multiplies<int>());
         }
 
@@ -433,30 +402,20 @@ namespace trt {
         virtual DType dtype(const std::string &name) override { return dtype(index(name)); }
 
         virtual DType dtype(int ibinding) override {
-            // 获取张量名称
             const char *tensorName = this->context_->engine_->getIOTensorName(ibinding);
+            DataType dataType = this->context_->engine_->getTensorDataType(tensorName);
 
-            // 获取张量的数据类型
-            nvinfer1::DataType dataType = this->context_->engine_->getTensorDataType(tensorName);
-
-            // 将 nvinfer1::DataType 转换为自定义的 DType
             return static_cast<DType>(dataType);
         }
 
 
         virtual bool has_dynamic_dim() override {
-            // 获取输入和输出张量的总数
             int numIOTensors = this->context_->engine_->getNbIOTensors();
 
-            // 遍历每个张量
             for (int i = 0; i < numIOTensors; ++i) {
-                // 获取张量名称
                 const char *tensorName = this->context_->engine_->getIOTensorName(i);
+                Dims dims = this->context_->engine_->getTensorShape(tensorName);
 
-                // 获取张量的维度
-                nvinfer1::Dims dims = this->context_->engine_->getTensorShape(tensorName);
-
-                // 检查维度中是否存在 -1
                 for (int j = 0; j < dims.nbDims; ++j) {
                     if (dims.d[j] == -1) {
                         return true;
@@ -477,8 +436,8 @@ namespace trt {
             int numIOTensors = engine->getNbIOTensors();
             for (int i = 0; i < numIOTensors; ++i) {
                 const char *tensorName = engine->getIOTensorName(i);
-                nvinfer1::TensorIOMode ioMode = engine->getTensorIOMode(tensorName);
-                if (ioMode == nvinfer1::TensorIOMode::kINPUT) {
+                TensorIOMode ioMode = engine->getTensorIOMode(tensorName);
+                if (ioMode == TensorIOMode::kINPUT) {
                     num_input++;
                 } else {
                     num_output++;

@@ -1,9 +1,0 @@
-{
-    "recommendations": [
-        "ms-iot.vscode-ros",
-        "spadin.memento-inputs",
-        "augustocdias.tasks-shell-input",
-        "vadimcn.vscode-lldb",
-        "llvm-vs-code-extensions.vscode-clangd"
-    ]
-}

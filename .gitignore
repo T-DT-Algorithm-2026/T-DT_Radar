@@ -6,3 +6,5 @@ install/
 config/merged_bag/*
 
 *.engine
+
+ros2bag/

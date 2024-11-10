@@ -23,7 +23,7 @@ def generate_launch_description():
             parameters=[ {'rosbag_file': 
                 # '/home/tdt/rosbag/ros2bags/radar_record0531_2032_54/merged_bag/merged_bag_0.db3'
                 # '/home/shenxw/Rosbag/适应性录像第二把/merged_bag/merged_bag_0.db3'
-                '/home/tdt/适应性训练第一把/merged_bag_0.db3'
+                '/home/mozihe/T-DT_Radar/ros2bag/适应性训练第一把/merged_bag_0.db3'
                 }],
             extra_arguments=[{'use_intra_process_comms': True}]
         )  

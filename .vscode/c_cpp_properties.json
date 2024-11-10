@@ -6,13 +6,17 @@
         "limitSymbolsToIncludedHeaders": false
       },
       "includePath": [
-        "${workspaceFolder}/**"
+        "/opt/ros/jazzy/include/**",
+        "/home/mozihe/T-DT_Radar/src/fusion/kalman_filter/include/**",
+        "/home/mozihe/T-DT_Radar/src/lidar/cluster/include/**",
+        "/home/mozihe/T-DT_Radar/src/lidar/dynamic_cloud/include/**",
+        "/usr/include/**"
       ],
-      "name": "linux-gcc-x64",
-      "intelliSenseMode": "linux-gcc-x64",
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
       "compilerPath": "/usr/bin/gcc",
-      "cStandard": "${default}",
-      "cppStandard": "${default}"
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
     }
   ],
   "version": 4
