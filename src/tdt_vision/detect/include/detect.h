@@ -9,11 +9,13 @@
 #include "cv_bridge/cv_bridge.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
-#include "infer.hpp"
+#include "NvidiaInterface.hpp"
 #include "opencv2/opencv.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
 #include "vision_interface/msg/detect_result.hpp"
 #include "yolos.hpp"
+#include "BaseInfer.hpp"
+#include <fstream>
 namespace tdt_radar {
 
 class Detect final : public rclcpp::Node {
@@ -27,10 +29,9 @@ public:
         compressed_image_sub;
 
 private:
-    std::shared_ptr<yolo::Infer>     yolo;
-    std::shared_ptr<yolo::Infer>     armor_yolo;
-    std::shared_ptr<classify::Infer> classifier;
-    // densenet121::densenet121_classifier* densenet121;
+    std::shared_ptr<Infer<yolo::BoxArray>>     yolo;
+    std::shared_ptr<Infer<yolo::BoxArray>>     armor_yolo;
+    std::shared_ptr<Infer<int>> classifier;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr pub;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub;
 

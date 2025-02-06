@@ -1,6 +1,6 @@
 <div align="center">
 
-# T-DT 2024 Radar
+# T-DT 2025 Radar
 
 > 2024年东北大学T-DT实验室 RoboMaster超级对抗赛 雷达代码
 
@@ -8,8 +8,7 @@
 <a href="https://neutdt.cn"><img alt="Home Page" src="https://img.shields.io/badge/Home%20Page-T--DT-green"></a>
 
 <p align="center">
-  <!-- <img src=".github/NEU.jpg" width="300"/> -->
-
+  <img src=".github/NEU.webp" width="300"/>
   <img src=".github/T-DT.jpg" width="300"/>
 </p>
 
@@ -33,10 +32,15 @@
 **v1.0**
 - 加入开源技术报告链接
 
-# 项目介绍
-东北大学RM2024雷达技术报告 [https://bbs.robomaster.com/wiki/260375/27115](https://bbs.robomaster.com/wiki/260375/27115)
+**v2.0**
+- 进入2025赛季，更新README
 
-本项目通过激光雷达和单目相机的目标检测，进行传感器后融合，实现了传感器之间的完全解耦合，避免了联合标定带来的误差，同时开发难度不随传感器数量增加而增加。~~(如果和你关系好的队伍不幸被淘汰了，可以把相机/雷达直接借过来用。)~~
+# 项目介绍
+
+
+本项目通过激光雷达和单目相机的目标检测，进行传感器后融合，实现了传感器之间的完全解耦合，避免了联合标定带来的误差，同时开发难度不随传感器数量增加而增加。  
+
+东北大学RM2024雷达技术报告 [https://bbs.robomaster.com/wiki/260375/27115](https://bbs.robomaster.com/wiki/260375/27115)
 
 **如果你没有激光雷达，也可以直接使用本项目的单目相机方案 (在RM2023的0.6m误差规则下取得了最高91%的准确率，荣获2023年雷达MVP)**
 
@@ -112,7 +116,6 @@
 | [`lidar`](./src/lidar/) | 激光雷达模块 |
 | [`camera`](./src/tdt_vision/) | 相机模块（无相机驱动） |
 | [`interface`](./src/interface/) | 自定义消息接口 |
-| [~~`llm_decision`~~](./src/llm_decision/) | ~~大模型决策模块~~ |
 | [`livox_driver`](./src/livox_driver/) | Livox驱动 |
 | [`fusion`](./src/fusion/) | 传感器后融合模块 |
 | [`utils`](./src/utils/) | 工具包 |
@@ -120,17 +123,12 @@
 ## 依赖
 
 ```bash
-Ubuntu 22.04
-ROS2 (Humble)
-CUDA+CUDNN+TensorRT8
-OpenCV 4.5.4
-PCL 1.12.1
+Ubuntu 24.04
+ROS2 (Jazzy)
+CUDA+CUDNN+TensorRT10
+OpenCV 4.6.0
+PCL 1.14.0
 Livox_SDK(1)
-```
-如果您使用的是g++-12, 希望使用clang和clangd, 请确保安装了以下包:
-
-```bash
-sudo apt-get install libstdc++12-dev
 ```
 
 ## 进程间通信消息名称及用途
@@ -167,13 +165,10 @@ sudo apt-get install libstdc++12-dev
 | Radar2Sentry | topic<vision_interface::msg::Radar2Sentry> | 发送给串口的最终结果 |
 ## 工具
 
-可用VSCode使用Ctrl+Shift+B使用常见编译任务(需安装工作区推荐插件)，例如下方指令为编译单个包指令，已集成进tasks.json
-
 ```bash
 colcon build --packages-select 功能包名称
 ```
 
-已实现VSCode下使用gdbserver或lldb-server进行程序调试的配置文件，按下F5即可使用，需安装相应插件
 ## 测试
     
 ```bash
@@ -201,7 +196,9 @@ Launch文件已集成foxglove-bridge,启动后直接打开foxglove-studio即可�
 - 改进聚类算法
 - 使用ros参数，实时调参
 # 联系方式
-Email: shenxuewen0127@gmail.com
-
+Email: zhujunheng2005@gmail.com  
+QQ: 820288431  
+---
+Email: shenxuewen0127@gmail.com  
 QQ: 2738226430
 </div>

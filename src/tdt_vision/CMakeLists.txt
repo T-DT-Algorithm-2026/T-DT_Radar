@@ -4,33 +4,25 @@ project(tdt_vision)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
-# openvino tensort用，编译动态库时，符号表对只读文件重映射，需要添加此指令
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# 包含头文件
 include_directories(  
   "detect/include"
   "resolve/include"
   "calibrate/include"
-  "radar_utils"
-  "yolo"
 )
+
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 include_directories(/usr/local/cuda/include)
 link_directories(/usr/local/cuda/lib64)
 
-
-
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-file(GLOB_RECURSE RADAR_UTILS_SRCS "radar_utils/*.cpp")
-
-ament_auto_add_library(radar_utils SHARED
-    ${RADAR_UTILS_SRCS}
-)
+add_subdirectory(utils)
+include_directories(${PROJECT_SOURCE_DIR}/utils/include)
 
 set(RADAR_DETECT "radar_detect")
 file(GLOB_RECURSE RADAR_DETECT_SRCS "detect/src/*.cpp")
@@ -44,11 +36,13 @@ add_definitions(-D use_tensorrt)
 enable_language(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${nvinfer_INCLUDE_DIRS})
-add_subdirectory(yolo)
-include_directories(${PROJECT_SOURCE_DIR}/yolo)
+
+add_subdirectory(infer)
+include_directories(${PROJECT_SOURCE_DIR}/infer/include)
 
 target_link_libraries(${RADAR_DETECT}
-    yolo 
+    utils
+    infer 
     ${nvinfer_LIBRARY} 
     cudart 
     nvonnxparser 
