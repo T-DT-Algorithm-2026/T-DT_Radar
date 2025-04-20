@@ -1,0 +1,22 @@
+# vision_record:
+#   - /VisionControlPub
+#   - /armorDetectInfo
+#   - /armorResolveInfo
+#   - /sentryUsartData
+#   - /compressed_image
+radar_record:
+    - /compressed_image
+    - /livox/lidar
+    - /match_info
+    - /sentry2RadarData
+    # - /Radar2Sentry
+    # - /hero_state
+    # - /lidar_detect
+
+# 设置 数据集文件夹 相对于本yaml文件所在文件夹的储存位置：path = "...src/databag_tool/" + bags_relative_path , 用于 record 和 merge
+# bags_relative_path: ../../../ros2bags/
+
+bags_relative_path: ../../../../../../home/tdt/rosbag/ros2bags/
+
+# 强制停止时间，单次开机自启或启动后的停止时间
+forced_stop_time: 1500

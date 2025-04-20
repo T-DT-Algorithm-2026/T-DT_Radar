@@ -10,6 +10,26 @@ include_directories(
   "detect/include"
   "resolve/include"
   "calibrate/include"
+  "camera/include"
+)
+
+find_package(libhikcamera REQUIRED)
+include_directories(${libhikcamera_INCLUDE_DIRS})
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
+
+set(CAMERA_NODE "camera")   # 相机节点名称
+file(GLOB_RECURSE CAMERA_SRCS "camera/src/*.cpp")
+ament_auto_add_library(${CAMERA_NODE} SHARED
+    ${CAMERA_SRCS}
+)
+target_link_libraries(${CAMERA_NODE}
+    ${libhikcamera_LIBRARIES}
+    -lpthread -lm
+)
+rclcpp_components_register_node(${CAMERA_NODE}
+    PLUGIN "tdt_vision::NodeCamera"
+    EXECUTABLE ${CAMERA_NODE}_node
 )
 
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
