@@ -14,7 +14,7 @@ NodeDebug::NodeDebug(const rclcpp::NodeOptions &node_options)
       std::bind(&NodeDebug::image_callback, this, std::placeholders::_1));
 
   image_pub_ = create_publisher<sensor_msgs::msg::CompressedImage>(
-      "compressed_image", rclcpp::SensorDataQoS());
+      "compressed_image", 10);
 
   debug_thread_ = std::make_shared<std::thread>(&NodeDebug::record, this);
 }
