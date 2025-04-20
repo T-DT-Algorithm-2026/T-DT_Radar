@@ -64,7 +64,7 @@ def generate_launch_description():
             extra_arguments=[{'use_intra_process_comms': True}]
         )        
 
-    def get_camera_detector_container(camera_node,radar_detect_node,radar_resolve_node,foxglove_node,record_node):
+    def get_camera_detector_container(camera_node,radar_detect_node,radar_resolve_node,foxglove_node,debug_node,record_node):
         return ComposableNodeContainer(
             name='camera_detector_container',
             namespace='',
@@ -76,7 +76,7 @@ def generate_launch_description():
                 radar_detect_node,
                 radar_resolve_node,
                 foxglove_node,
-                # debug_node,
+                debug_node,
                 record_node
             ],
             output='both',
@@ -104,12 +104,12 @@ def generate_launch_description():
     radar_detect_node = get_radar_detect_node('tdt_vision', 'tdt_radar::Detect')
     radar_resolve_node = get_radar_resolve_node('tdt_vision', 'tdt_radar::Resolve')
     foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
-    # tdt_debug_node = get_debug_node('tdt_vision', 'tdt_vision::NodeDebug')
+    tdt_debug_node = get_debug_node('tdt_vision', 'tdt_vision::NodeDebug')
     record_node = get_record_node('databag_tool', 'BagRecorderNode')
 
 
     # 创建节点容器
-    cam_detector = get_camera_detector_container(hik_camera_node,radar_detect_node,radar_resolve_node,foxglove_node,record_node)
+    cam_detector = get_camera_detector_container(hik_camera_node,radar_detect_node,radar_resolve_node,foxglove_node,tdt_debug_node,record_node)
     # debug_container = get_debug_container(tdt_debug_node)
     plugin_map_launch_cmd = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
@@ -117,6 +117,6 @@ def generate_launch_description():
              )
     return LaunchDescription([
             cam_detector,
-            plugin_map_launch_cmd
+            plugin_map_launch_cmd,
             # debug_container
         ])

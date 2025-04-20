@@ -11,6 +11,7 @@ include_directories(
   "resolve/include"
   "calibrate/include"
   "camera/include"
+  "tdt_debug/include"
 )
 
 find_package(libhikcamera REQUIRED)
@@ -94,6 +95,17 @@ rclcpp_components_register_node(${RADAR_CALIBRATE}
     PLUGIN "tdt_radar::Calibrate"
     EXECUTABLE ${RADAR_CALIBRATE}_node
 )
+
+set(TDT_DEBUG_NODE "tdt_debug") # tdt_debug节点名称
+file(GLOB_RECURSE TDT_DEBUG_SRCS "tdt_debug/src/*.cpp")
+ament_auto_add_library(${TDT_DEBUG_NODE} SHARED
+    ${TDT_DEBUG_SRCS}
+)
+rclcpp_components_register_node(${TDT_DEBUG_NODE}
+    PLUGIN "tdt_vision::NodeDebug"
+    EXECUTABLE ${TDT_DEBUG_NODE}_node
+)
+
 
 ament_auto_package(
     INSTALL_TO_SHARE
