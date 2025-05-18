@@ -23,7 +23,7 @@ void NodeCamera::getImage() {
   param_init();
   camera_node_init();
 
-  rclcpp::WallRate loop_rate(200);
+  rclcpp::WallRate loop_rate(60);
   // 循环频率为200Hz
   // 选择相机模式
   if (tdtconfig::CAMERA)
@@ -52,7 +52,7 @@ void NodeCamera::getImage() {
 
     auto end = std::chrono::system_clock::now();
 
-    // loop_rate.sleep();
+    loop_rate.sleep();
   }
   Camera_->CloseCamera();
   rclcpp::shutdown();

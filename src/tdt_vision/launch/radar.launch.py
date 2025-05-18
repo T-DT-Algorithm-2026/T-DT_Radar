@@ -83,20 +83,6 @@ def generate_launch_description():
             emulate_tty=True,
             on_exit=Shutdown(),
         )
-        
-    # def get_debug_container(debug_node):
-    #     return ComposableNodeContainer(
-    #         name='debug_container',
-    #         namespace='',
-    #         package='rclcpp_components',
-    #         executable='component_container',
-    #         composable_node_descriptions=[
-    #             debug_node
-    #         ],
-    #         output='both',
-    #         emulate_tty=True,
-    #         on_exit=Shutdown(),
-    #     )
 
 
     # 创建节点描述
@@ -110,7 +96,6 @@ def generate_launch_description():
 
     # 创建节点容器
     cam_detector = get_camera_detector_container(hik_camera_node,radar_detect_node,radar_resolve_node,foxglove_node,tdt_debug_node,record_node)
-    # debug_container = get_debug_container(tdt_debug_node)
     plugin_map_launch_cmd = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory('tdt_vision'), 'launch', 'map_server_launch.py')]),
@@ -118,5 +103,4 @@ def generate_launch_description():
     return LaunchDescription([
             cam_detector,
             plugin_map_launch_cmd,
-            # debug_container
         ])

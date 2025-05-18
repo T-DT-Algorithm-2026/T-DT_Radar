@@ -19,7 +19,7 @@ namespace tdt_radar {
                 "/kalman_detect", 10, std::bind(&DebugMap::callback, this, std::placeholders::_1));
             camera_detect_sub = this->create_subscription<vision_interface::msg::DetectResult>(
                 "/resolve_result", rclcpp::SensorDataQoS(), std::bind(&DebugMap::camera_callback, this, std::placeholders::_1));
-            map = cv::imread("config/RM2024.png");
+            map = cv::imread("config/RM2025.png");
             match_info_sub = this->create_subscription<vision_interface::msg::MatchInfo>(
                 "/match_info", 10, std::bind(&DebugMap::save_match_info, this, std::placeholders::_1));
             radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>("/hero_state", 10);

@@ -203,27 +203,6 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 detect_msg.red_y[i]=15-detect_msg.red_y[i];
             }
         }
-        if(this->lidar_detect.engine_state==1){
-            detect_msg.red_x[1]=9.027;
-            detect_msg.red_y[1]=10.838;
-            //工程赋值
-        }
-        if(this->lidar_detect.engine_state==2){
-            detect_msg.red_x[1]=1.3;
-            detect_msg.red_y[1]=3.245;//
-            //工程赋值
-        }
-    }else{
-        if(this->lidar_detect.engine_state==1){
-            detect_msg.blue_x[1]=28-9.027;
-            detect_msg.blue_y[1]=15-10.838;
-            //工程赋值
-        }
-        if(this->lidar_detect.engine_state==2){
-            detect_msg.blue_x[1]=28-1.3;
-            detect_msg.blue_y[1]=15-3.245;
-            //工程赋值
-        }
     }
     radar_detect_pub_->publish(detect_msg);
 

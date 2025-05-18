@@ -63,9 +63,6 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
 {
     cv::namedWindow("detect", cv::WINDOW_NORMAL);
 
-    this->declare_parameter<bool>("if_rosbag", false);
-    this->if_rosbag = this->get_parameter("if_rosbag").as_bool();
-
     // 使用system函数调用nvidia-smi命令
     std::cout << "Checking CUDA with nvidia-smi...\n";
     if (system("nvidia-smi") == 0) {
@@ -134,18 +131,9 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     // this->yolo = yolo::load(yolo_path, yolo::Type::V5);
     this->yolo = yolo::load(yolo_path, yolo::Type::V8, 0.65f, 0.45f);
     TDT_INFO("Load yolo engine success!");
-    if (if_rosbag)
-        compressed_image_sub =
-            this->create_subscription<sensor_msgs::msg::CompressedImage>(
-                "compressed_image", rclcpp::SensorDataQoS(),
-                std::bind(&Detect::compressed_callback, this,
-                          std::placeholders::_1));
-    else
-        image_sub = this->create_subscription<sensor_msgs::msg::Image>(
+    image_sub = this->create_subscription<sensor_msgs::msg::Image>(
             "camera_image", rclcpp::SensorDataQoS(),
             std::bind(&Detect::callback, this, std::placeholders::_1));
-    image_pub = this->create_publisher<sensor_msgs::msg::Image>(
-        "detect_image", rclcpp::SensorDataQoS());
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
@@ -287,6 +275,7 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         float    max_confidence = 0;
         for (auto& armor : car.armors) {
             if (armor.class_label != 0 &&
+                armor.class_label != 5 &&
                 armor.confidence > max_confidence) {
                 max_rect = cv::Rect(
                     armor.left + car.car.left, armor.top + car.car.top,
@@ -365,16 +354,6 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (key == 'r') {
         debug = !debug;
     }
-}
-void Detect::compressed_callback(
-    const std::shared_ptr<sensor_msgs::msg::CompressedImage> msg)
-{
-    std::cout << "Compressed Image" << std::endl;
-    auto img = cv::imdecode(msg->data, cv::IMREAD_COLOR);
-    auto raw_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img)
-                       .toImageMsg();
-    raw_msg->header.stamp = msg->header.stamp;
-    callback(raw_msg);
 }
 }  // namespace tdt_radar
 RCLCPP_COMPONENTS_REGISTER_NODE(tdt_radar::Detect)

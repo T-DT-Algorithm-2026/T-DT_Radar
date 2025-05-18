@@ -50,7 +50,6 @@ def generate_launch_description():
             package=package,
             plugin=plugin,
             name="radar_detect_node",
-            parameters=[{"if_rosbag": False}],
             extra_arguments=[{"use_intra_process_comms": True}],
         )
 
@@ -82,7 +81,6 @@ def generate_launch_description():
             on_exit=Shutdown(),
         )
 
-    # 创建节点描述
     radar_detect_node = get_radar_detect_node("tdt_vision", "tdt_radar::Detect")
     radar_resolve_node = get_radar_resolve_node("tdt_vision", "tdt_radar::Resolve")
     foxglove_node = get_foxglove_node(
@@ -91,7 +89,6 @@ def generate_launch_description():
 
     ros_bag_player_node = get_rosbag_player_node('rosbag_player', 'RosbagPlayer')
 
-    # 创建节点容器
     cam_detector = get_camera_detector_container(
         radar_detect_node, radar_resolve_node, foxglove_node, ros_bag_player_node
     )

@@ -1,9 +1,3 @@
-# vision_record:
-#   - /VisionControlPub
-#   - /armorDetectInfo
-#   - /armorResolveInfo
-#   - /sentryUsartData
-#   - /compressed_image
 radar_record:
     - /compressed_image
     - /livox/lidar

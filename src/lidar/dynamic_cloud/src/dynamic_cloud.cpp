@@ -10,7 +10,7 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
     RCLCPP_INFO(this->get_logger(), "Dynamic_cloud Node start");
     //从pcd读取map
     auto temp_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2024.pcd", *temp_cloud) == -1)
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2025.pcd", *temp_cloud) == -1)
     {
         PCL_ERROR("Couldn't read file map.pcd \n");
     }
@@ -132,25 +132,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                (point.z > 1.7 && point.z < 3);
     };//飞机飞到中场
 
-    auto engine_filter = [](pcl::PointXYZ &point) {
-        return (point.x > 28-2.0234 && point.x < 28-1.0234) &&
-               (point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1) &&
-               (point.z > 0.4 && point.z < 1.5);
-    };//兑换站
-
-    auto little_engine_filter = [](pcl::PointXYZ &point) {
-        //小资源岛方程：
-        // y=tan55°*x - 20.2563
-        // y=tan55°*x -18.0736
-        // y=-1/tan55°*x -5.9628
-        // y=-1/tan55°*x -7.4988
-        double xminusy = point.y - point.x*tan(55.0/180.0*M_PI);
-        double xplusy = point.y + point.x / tan(55.0/180.0*M_PI);    
-        return (xminusy < -21.9555 && xminusy > -23.3419) &&
-               (xplusy > 16.7456 && xplusy < 18.1448)&&(point.z>0&&point.z<1.2);
-               //构建方程之后微调一下
-};
-
     auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();
     pcl::fromROSMsg(*msg, receive_cloud);
 
@@ -189,22 +170,14 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             //或者y(11,12),x(23,24)不要
             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
             //画四个直线切割大资源岛
-            ((21.5-0.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+0.9/sqrt(2))&&
-            (-6.5-2.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+2.9/sqrt(2)))||
-            ((12<point.y&&point.y<13.5)&&(17<point.x&&point.x<18))||
-            ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
-            (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)||
-            little_engine_filter(point)
-            ///TODO: 此处代码混乱，需要重构，全部替换成Lambda表达式的过滤器形式
+            ((21.5-0.9/sqrt(2))<(point.x - point.y) &&(point.x - point.y) <(21.5+0.9/sqrt(2))&&
+            (-6.5-2.9/sqrt(2))<(point.y+point.x)&&(point.y+point.x)<(-6.5+2.9/sqrt(2)))
         )
         {
             // 如果在飞镖识别范围内：x(28-0.5889-0.1885,28-0.5889) y(3.925,4.525),z(2.7422-0.859,2.7422)
             // 如果在飞机识别范围内：x(14,28-3.024) y(0,1.356+2.4) z(1.7,2.5)
-            // 如果在兑换站范围内   x(28-2.0234,28-1.0234) y(10.955,10.955+1.6) z(0.4,1.5)
             if((point.x>28-0.5889-0.1885&&point.x<28-0.5889)&&(point.y>3.925&&point.y<4.525)&&(point.z>2.4722-0.859+0.1&&point.z<2.4722)||
-            (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)||
-            (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)||
-            little_engine_filter(point)
+            (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)
             ){
                 other_filtered_cloud.push_back(point);
                 }
@@ -315,35 +288,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         break;
     }
 
-    pcl::PointCloud<pcl::PointXYZ> engine_cloud;
-    for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
-    {
-        auto &point = other_accumulated_cloud.points[i];
-        if (engine_filter(point))
-        {
-            engine_cloud.push_back(point);
-        }
-    }
-    if(engine_cloud.size()>5){
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Find engine cloud!");
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Engine cloud size: %d", engine_cloud.size());
-        lidar_detect.engine_state = 2;
-    }
-    
-    pcl::PointCloud<pcl::PointXYZ> little_engine_cloud;
-    for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
-    {
-        auto &point = other_accumulated_cloud.points[i];
-        if (little_engine_filter(point))
-        {
-            little_engine_cloud.push_back(point);
-        }
-    }
-    if(little_engine_cloud.size()>5){
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Find little engine cloud!");
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Little engine cloud size: %d", little_engine_cloud.size());
-        lidar_detect.engine_state = 1;
-    }
     
     detect_pub_->publish(lidar_detect);
     // std::cout << "publish time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;

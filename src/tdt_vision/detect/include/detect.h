@@ -22,8 +22,6 @@ class Detect final : public rclcpp::Node {
 public:
     explicit Detect(const rclcpp::NodeOptions& options);
     void callback(const std::shared_ptr<sensor_msgs::msg::Image> msg);
-    void compressed_callback(
-        const std::shared_ptr<sensor_msgs::msg::CompressedImage> msg);
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr
         compressed_image_sub;
@@ -33,7 +31,6 @@ private:
     std::shared_ptr<Infer<yolo::BoxArray>>     armor_yolo;
     std::shared_ptr<Infer<int>> classifier;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr pub;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub;
 
     bool        if_rosbag = false;
     int         EnemyColor;  // 0为蓝色 2为红色
