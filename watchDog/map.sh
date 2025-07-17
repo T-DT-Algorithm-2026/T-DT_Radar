@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env zsh
 
 # 当接收到SIGINT信号时，结束脚本执行
 trap "echo 'Script terminated by user'; exit" SIGINT
@@ -7,7 +7,7 @@ trap "echo 'Script terminated by user'; exit" SIGINT
 SCRIPT_PATH=$(dirname $(realpath $0))
 cd $SCRIPT_PATH/..
 
-source ./install/setup.bash
+source ./install/setup.zsh
 
 # 设置程序路径
 PROGRAM="ros2 run debug_map debug_map"
@@ -19,10 +19,10 @@ do
     then
         echo "$PROGRAM is running~"
     else
-        echo "$PROGRAM launch failed!"
+        echo "$PROGRAM run failed!"
 
         # 启动程序
-        $PROGRAM
+        eval $PROGRAM
     fi
 
     # 等待一段时间再次检查

@@ -1,30 +1,27 @@
 #!/usr/bin/env zsh
 
-# 当接收到SIGINT信号时，结束脚本执行
-trap "echo 'Script terminated by user'; exit" SIGINT
 
 # 获取脚本所在的绝对路径
 SCRIPT_PATH=$(dirname $(realpath $0))
 cd $SCRIPT_PATH/..
-
 # 设置程序路径
-PROGRAM="./src/livox_driver/livox_ros2_driver/launch/livox_lidar_launch.py"
+PROGRAM="ros2 run roborts_center_usart roborts_center_usart"
 
 source ./install/setup.zsh
-#打印当前路径(pwd)
-echo $(pwd)
 
+# 当接收到SIGINT信号时，结束脚本执行
+trap "echo 'Script terminated by user'; exit" SIGINT
+trap "exit;" SIGHUP
 while true
 do
     # 检查程序是否正在运行
-    if pgrep -f $PROGRAM > /dev/null
+    if pgrep -f "$PROGRAM" > /dev/null
     then
         echo "$PROGRAM is running~"
     else
-        echo "$PROGRAM launch failed!"
 
         # 启动程序
-        ros2 launch $PROGRAM
+        eval $PROGRAM
     fi
 
     # 等待一段时间再次检查

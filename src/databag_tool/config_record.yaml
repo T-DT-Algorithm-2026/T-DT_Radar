@@ -3,12 +3,12 @@ radar_record:
     - /livox/lidar
     - /match_info
     - /sentry2RadarData
-    # - /Radar2Sentry
+    - /Radar2Sentry
     # - /hero_state
-    # - /lidar_detect
+    - /lidar_detect
 
 # 设置 数据集文件夹 相对于本yaml文件所在文件夹的储存位置：path = "...src/databag_tool/" + bags_relative_path , 用于 record 和 merge
-bags_relative_path: ../../../ros2bags/
+bags_relative_path: ../../ros2bags/
 
 # bags_relative_path: ../../../../../../home/tdt/rosbag/ros2bags/
 

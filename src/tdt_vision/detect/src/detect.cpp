@@ -81,7 +81,7 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     std::ifstream file1(yolo_path.c_str());
     if (!file1.good()) {
         system("python3 src/utils/onnx2trt.py "
-               "--onnx=model/ONNX/RM2024.onnx "
+               "--onnx=model/ONNX/RM2025.onnx "
                "--saveEngine=model/TensorRT/yolo.engine "
                "--minBatch 1 "
                "--optBatch 1 "

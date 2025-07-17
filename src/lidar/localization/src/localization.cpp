@@ -140,7 +140,7 @@ private:
         // std::cout << "calib time   : " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[msec]" << std::endl;
         RCLCPP_WARN(this->get_logger(), "calib result : %f", registration->getFitnessScore());
 
-        if(registration->getFitnessScore()<0.1){
+        if(registration->getFitnessScore()<0.2){
         has_aligned_ = true;}
 
         //打印变换矩阵

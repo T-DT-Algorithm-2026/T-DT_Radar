@@ -170,8 +170,8 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             //或者y(11,12),x(23,24)不要
             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
             //画四个直线切割大资源岛
-            ((21.5-0.9/sqrt(2))<(point.x - point.y) &&(point.x - point.y) <(21.5+0.9/sqrt(2))&&
-            (-6.5-2.9/sqrt(2))<(point.y+point.x)&&(point.y+point.x)<(-6.5+2.9/sqrt(2)))
+            ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
+            (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))
         )
         {
             // 如果在飞镖识别范围内：x(28-0.5889-0.1885,28-0.5889) y(3.925,4.525),z(2.7422-0.859,2.7422)

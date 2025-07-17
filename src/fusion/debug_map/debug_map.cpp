@@ -40,12 +40,12 @@ namespace tdt_radar {
             for(int i=0;i<6;i++){
                 int number = i+1;
                 if(number==6)number++;
-                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<2){
+                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5){
                     cv::Point2f point = cv::Point2f(clone_map.cols*blue_point[i].x/28,clone_map.rows*(15-blue_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(200,0,0),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
                 }
-                if(red_point[i].x*red_point[i].y&&time-red_update[i]<2){
+                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5){
                     cv::Point2f point = cv::Point2f(clone_map.cols*red_point[i].x/28,clone_map.rows*(15-red_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(0,0,200),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
@@ -143,7 +143,7 @@ namespace tdt_radar {
                             relax_time[i] = time;
                         } 
                         else{
-                            if(time-red_update[i]<2){
+                            if(time-red_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = red_point[i].x;
                             radar2sentry.radar_enemy_y[i] = red_point[i].y;
                             }
@@ -156,13 +156,13 @@ namespace tdt_radar {
                         //当mark在(105,117)间隔0.4s发送一次
                         if(match_info.marks[i]<105){
                             relax[i]=false;
-                            if(time-red_update[i]<2){
+                            if(time-red_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = red_point[i].x;
                             radar2sentry.radar_enemy_y[i] = red_point[i].y;
                             } 
                         }else if(time-relax_time[i]>0.35){
                             relax_time[i] = time;
-                            if(time-red_update[i]<2){
+                            if(time-red_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = red_point[i].x;
                             radar2sentry.radar_enemy_y[i] = red_point[i].y; 
                             }
@@ -178,7 +178,7 @@ namespace tdt_radar {
                             relax_time[i] = time;
                         } 
                         else{
-                            if(time-blue_update[i]<2){
+                            if(time-blue_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = blue_point[i].x;
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             }
@@ -191,13 +191,13 @@ namespace tdt_radar {
                         //当mark在(105,117)间隔0.4s发送一次
                         if(match_info.marks[i]<105){
                             relax[i]=false;
-                            if(time-blue_update[i]<2){
+                            if(time-blue_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = blue_point[i].x;
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             } 
                         }else if(time-relax_time[i]>0.35){
                             relax_time[i] = time;
-                            if(time-blue_update[i]<2){
+                            if(time-blue_update[i]<0.5){
                             radar2sentry.radar_enemy_x[i] = blue_point[i].x;
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             } 

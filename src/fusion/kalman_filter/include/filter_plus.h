@@ -32,7 +32,7 @@ public:
     pcl::PointXY predict_point;
     float detect_r = 1;
     float car_speed = 2;
-    float car_max_speed = 3.0;
+    float car_max_speed = 2.5;
     cv::Scalar color;
     bool has_updated = false;
     cv::Mat Q= cv::Mat::zeros(4, 4, CV_32F);
