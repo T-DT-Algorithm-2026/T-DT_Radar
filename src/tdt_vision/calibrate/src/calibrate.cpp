@@ -77,8 +77,7 @@ namespace tdt_radar {
         cv::imshow("calibrate", img);
         //按下回车键，开始标定
         auto key =cv::waitKey(10);
-        switch (key)
-        {
+        switch (key) {
             case 13:
                 is_calibrating = true;
                 break;

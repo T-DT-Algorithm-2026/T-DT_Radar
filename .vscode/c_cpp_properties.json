@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/jazzy/include/**",
+        "/home/tdt/T-DT_Radar/src/fusion/kalman_filter/include/**",
+        "/home/tdt/T-DT_Radar/src/lidar/cluster/include/**",
+        "/home/tdt/T-DT_Radar/src/lidar/dynamic_cloud/include/**",
+        "/home/tdt/T-DT_Radar/src/roborts_center_usart/include/**",
+        "/home/tdt/T-DT_Radar/src/roborts_utils/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

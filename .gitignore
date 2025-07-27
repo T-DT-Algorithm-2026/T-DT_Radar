@@ -7,4 +7,4 @@ config/merged_bag/*
 
 *.engine
 
-ros2bag/
+ros2bags/

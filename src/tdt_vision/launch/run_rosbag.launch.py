@@ -27,7 +27,7 @@ def generate_launch_description():
                     "rosbag_file":
                     # '/home/tdt/rosbag/ros2bags/radar_record0531_2032_54/merged_bag/merged_bag_0.db3'
                     # '/home/shenxw/Rosbag/适应性录像第二把/merged_bag/merged_bag_0.db3'
-                    "/home/tdt/T-DT_Radar/ros2bags/radar_record0530_1634_13/merged_bag/merged_bag_0.db3"
+                    "/home/tdt/T-DT_Radar/ros2bags/radar_record0601_2036_02/merged_bag_1/merged_bag_1_0.db3"
                 }
             ],
             extra_arguments=[{"use_intra_process_comms": True}],

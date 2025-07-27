@@ -34,7 +34,7 @@ namespace tdt_radar {
         std::vector<cv::Point3f> real_points;
         
 
-        cv::Point3f self_FORTRESS   = cv::Point3f(6.618, -7.5, 0.15);
+        cv::Point3f self_FORTRESS   = cv::Point3f(5.471, -7.5, 0.0);
         cv::Point3f self_Tower = cv::Point3f(10.936, -11.161, 0.868);
         cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.24524);
         cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.745);

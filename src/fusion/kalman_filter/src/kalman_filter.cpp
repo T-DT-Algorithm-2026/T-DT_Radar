@@ -76,69 +76,95 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXY>::Ptr cloud_xy(new pcl::PointCloud<pcl::PointXY>);
     pcl::fromROSMsg(*msg, *cloud);
-    for(auto point : cloud->points)
-    {
+    for(auto point : cloud->points) {
         pcl::PointXY point_xy;
         point_xy.x = point.x;
         point_xy.y = point.y;
         cloud_xy->points.push_back(point_xy);
     }
-    if(cloud_xy->points.size() == 0)return;
-    for(auto &kf : KFs)
-    {
+    if(cloud_xy->points.size() == 0)
+        return;
+    for(auto &kf : KFs) {
         kf.update_predict_point();
         kf.has_updated = false;
     }
 
-    for(auto point : cloud_xy->points)//对于每个点
+    //对于每个点
     //如果遍历所有卡尔曼都没找到能够匹配的，新建一个卡尔曼
     //若找到了1个，则更新这个卡尔曼
     //若找到了多个，则更新距离最近的那个
-    {
-        std::vector<int> match_kf_indexs;
-        for(int i = 0; i < this->KFs.size(); i++)
-        {
-            if(KFs[i].match(point)){
-                match_kf_indexs.push_back(i);
-            }
+     if (KFs.empty()) {
+
+        // 如果当前没有跟踪器，则所有检测点都是新目标
+        for (const auto& point : cloud_xy->points) {
+            KFs.emplace_back(point, time);
         }
-        if(match_kf_indexs.size() == 0)
-        {
-            Kalman_filter_plus kf(point, time);
-            KFs.push_back(kf);
-            // std::cout<<"new kf"<<std::endl;
-        }
-        else if(match_kf_indexs.size() == 1)
-        {
-            KFs[match_kf_indexs[0]].update(point, time);
-            // std::cout<<"update kf"<<std::endl;
-        }
-        else
-        {
-            float min_distance = 1000000;
-            int min_index = 0;
-            for(auto index : match_kf_indexs)
-            {
-                float distance = KFs[index].Distance(KFs[index].predict_point, point);
-                if(distance < min_distance)
-                {
-                    min_distance = distance;
-                    min_index = index;
+    } else {
+        // --- 阶段一：分离“全新点”和“候选点” ---
+        
+        std::vector<pcl::PointXY> candidate_points; // 至少有一个KF能匹配上的点
+        std::vector<bool> point_is_candidate(cloud_xy->points.size(), false); // 标记每个点是否为候选点
+
+        for (size_t j = 0; j < cloud_xy->points.size(); ++j) {
+            bool has_at_least_one_match = false;
+            for (size_t i = 0; i < KFs.size(); ++i) {
+                // 检查该点是否在任何一个KF的匹配门控范围内
+                if (KFs[i].match(cloud_xy->points[j])) {
+                    has_at_least_one_match = true;
+                    break; // 只要有一个匹配，就无需再检查其他KF
                 }
             }
-            KFs[min_index].update(point, time);
-            // std::cout<<"find kf"<<std::endl;
+
+            if (has_at_least_one_match) {
+                // 如果至少有一个KF能匹配，则将其视为“候选点”，等待匈牙利分配
+                candidate_points.push_back(cloud_xy->points[j]);
+                point_is_candidate[j] = true;
+            } else {
+                // 如果没有任何一个KF能匹配，则判定为“全新点”，立即创建新滤波器
+                KFs.emplace_back(cloud_xy->points[j], time);
+            }
+        }
+        
+        // --- 阶段二：仅对“候选点”进行匈牙利匹配 ---
+        
+        if (!candidate_points.empty()) {
+            size_t num_kfs = KFs.size();
+            size_t num_candidates = candidate_points.size();
+            const double max_cost = 1e9;
+
+            Eigen::MatrixXd cost_matrix(num_kfs, num_candidates);
+
+            for (size_t i = 0; i < num_kfs; ++i) {
+                for (size_t j = 0; j < num_candidates; ++j) {
+                    // 成本矩阵现在是 KFs 和 candidate_points 之间的
+                    if (KFs[i].match(candidate_points[j])) {
+                        cost_matrix(i, j) = KFs[i].Distance(KFs[i].predict_point, candidate_points[j]);
+                    } else {
+                        // 按理说这里不会执行，因为候选点都至少有一个匹配项，但作为安全措施保留
+                        cost_matrix(i, j) = max_cost;
+                    }
+                }
+            }
+
+            // 运行匈牙利算法
+            std::vector<int> assignments = solve_hungarian(cost_matrix);
+
+            // 处理成功匹配的对 (KF <-> Candidate Point)
+            for (size_t i = 0; i < assignments.size(); ++i) {
+                int candidate_idx = assignments[i];
+                
+                if (candidate_idx != -1 && cost_matrix(i, candidate_idx) < max_cost) {
+                    KFs[i].update(candidate_points[candidate_idx], time);
+                }
+            }
         }
     }
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-    for(int i = KFs.size() - 1; i >= 0; i--)
-    {
-        if((KFs[i].last_time) > 1.5){
+    for(int i = KFs.size() - 1; i >= 0; i--) {
+        if ((KFs[i].last_time) > 1.5) {
             KFs.erase(KFs.begin() + i);
             // std::cout<<"delete kf"<<std::endl;
-        }
-        else
-        {
+        } else {
             // if(KFs[i].has_updated)
             // {
             pcl::PointXYZRGB point;
@@ -146,21 +172,20 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             point.y = KFs[i].predict_point.y;
             point.z = 1.5;
             int color = KFs[i].get_color();
-            switch (color)
-            {
-            case 0:
-                point.b = 255;
-                break;
+            switch (color) {
+                case 0:
+                    point.b = 255;
+                    break;
 
-            case 2:
-                point.r = 255;
-                break;
-            
-            default:
-                point.r = KFs[i].color[0];
-                point.g = KFs[i].color[1];
-                point.b = KFs[i].color[2];
-                break;
+                case 2:
+                    point.r = 255;
+                    break;
+                
+                default:
+                    point.r = KFs[i].color[0];
+                    point.g = KFs[i].color[1];
+                    point.b = KFs[i].color[2];
+                    break;
             }
             cloud_filtered->points.push_back(point);
             // }
