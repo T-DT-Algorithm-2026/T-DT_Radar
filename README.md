@@ -1,8 +1,8 @@
 <div align="center">
 
-# T-DT 2025 Radar
+# T-DT 2026 Radar
 
-> 2024年东北大学T-DT实验室 RoboMaster超级对抗赛 雷达代码
+> 2026年东北大学T-DT实验室 RoboMaster超级对抗赛 雷达代码
 
 <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow"></a>
 <a href="https://neutdt.cn"><img alt="Home Page" src="https://img.shields.io/badge/Home%20Page-T--DT-green"></a>
