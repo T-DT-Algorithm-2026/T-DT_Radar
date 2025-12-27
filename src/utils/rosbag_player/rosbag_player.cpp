@@ -11,6 +11,10 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_interface/msg/match_info.hpp>
 #include <thread>
+#include <std_msgs/msg/string.hpp>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 using namespace std::chrono_literals;
 
@@ -30,6 +34,10 @@ public:
         pointcloud_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10);
         image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera_image", rclcpp::SensorDataQoS());
         match_info_publisher_ = this->create_publisher<vision_interface::msg::MatchInfo>("/match_info", 10);
+        // 订阅控制话题，用于 pause/resume/toggle
+        control_sub_ = this->create_subscription<std_msgs::msg::String>(
+            "rosbag_player/control", 10,
+            std::bind(&RosbagPlayer::control_callback, this, std::placeholders::_1));
         signal(SIGINT, on_exit);
         // 创建一个新的线程来处理bag文件
             reader_.open(rosbag_file);
@@ -46,8 +54,14 @@ public:
 private:
     void play_bag() {
         while (rclcpp::ok()) {
+            // 如果处于暂停状态，则等待直到恢复
+            if (paused_.load()) {
+                std::unique_lock<std::mutex> lk(pause_mutex_);
+                pause_cv_.wait(lk, [this]() { return !paused_.load(); });
+            }
+
             if(!reader_.has_next())
-            reader_.open(rosbag_file);
+                reader_.open(rosbag_file);
 
             auto start_time = std::chrono::high_resolution_clock::now();
             auto bag_message = reader_.read_next();
@@ -95,12 +109,37 @@ private:
         rclcpp::shutdown();
     }
 
+    void control_callback(const std_msgs::msg::String::SharedPtr msg) {
+        const std::string &cmd = msg->data;
+        if (cmd == "pause") {
+            paused_.store(true);
+            RCLCPP_INFO(this->get_logger(), "rosbag_player: paused");
+        } else if (cmd == "resume") {
+            paused_.store(false);
+            pause_cv_.notify_all();
+            RCLCPP_INFO(this->get_logger(), "rosbag_player: resumed");
+        } else if (cmd == "toggle") {
+            bool now = !paused_.load();
+            paused_.store(now);
+            if (!now) {
+                pause_cv_.notify_all();
+            }
+            RCLCPP_INFO(this->get_logger(), "rosbag_player: toggled to %s", now ? "paused" : "running");
+        } else {
+            RCLCPP_INFO(this->get_logger(), "rosbag_player: unknown control '%s'", cmd.c_str());
+        }
+    }
+
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
     rclcpp::Publisher<vision_interface::msg::MatchInfo>::SharedPtr match_info_publisher_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr control_sub_;
     rosbag2_cpp::Reader reader_;
     std::shared_ptr<std::thread> processing_thread_;
     std::string rosbag_file;
+    std::atomic<bool> paused_{false};
+    std::mutex pause_mutex_;
+    std::condition_variable pause_cv_;
 
 };
 

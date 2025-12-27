@@ -8,7 +8,8 @@
 #include "pcl/point_types.h"
 #include "pcl/point_cloud.h"
 #include "pcl/io/pcd_io.h"
-#include "filter_plus.h"
+// #include "filter_plus.h"
+#include "guess_point.h"
 #include <rclcpp/publisher.hpp>
 #include <vision_interface/msg/detect_result.hpp>
 #include <vision_interface/msg/radar2_sentry.hpp>
@@ -39,6 +40,7 @@ class KalmanFilter :public rclcpp::Node
     void lidar_callback(const vision_interface::msg::RadarWarn::SharedPtr msg);
     void match_callback(const vision_interface::msg::MatchInfo::SharedPtr msg);
     std::vector<Kalman_filter_plus> KFs;
+    car arr[12];
     vision_interface::msg::RadarWarn lidar_detect;
     vision_interface::msg::MatchInfo match_info;
 };
@@ -139,5 +141,5 @@ std::vector<int> solve_hungarian(const Eigen::MatrixXd& cost_matrix) {
     }
 
     return result;
-}
+}//匈牙利算法
 }//namespace tdt_radar

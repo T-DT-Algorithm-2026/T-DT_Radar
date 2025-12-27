@@ -152,9 +152,17 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     auto result = yolo->forward(image);
     if (result.size() == 0) {
         RCLCPP_INFO(this->get_logger(), "No Car!");
+        cv::Mat final_img;
+        cv::resize(img, final_img, cv::Size(1536, 1125));
+        cv::imshow("detect", final_img);
+        cv::waitKey(1);
         return;
     } else if (result.size() > MAX_CARS) {
         RCLCPP_INFO(this->get_logger(), "Too Many Car!");
+        cv::Mat final_img;
+        cv::resize(img, final_img, cv::Size(1536, 1125));
+        cv::imshow("detect", final_img);
+        cv::waitKey(1);
         return;
     }
 
