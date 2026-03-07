@@ -25,9 +25,11 @@ def generate_launch_description():
             parameters=[
                 {
                     "rosbag_file":
-                    # '/home/tdt/rosbag/ros2bags/radar_record0531_2032_54/merged_bag/merged_bag_0.db3'
-                    # '/home/shenxw/Rosbag/适应性录像第二把/merged_bag/merged_bag_0.db3'
-                    "/home/tdt/T-DT_Radar/ros2bags/radar_record0601_2036_02/merged_bag_1/merged_bag_1_0.db3"
+                    '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
+                    # '/home/robot/ros2bag/rosbag_0803_1742/bag_0803_1748_03/bag_0803_1748_03_0.db3'
+
+
+        
                 }
             ],
             extra_arguments=[{"use_intra_process_comms": True}],
@@ -78,30 +80,21 @@ def generate_launch_description():
             ],
             output="both",
             emulate_tty=True,
+            # prefix=['gdbserver localhost:3000'],
             on_exit=Shutdown(),
         )
 
     radar_detect_node = get_radar_detect_node("tdt_vision", "tdt_radar::Detect")
     radar_resolve_node = get_radar_resolve_node("tdt_vision", "tdt_radar::Resolve")
-    foxglove_node = get_foxglove_node(
-        "foxglove_bridge", "foxglove_bridge::FoxgloveBridge"
-    )
-
+    foxglove_node = get_foxglove_node("foxglove_bridge", "foxglove_bridge::FoxgloveBridge")
     ros_bag_player_node = get_rosbag_player_node('rosbag_player', 'RosbagPlayer')
 
-    cam_detector = get_camera_detector_container(
-        radar_detect_node, radar_resolve_node, foxglove_node, ros_bag_player_node
-    )
-
+    cam_detector = get_camera_detector_container(radar_detect_node, radar_resolve_node, foxglove_node, ros_bag_player_node)
     plugin_map_launch_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                os.path.join(
-                    get_package_share_directory("tdt_vision"),
-                    "launch",
-                    "map_server_launch.py",
-                )
-            ]
-        ),
-    )
-    return LaunchDescription([cam_detector, plugin_map_launch_cmd])
+                PythonLaunchDescriptionSource([os.path.join(
+                    get_package_share_directory("tdt_vision"), "launch", "map_server_launch.py",)]),
+            )
+    return LaunchDescription([
+            cam_detector, 
+            plugin_map_launch_cmd
+        ])

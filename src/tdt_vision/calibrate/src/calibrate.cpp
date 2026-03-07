@@ -47,7 +47,7 @@ namespace tdt_radar {
                                   "          ┗┻┛       ┗┻┛");
 
         image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-                "camera_image", rclcpp::SensorDataQoS(),
+                "camera1/image", rclcpp::SensorDataQoS(),
                 std::bind(&Calibrate::callback, this, std::placeholders::_1));
         compressed_image_sub = this->create_subscription<sensor_msgs::msg::CompressedImage>(
                 "compressed_image", rclcpp::SensorDataQoS(),

@@ -32,7 +32,7 @@ public:
         this->get_parameter("rosbag_file", rosbag_file);
 
         pointcloud_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10);
-        image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera_image", rclcpp::SensorDataQoS());
+        image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera1/image", rclcpp::SensorDataQoS());
         match_info_publisher_ = this->create_publisher<vision_interface::msg::MatchInfo>("/match_info", 10);
         // 订阅控制话题，用于 pause/resume/toggle
         control_sub_ = this->create_subscription<std_msgs::msg::String>(

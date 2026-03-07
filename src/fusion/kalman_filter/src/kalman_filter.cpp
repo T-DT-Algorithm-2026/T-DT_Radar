@@ -28,7 +28,7 @@ void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::Sh
 {
     // RCLCPP_INFO(this->get_logger(), "Detect_callback");
     rclcpp::Time time = msg->header.stamp;
-    std::cout<<msg->blue_x[0]<<","<<msg->blue_y[0]<<std::endl;
+    // std::cout<<msg->blue_x[0]<<","<<msg->blue_y[0]<<std::endl;
     for(int i=0;i<6;i++)
     {
         pcl::PointXY red_point;
@@ -95,7 +95,7 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         pcl::PointXY point_xy;
         point_xy.x = point.x;
         point_xy.y = point.y;
-        std::cout<<point.z<<std::endl;
+        // std::cout<<point.z<<std::endl;
         cloud_xy->points.push_back(point_xy);
     }//三维传二维？
     if(cloud_xy->points.size() == 0)
@@ -219,7 +219,6 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                     arr[kf.new_id].getcar(&kf);
                 } 
             }
-            std::cout<<"10"<<std::endl;
             for(auto &car: arr)
             {
                 car.deal_car();

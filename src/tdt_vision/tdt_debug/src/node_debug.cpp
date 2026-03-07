@@ -10,7 +10,7 @@ namespace tdt_vision {
 NodeDebug::NodeDebug(const rclcpp::NodeOptions &node_options)
     : Node("debug_node", node_options) {
   image_sub_ = create_subscription<sensor_msgs::msg::Image>(
-      "camera_image", rclcpp::SensorDataQoS(),
+      "camera1/image", rclcpp::SensorDataQoS(),
       std::bind(&NodeDebug::image_callback, this, std::placeholders::_1));
 
   image_pub_ = create_publisher<sensor_msgs::msg::CompressedImage>(

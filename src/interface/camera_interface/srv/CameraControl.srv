@@ -1,0 +1,8 @@
+# 请求部分
+string camera_name    # 相机名称 (对应 config.json 中的 id)，如果留空或 "all" 则控制所有相机
+bool target_state     # true: 期望启动采集, false: 期望停止采集
+
+---
+# 响应部分
+bool success          # 执行结果
+string message        # 详细信息 (例如 "Camera A started" 或 "Camera B not found")

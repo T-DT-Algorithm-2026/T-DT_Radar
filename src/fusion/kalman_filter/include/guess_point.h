@@ -60,13 +60,13 @@ public:
     void test()
     {
         // std::cout<<"color:";
-        // std::cout<<color<<std::endl;
-        std::cout<<"number";
-        std::cout<<number<<std::endl;
-        // std::cout<<"send_point";
-        // std::cout<<send_point.x<<","<<send_point.y<<std::endl;
-        std::cout<<"point";
-        std::cout<<point.x<<","<<point.y<<std::endl;  
+        // // std::cout<<color<<std::endl;
+        // std::cout<<"number";
+        // std::cout<<number<<std::endl;
+        // // std::cout<<"send_point";
+        // // std::cout<<send_point.x<<","<<send_point.y<<std::endl;
+        // std::cout<<"point";
+        // std::cout<<point.x<<","<<point.y<<std::endl;  
     }
 
     void deal_car() 

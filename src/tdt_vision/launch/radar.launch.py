@@ -14,11 +14,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
+
     def get_camera_node(package, plugin):
         return ComposableNode(
             package=package,
             plugin=plugin,
-            name='vision_camera_node',
+            name='camera_node',
+            parameters=[{'config_path': '/home/robot/T-DT_Radar/config/config.json', 'auto_start': True}],
             extra_arguments=[{'use_intra_process_comms': True}]
         )
         
@@ -38,7 +40,7 @@ def generate_launch_description():
             name='radar_detect_node',
             extra_arguments=[{'use_intra_process_comms': True}]
         )
-        
+     
     def get_radar_resolve_node(package, plugin):
         return ComposableNode(
             package=package,
@@ -86,7 +88,7 @@ def generate_launch_description():
 
 
     # 创建节点描述
-    hik_camera_node = get_camera_node('tdt_vision', 'tdt_vision::NodeCamera')
+    camera_node = get_camera_node('tdt_vision', 'tdt_vision::TDTCameraNode')
     radar_detect_node = get_radar_detect_node('tdt_vision', 'tdt_radar::Detect')
     radar_resolve_node = get_radar_resolve_node('tdt_vision', 'tdt_radar::Resolve')
     foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
@@ -95,7 +97,7 @@ def generate_launch_description():
 
 
     # 创建节点容器
-    cam_detector = get_camera_detector_container(hik_camera_node,radar_detect_node,radar_resolve_node,foxglove_node,tdt_debug_node,record_node)
+    cam_detector = get_camera_detector_container(camera_node,radar_detect_node,radar_resolve_node,foxglove_node,tdt_debug_node,record_node)
     plugin_map_launch_cmd = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory('tdt_vision'), 'launch', 'map_server_launch.py')]),

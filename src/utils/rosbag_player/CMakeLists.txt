@@ -40,17 +40,4 @@ rclcpp_components_register_node(${ROSBAG_PLAYER}
 
 target_link_libraries(rosbag_player_node ${PCL_LIBRARIES})
 
-# Add a small C++ interactive control executable
-ament_auto_add_executable(rosbag_control
-  src/rosbag_control.cpp
-)
-ament_target_dependencies(rosbag_control
-  rclcpp
-  std_msgs
-)
-
-install(TARGETS rosbag_control
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
-)
-
 ament_auto_package()

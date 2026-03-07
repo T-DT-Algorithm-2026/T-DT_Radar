@@ -22,7 +22,10 @@ def generate_launch_description():
             name='rosbag_player_node',
             parameters=[ {'rosbag_file': 
                 # '/home/tdt/rosbag/ros2bags/radar_record0531_2032_54/merged_bag/merged_bag_0.db3'
-                '/home/tdt/T-DT_Radar/ros2bags/radar_record0529_2142_47/merged_bag/merged_bag_0.db3'
+                # '/home/tdt/T-DT_Radar/ros2bags/radar_record0529_2142_47/merged_bag/merged_bag_0.db3'
+                # '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
+                '/home/robot/ros2bag/rosbag_0803_1742/bag_0803_1748_03/bag_0803_1748_03_0.db3'
+
                 }],
             extra_arguments=[{'use_intra_process_comms': True}]
         )  

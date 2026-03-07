@@ -5,6 +5,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include "classify.hpp"
 #include "cv_bridge/cv_bridge.hpp"
 #include "geometry_msgs/msg/point.hpp"
@@ -16,15 +17,24 @@
 #include "yolos.hpp"
 #include "BaseInfer.hpp"
 #include <fstream>
+
+#include <pcl/point_cloud.h>            // 用于 pcl::PointCloud 类型
+#include <pcl/point_types.h>            // 用于 pcl::PointXYZ 类型
+#include <pcl_conversions/pcl_conversions.h>
+ 
 namespace tdt_radar {
 
 class Detect final : public rclcpp::Node {
 public:
     explicit Detect(const rclcpp::NodeOptions& options);
     void callback(const std::shared_ptr<sensor_msgs::msg::Image> msg);
+    void fly_callback(const std::shared_ptr<sensor_msgs::msg::PointCloud2> msg);
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;
-    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr
-        compressed_image_sub;
+    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_image_sub;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr fly_sub;
+    cv::Point3f fly_point;
+    cv::Point2f get_2d(const cv::Point3f& point);
+
 
 private:
     std::shared_ptr<Infer<yolo::BoxArray>>     yolo;
