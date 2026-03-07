@@ -7,29 +7,30 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(  
-  "detect/include"
-  "resolve/include"
-  "calibrate/include"
-  "camera/include"
-  "tdt_debug/include"
+    "detect/include"
+    "detect_fly/include"
+    "resolve/include"
+    "calibrate/include"
+    "camera/include"
+    "tdt_debug/include"
+    "TDT_Camera/include"
+    "record/include"
 )
 
-find_package(libhikcamera REQUIRED)
-include_directories(${libhikcamera_INCLUDE_DIRS})
+add_subdirectory(TDT_Camera)#tdt新相机
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 set(CAMERA_NODE "camera")   # 相机节点名称
-file(GLOB_RECURSE CAMERA_SRCS "camera/src/*.cpp")
+file(GLOB_RECURSE CAMERA_SRCS "camera/src/tdt_camera_node.cpp")
 ament_auto_add_library(${CAMERA_NODE} SHARED
     ${CAMERA_SRCS}
 )
 target_link_libraries(${CAMERA_NODE}
-    ${libhikcamera_LIBRARIES}
-    -lpthread -lm
+    TDT_Camera
 )
 rclcpp_components_register_node(${CAMERA_NODE}
-    PLUGIN "tdt_vision::NodeCamera"
+    PLUGIN "tdt_vision::TDTCameraNode"
     EXECUTABLE ${CAMERA_NODE}_node
 )
 
@@ -75,6 +76,28 @@ rclcpp_components_register_node(${RADAR_DETECT}
     EXECUTABLE ${RADAR_DETECT}_node
 )
 
+set(RADAR_DETECT_FLY "radar_detect_fly")
+file(GLOB_RECURSE RADAR_DETECT_FLY_SRCS "detect_fly/src/*.cpp")
+ament_auto_add_library(${RADAR_DETECT_FLY} SHARED
+    ${RADAR_DETECT_FLY_SRCS}
+)
+ament_target_dependencies(${RADAR_DETECT_FLY} 
+    vision_interface 
+)
+
+target_link_libraries(${RADAR_DETECT_FLY}
+    utils          
+    infer          
+    ${nvinfer_LIBRARY} 
+    cudart         
+    nvonnxparser   
+    fmt            
+)
+rclcpp_components_register_node(${RADAR_DETECT_FLY}
+    PLUGIN "tdt_radar::DetectFly"
+    EXECUTABLE ${RADAR_DETECT_FLY}_node
+)
+
 set(RADAR_RESOLVE "radar_resolve")
 file(GLOB_RECURSE RADAR_RESOLVE_SRCS "resolve/src/*.cpp")
 
@@ -104,6 +127,17 @@ ament_auto_add_library(${TDT_DEBUG_NODE} SHARED
 rclcpp_components_register_node(${TDT_DEBUG_NODE}
     PLUGIN "tdt_vision::NodeDebug"
     EXECUTABLE ${TDT_DEBUG_NODE}_node
+)
+
+
+set(RADAR_RECORD_NODE "radar_record") # radar_record节点名称
+file(GLOB_RECURSE RADAR_RECORD_SRCS "record/src/*.cpp")
+ament_auto_add_library(${RADAR_RECORD_NODE} SHARED
+    ${RADAR_RECORD_SRCS}
+)
+rclcpp_components_register_node(${RADAR_RECORD_NODE}
+    PLUGIN "tdt_radar::Record"
+    EXECUTABLE ${RADAR_RECORD_NODE}_node
 )
 
 

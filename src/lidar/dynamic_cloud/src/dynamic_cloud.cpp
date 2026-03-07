@@ -21,41 +21,43 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
     auto result = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     sor.filter(*result);
     map_cloud = result;
-    kd_Tree.setInputCloud(map_cloud);
+    kd_Tree.setInputCloud(map_cloud);//获取地图的kd_tree
 
     sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10, std::bind(&DynamicCloud::callback, this, std::placeholders::_1));
     pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_dynamic", 10);
     other_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_other", 10);
+    fly_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_fly", 10);
+
     detect_pub_ = this->create_publisher<vision_interface::msg::RadarWarn>("/lidar_detect", 10);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Dynamic Cloud Launch!");
 }
 
 void DynamicCloud::GetDynamicCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud,pcl::PointCloud<pcl::PointXYZ> &output_cloud,float threshold,int thread_num){
     int K=1;
-    std::vector<std::thread> threads;
-    std::vector<pcl::PointCloud<pcl::PointXYZ>> clouds(thread_num);
+    std::vector<std::thread> threads;//创建线程容器
+    std::vector<pcl::PointCloud<pcl::PointXYZ>> clouds(thread_num);//创建点云容器
     auto start=std::chrono::system_clock::now();
     int cloud_size=input_cloud.points.size();
-    int step=cloud_size/thread_num;
+    int step=cloud_size/thread_num;//计算每个线程处理的点云数量
     for(int i=0;i<thread_num;i++){
         threads.push_back(std::thread([i,step,cloud_size,&clouds,&input_cloud,this,threshold,K](){
             for(int j=i*step;j<(i+1)*step;j++){
-                std::vector<int> pointIdxNKNSearch(K);
-                std::vector<float> pointNKNSquaredDistance(K);
+                std::vector<int> pointIdxNKNSearch(K);//储存索引
+                std::vector<float> pointNKNSquaredDistance(K);//储存距离
                 if(kd_Tree.nearestKSearch(input_cloud.points[j],K,pointIdxNKNSearch,pointNKNSquaredDistance)>0){
                     if(pointNKNSquaredDistance[0]>threshold){
                         clouds[i].points.push_back(input_cloud.points[j]);
-                    }
+                    }//以最近距离阈值筛选动态点，与地图的kd_tree对比
                 }
             }
         }));            
     }
     for(auto &t:threads){
         t.join();
-    }
+    }//等待所有线程完成
     for(auto &cloud:clouds){
         output_cloud+=cloud;
-    }
+    }//合并线程结果
     auto end=std::chrono::system_clock::now();
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "kd_tree search time: %f", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0);
 }
@@ -132,35 +134,40 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                (point.z > 1.7 && point.z < 3);
     };//飞机飞到中场
 
-    auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();
-    pcl::fromROSMsg(*msg, receive_cloud);
+    auto fly_have = [](pcl::PointXYZ &point) {
+        return (point.x > 1 && point.x < 27) &&
+               (point.y > 0.2 && point.y < 14.8) &&
+               (point.z > 1.7 && point.z < 3);
+    };//飞机存在
 
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    geometry_msgs::msg::TransformStamped transform_stamped;
-    // 获取目标坐标系的变换
+    auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();
+    pcl::fromROSMsg(*msg, receive_cloud);//转换点云数据类型
+
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();//计时
+    geometry_msgs::msg::TransformStamped transform_stamped;//储存坐标变化
     auto ta=std::chrono::steady_clock::now();
     try{
     transform_stamped = tf_buffer_.lookupTransform("rm_frame", msg->header.frame_id, tf2::TimePointZero);}
     catch (tf2::TransformException &ex){
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Transform error: %s", ex.what());
         return;
-    }
-    pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
-    auto transform = Eigen::Affine3f::Identity();
+    }//获取最新的坐标系变化
+    pcl::PointCloud<pcl::PointXYZ> transformed_cloud;//转换后的点云
+    auto transform = Eigen::Affine3f::Identity();//初始化变换矩阵
     transform.translation() << transform_stamped.transform.translation.x,
                                transform_stamped.transform.translation.y,
-                               transform_stamped.transform.translation.z;
+                               transform_stamped.transform.translation.z;//赋值平移矩阵
     Eigen::Quaternionf rotation(
         transform_stamped.transform.rotation.w,
         transform_stamped.transform.rotation.x,
         transform_stamped.transform.rotation.y,
         transform_stamped.transform.rotation.z);
-    transform.rotate(rotation);
-    pcl::transformPointCloud(receive_cloud, transformed_cloud, transform);
+    transform.rotate(rotation);//赋值旋转矩阵
+    pcl::transformPointCloud(receive_cloud, transformed_cloud, transform);//应用点云变化
 
     //只保留x在3-28，y在0-15，z在0-2.4的点
-    pcl::PointCloud<pcl::PointXYZ> filtered_cloud;
-    pcl::PointCloud<pcl::PointXYZ> other_filtered_cloud;
+    pcl::PointCloud<pcl::PointXYZ> filtered_cloud;//滤除后的点云
+    pcl::PointCloud<pcl::PointXYZ> other_filtered_cloud;//滤除后的点云（飞镖和飞机用）
     for (size_t i = 0; i < transformed_cloud.size(); i++)
     {
         auto &point = transformed_cloud.points[i];
@@ -177,17 +184,18 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             // 如果在飞镖识别范围内：x(28-0.5889-0.1885,28-0.5889) y(3.925,4.525),z(2.7422-0.859,2.7422)
             // 如果在飞机识别范围内：x(14,28-3.024) y(0,1.356+2.4) z(1.7,2.5)
             if((point.x>28-0.5889-0.1885&&point.x<28-0.5889)&&(point.y>3.925&&point.y<4.525)&&(point.z>2.4722-0.859+0.1&&point.z<2.4722)||
-            (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)
-            ){
+            (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)||
+            (point.x>0.5&&point.x<15)&&(point.y>15-1.356-2.4-0.8&&point.y<15-0.2)&&(point.z>1.7&&point.z<3))
+            {
                 other_filtered_cloud.push_back(point);
-                }
+            }
             continue;
         }
         filtered_cloud.push_back(point);
-    }
+    }//点云筛选
     // std::cout << "filter time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     pcl::PointCloud<pcl::PointXYZ> dynamic_pointcloud;
-    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.1,12);
+    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.1,12);//提取动态点云
     ///TODO: 点云积分的代码比较重复，需要重构成一个class，维护那些积分的点云
 
     if(accumulate_count<accumulate_time){
@@ -199,7 +207,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         accumulated_clouds_.push_back(dynamic_pointcloud.makeShared());
         other_accumulated_clouds_.erase(other_accumulated_clouds_.begin());
         other_accumulated_clouds_.push_back(other_filtered_cloud.makeShared());
-    }
+    }//点云缓存--3帧
     pcl::PointCloud<pcl::PointXYZ> accumulated_cloud;
     for(auto it = accumulated_clouds_.begin(); it != accumulated_clouds_.end(); ++it)
     {
@@ -209,21 +217,34 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     for(auto it = other_accumulated_clouds_.begin(); it != other_accumulated_clouds_.end(); ++it)
     {
         other_accumulated_cloud += **it;
-    }//因为other的点少，就先累积再处理
+    }//因为other的点少，就先累积再处理//合并点云
     ta = std::chrono::steady_clock::now();
-    sensor_msgs::msg::PointCloud2 output;
+    sensor_msgs::msg::PointCloud2 output;//储存发布点云
     accumulated_cloud.header.frame_id = "rm_frame";
     other_accumulated_cloud.header.frame_id = "rm_frame";
     pcl::toROSMsg(accumulated_cloud, output);
     output.header.frame_id = "rm_frame";
     output.header.stamp = msg->header.stamp;
-    pub_->publish(output);
+    pub_->publish(output);//发布动态点云(车)
 
     pcl::toROSMsg(other_accumulated_cloud, output);
-    other_pub_->publish(output);
+    other_pub_->publish(output);//发布动态点云(飞镖和飞机)
+    //筛除飞机点云并发布
+    pcl::PointCloud<pcl::PointXYZ> fly_cloud;
+    for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
+    {
+        auto &point = other_accumulated_cloud.points[i];
+        if (fly_have(point))
+        {
+            fly_cloud.push_back(point);
+        }
+    }
+    fly_cloud.header.frame_id = "rm_frame";
+    pcl::toROSMsg(fly_cloud, output);
+    fly_pub_->publish(output);//发布动态点云(飞机)
+
     // 筛出飞镖点云
     pcl::PointCloud<pcl::PointXYZ> dart_cloud;
-
     for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
     {
         auto &point = other_accumulated_cloud.points[i];
@@ -232,7 +253,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             dart_cloud.push_back(point);
         }
     }
-
     if(dart_cloud.size()>5){
         RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Find dart cloud!");
         RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Dart cloud size: %d", dart_cloud.size());
@@ -242,7 +262,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     pcl::PointCloud<pcl::PointXYZ> fly_safe_cloud;
     pcl::PointCloud<pcl::PointXYZ> fly_warn_cloud;
     pcl::PointCloud<pcl::PointXYZ> fly_alarm_cloud;
-
     for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
     {
         auto &point = other_accumulated_cloud.points[i];

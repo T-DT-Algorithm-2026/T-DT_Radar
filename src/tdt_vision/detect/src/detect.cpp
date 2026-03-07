@@ -26,6 +26,34 @@ int getColor(cv::Mat& img)
     }
 }
 
+cv::Point2f Detect::get_2d(const cv::Point3f& point)
+{
+    cv::Mat world_rvec;
+    cv::Mat world_tvec;
+    cv::Mat camera_matrix;
+    cv::Mat dist_coeffs;
+    cv::FileStorage fs;
+    std::vector<cv::Point3f> objectPoints = {point};
+    fs.open("./config/camera_params.yaml", cv::FileStorage::READ);
+    fs["camera_matrix"] >> camera_matrix;
+    fs["dist_coeffs"] >> dist_coeffs;
+    fs.release();
+
+    fs.open("./config/out_matrix.yaml", cv::FileStorage::READ);
+    fs["world_tvec"] >> world_tvec;
+    fs["world_rvec"] >> world_rvec;
+    fs.release();//读取参数
+    
+    std::vector<cv::Point2f> temp;
+    cv::projectPoints(objectPoints,
+                    world_rvec,
+                    world_tvec,
+                    camera_matrix,
+                    dist_coeffs,
+                    temp);
+    return temp[0];
+}
+
 bool isRectInside(const cv::Rect& small, const cv::Rect& big)
 {
     bool topLeftInside = big.contains(small.tl());
@@ -132,8 +160,11 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     this->yolo = yolo::load(yolo_path, yolo::Type::V8, 0.65f, 0.45f);
     TDT_INFO("Load yolo engine success!");
     image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-            "camera_image", rclcpp::SensorDataQoS(),
+            "camera1/image", rclcpp::SensorDataQoS(),
             std::bind(&Detect::callback, this, std::placeholders::_1));
+    fly_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+        "/livox/lidar_fly_cluster", rclcpp::SensorDataQoS(),
+        std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
@@ -355,6 +386,21 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // time_used.count()*1000);
     std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
               << std::endl;
+    
+    if(fly_point.z&&fly_point.x&&fly_point.y)
+    {
+        cv::Point2f fly_2d = get_2d(fly_point);
+        int width = 400;  // 宽度
+        int height = 300;  // 高度
+
+        // 计算左上角和右下角
+        cv::Point top_left(fly_2d.x - width / 2, fly_2d.y - height / 2);
+        cv::Point bottom_right(fly_2d.x + width / 2, fly_2d.y + height / 2);
+
+        // 绘制矩形
+        cv::rectangle(img, top_left, bottom_right, cv::Scalar(0, 0, 255), 2);  // 红色矩形，2个像素的线宽
+    }
+
     cv::Mat final_img;
     cv::resize(img, final_img, cv::Size(1536, 1125));
     cv::imshow("detect", final_img);
@@ -362,6 +408,21 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (key == 'r') {
         debug = !debug;
     }
+}
+
+
+void Detect::fly_callback(const std::shared_ptr<sensor_msgs::msg::PointCloud2> msg)
+{
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    pcl::fromROSMsg(*msg, cloud);
+    for(auto & point : cloud.points)
+    {
+        fly_point.x = point.x;
+        fly_point.y = point.y-15;
+        fly_point.z = point.z;
+        break; // 只取第一个点   
+    }
+    // std::cout << "Fly Point: (" << fly_point.x << ", " << fly_point.y << ", " << fly_point.z << ")\n";
 }
 }  // namespace tdt_radar
 RCLCPP_COMPONENTS_REGISTER_NODE(tdt_radar::Detect)

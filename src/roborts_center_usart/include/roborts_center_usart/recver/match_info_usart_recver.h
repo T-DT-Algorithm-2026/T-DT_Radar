@@ -39,7 +39,7 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     uint32_t eventType;
 
     float time_stamp;
-    int16_t frame_id;
+    uint16_t frame_id;
     uint16_t CRC16CheckSum;
   };
 // clang-format on

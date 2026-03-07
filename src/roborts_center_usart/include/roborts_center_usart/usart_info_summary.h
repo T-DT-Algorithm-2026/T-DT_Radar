@@ -14,26 +14,30 @@
 
 #include "recver/match_info_usart_recver.h"
 #include "recver/sentry_usart_recver.h"
+#include "recver/gimbal_usart_recver.h"
 #include "sender/decision_usart_sender.h"
 #include "sender/message_usart_sender.h"
 #include "sender/radar_usart_sender.h"
+#include "sender/gimbal_usart_sender.h"
 
 namespace tdtusart {
 namespace shared_data {
-static const int DataRecverNum = 2;  //   command , vision, matchInfo
+static const int DataRecverNum = 3;  //   command , vision, matchInfo
 static BaseUsartRecver *DataRecver[DataRecverNum + 1] = {
     nullptr, 
     (BaseUsartRecver *)(new MatchInfoUsartRecver()),
-    (BaseUsartRecver *)(new (SentryUsartRecver)),
+    (BaseUsartRecver *)(new SentryUsartRecver()),
+    (BaseUsartRecver *)(new GimbalUsartRecver()),
     // (BaseUsartRecver *)(new (VisionUsartRecver))
     };
     
-static const int DataSenderNum = 3;  // vision, commandReply
+static const int DataSenderNum = 4;  // vision, commandReply
 static BaseUsartSender *DataSender[DataSenderNum + 1] = {
     nullptr, 
     (BaseUsartSender *)(new DecisionUsartSender()),
     (BaseUsartSender *)(new MessageUsartSender()),
-    (BaseUsartSender *)(new RadarUsartSender())};
+    (BaseUsartSender *)(new RadarUsartSender()),
+    (BaseUsartSender *)(new GimbalUsartSender())};
 
 }  // namespace shared_data
 }  // namespace tdtusart
