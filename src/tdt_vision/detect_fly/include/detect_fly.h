@@ -59,9 +59,9 @@ public:
 private:
     // int h_min = 0, h_max = 95;
     // int s_min = 0, s_max = 125;
-    int h_min = 57, h_max = 172;
+    int h_min = 0, h_max = 172;
     int s_min = 0, s_max = 191;
-    int v_min = 200, v_max = 255;
+    int v_min = 245, v_max = 255;
     int g_min =0 , g_max =255;
 
     std::shared_ptr<Infer<yolo::BoxArray>> fly;

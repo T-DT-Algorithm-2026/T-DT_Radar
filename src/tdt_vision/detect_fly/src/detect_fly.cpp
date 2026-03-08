@@ -88,6 +88,9 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (result.size() == 0) 
     {
         RCLCPP_INFO(this->get_logger(), "No Fly!");
+        cv::imshow("detect_fly", img);
+        cv::waitKey(1);
+        return;
     }
     if(result.size() > 1) 
     {
@@ -106,24 +109,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         cv::imshow("roi", roi);
         // std::cout<<"Fly Rect:"<<fly_rect.x<<","<<fly_rect.y<<","<<fly_rect.width<<","<<fly_rect.height<<std::endl;
     }
-    // if (save_images_) 
-    // {
-    //     auto now = std::chrono::steady_clock::now();
-    //     if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_save_time_).count() >= 500) 
-    //     {
-    //         std::ostringstream oss;
-    //         oss << save_dir_ << "/" << std::setw(4) << std::setfill('0') << image_save_counter_++ << ".png";
-    //         cv::imwrite(oss.str(), roi);
-    //         RCLCPP_INFO(this->get_logger(), "Saved image: %s", oss.str().c_str());
-    //         last_save_time_ = now;
-    //     }
-    // }
 
-    if(roi.empty())
-    {
-        cv::imshow("detect_fly", img);
-        return;
-    }
 
     h_min = cv::getTrackbarPos("H Min", "Control");
     h_max = cv::getTrackbarPos("H Max", "Control");
@@ -152,25 +138,18 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     for (size_t i = 0; i < contours.size(); i++)
     {
         double area=contourArea(contours[i]);
-        if(area>50)
+        cv::RotatedRect rect = cv::minAreaRect(contours[i]);
+        rects.push_back(rect);
+        cv::Point2f vertices[4];
+        rect.points(vertices);
+        for (int j = 0; j < 4; j++) 
         {
-            cv::RotatedRect rect = cv::minAreaRect(contours[i]);
-            bool if1 = (fabs(rect.angle)<30&&rect.size.width>rect.size.height);
-            bool if2 = (fabs(rect.angle)>60&&rect.size.width<rect.size.height);//筛选长方形
-            if(if1||if2)
-            {
-                rects.push_back(rect);
-                cv::Point2f vertices[4];
-                rect.points(vertices);
-                // for (int j = 0; j < 4; j++) 
-                // {
-                //     // cv::line(img, vertices[j], vertices[(j+1)%4], cv::Scalar(0, 0, 255), 2);
-                // }
-                // cv::circle(img, rects[i].center, 3, cv::Scalar(255, 0, 0), -1);
-                contours_pac.push_back(contours[i]);
-            }
+            cv::line(roi, vertices[j], vertices[(j+1)%4], cv::Scalar(0, 0, 255), 1);
         }
+        cv::circle(roi, rects[i].center, 3, cv::Scalar(255, 0, 0), -1);
+        contours_pac.push_back(contours[i]);
     }//第一次筛选
+    std::cout<<"Contours Num:"<<contours.size()<<", Rects Num:"<<rects.size()<<std::endl;
 
     std::vector<cv::RotatedRect> final_rect;
     std::vector<std::vector<cv::Point>> final_contours_pac;
