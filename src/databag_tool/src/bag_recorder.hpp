@@ -232,66 +232,73 @@ void BagRecoder::search_topic(const std::string topic_name, std::unique_ptr<rosb
 
 void BagRecoder::search_topic(RecordSection &section)
 {   
-    std::string topic_name = section.unfind_topics.front();
-    // 获取 ROS 图中的话题信息
+    // 【改动1】：把获取 ROS 图信息的代码提到最前面，避免在循环里重复获取，提高效率
     auto topic_info_map = ros2_node_->get_topic_names_and_types();
 
-    // 查找指定话题的类型
-    std::string topic_type;
-    for (const auto &topic_info : topic_info_map) 
+    // 【改动2】：使用迭代器遍历所有尚未找到的话题
+    for (auto it = section.unfind_topics.begin(); it != section.unfind_topics.end(); ) 
     {
-      if (topic_info.first == topic_name) 
-      {
-        topic_type = topic_info.second.front();
-        break;
-      }
-    }
-    // 如果找到了类型，则动态创建订阅 (创建一个泛型订阅器来订阅这个主题并处理接收到的消息)
-    if (!topic_type.empty()) 
-    {
-      writer_create_topics(section.writer, topic_name, topic_type);
+        std::string topic_name = *it; // 获取当前遍历到的话题名称
 
-      auto topics_interface = ros2_node_->get_node_topics_interface();
-      rcutils_allocator_t allocator = rcutils_get_default_allocator();
-
-      auto subscription = rclcpp::create_generic_subscription(
-        topics_interface,
-        topic_name,
-        topic_type,
-        12000,
-        //rclcpp::SensorDataQoS(),
-        [this, topic_name, topic_type, allocator, &section](std::shared_ptr<rclcpp::SerializedMessage> msg) {
-          // 在这里处理消息,将消息写入 rosbag
-          auto bag_msg = std::make_shared<rosbag2_storage::SerializedBagMessage>();
-          bag_msg->serialized_data = std::make_shared<rcutils_uint8_array_t>();
-          bag_msg->topic_name = topic_name;
-          bag_msg->recv_timestamp = ros2_node_->now().nanoseconds();
-          bag_msg->serialized_data->buffer = msg->get_rcl_serialized_message().buffer;
-          bag_msg->serialized_data->buffer_length = msg->get_rcl_serialized_message().buffer_length;
-          bag_msg->serialized_data->buffer_capacity = msg->get_rcl_serialized_message().buffer_capacity;
-          // bag_msg->serialized_data->allocator = msg->get_rcl_serialized_message().allocator;
-          bag_msg->serialized_data->allocator = allocator;
-
-          std::lock_guard<std::mutex> lock(writer_mutex_);
-
-          section.writer->write(bag_msg);
-          
-        });
-
-        subscriptions.push_back(subscription);
-        unfind_topic_num --;
-        for(auto& topic_info :section.topic_info_of_this_section)
+        // 查找指定话题的类型
+        std::string topic_type;
+        for (const auto &topic_info : topic_info_map) 
         {
-            if(topic_info.topic_name ==  topic_name)
-                topic_info.topic_type = topic_type;
+          if (topic_info.first == topic_name) 
+          {
+            topic_type = topic_info.second.front();
+            break;
+          }
         }
-        section.unfind_topics.erase(section.unfind_topics.begin());
-        RCLCPP_INFO(ros2_node_->get_logger(), "录制端捕获 topic %s of type %s", topic_name.c_str(), topic_type.c_str());
-        // RCLCPP_INFO(ros2_node_->get_logger(), "unfind_topic_num %d", unfind_topic_num);
+        
+        // 如果找到了类型，则动态创建订阅 (创建一个泛型订阅器来订阅这个主题并处理接收到的消息)
+        if (!topic_type.empty()) 
+        {
+          writer_create_topics(section.writer, topic_name, topic_type);
 
-    } else {
-      ;
-      // RCLCPP_ERROR(ros2_node_->get_logger(), "Topic %s not found or has no type,注意是不是缺少/", topic_name.c_str());
+          auto topics_interface = ros2_node_->get_node_topics_interface();
+          rcutils_allocator_t allocator = rcutils_get_default_allocator();
+
+          auto subscription = rclcpp::create_generic_subscription(
+            topics_interface,
+            topic_name,
+            topic_type,
+            12000,
+            //rclcpp::SensorDataQoS(),
+            [this, topic_name, topic_type, allocator, &section](std::shared_ptr<rclcpp::SerializedMessage> msg) {
+              // 在这里处理消息,将消息写入 rosbag
+              auto bag_msg = std::make_shared<rosbag2_storage::SerializedBagMessage>();
+              bag_msg->serialized_data = std::make_shared<rcutils_uint8_array_t>();
+              bag_msg->topic_name = topic_name;
+              bag_msg->recv_timestamp = ros2_node_->now().nanoseconds();
+              bag_msg->serialized_data->buffer = msg->get_rcl_serialized_message().buffer;
+              bag_msg->serialized_data->buffer_length = msg->get_rcl_serialized_message().buffer_length;
+              bag_msg->serialized_data->buffer_capacity = msg->get_rcl_serialized_message().buffer_capacity;
+              bag_msg->serialized_data->allocator = allocator;
+
+              std::lock_guard<std::mutex> lock(writer_mutex_);
+
+              section.writer->write(bag_msg);
+              
+            });
+
+            subscriptions.push_back(subscription);
+            unfind_topic_num --;
+            for(auto& topic_info :section.topic_info_of_this_section)
+            {
+                if(topic_info.topic_name ==  topic_name)
+                    topic_info.topic_type = topic_type;
+            }
+            
+            // 【改动3】：使用迭代器删除找到的元素，并将迭代器自动指向下一个位置
+            it = section.unfind_topics.erase(it);
+            
+            RCLCPP_INFO(ros2_node_->get_logger(), "录制端捕获 topic %s of type %s", topic_name.c_str(), topic_type.c_str());
+
+        } else {
+            // 【改动4】：如果没找到该话题，将迭代器加1，继续寻找下一个未找到的话题
+            ++it;
+        }
     }
 }
 

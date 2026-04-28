@@ -132,7 +132,6 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }
 
     vision_interface::msg::FlyPoints fly_points_msg;
-    float z;
     std::cout<<"飞机数量:"<<clouds.size()<<std::endl;
 
     if(clouds.size() == 0)
@@ -146,17 +145,19 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         {
             fly_points_msg.fly_enemy_x = clouds[0].x;
             fly_points_msg.fly_enemy_y = clouds[0].y;
+            fly_points_msg.fly_enemy_z = clouds[0].z;
             fly_points_msg.fly_ally_x = 0.0;
             fly_points_msg.fly_ally_y = 0.0;
-            z=clouds[0].z;
+            fly_points_msg.fly_ally_z = 0.0;
         }
         else
         {
             fly_points_msg.fly_ally_x = clouds[0].x;
             fly_points_msg.fly_ally_y = clouds[0].y;
+            fly_points_msg.fly_ally_z = clouds[0].z;
             fly_points_msg.fly_enemy_x = 0.0;
             fly_points_msg.fly_enemy_y = 0.0;
-            z=clouds[0].z;
+            fly_points_msg.fly_enemy_z = 0.0;
         }
         std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
         std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_enemy_x <<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
@@ -167,18 +168,20 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         {
             fly_points_msg.fly_ally_x = clouds[0].x;
             fly_points_msg.fly_ally_y = clouds[0].y;
+            fly_points_msg.fly_ally_z = clouds[0].z;
             fly_points_msg.fly_enemy_x = clouds[1].x;
             fly_points_msg.fly_enemy_y = clouds[1].y;
-            z=clouds[1].z;
+            fly_points_msg.fly_enemy_z = clouds[1].z;
 
         }
         else
         {
             fly_points_msg.fly_ally_x = clouds[1].x;
             fly_points_msg.fly_ally_y = clouds[1].y;
+            fly_points_msg.fly_ally_z = clouds[1].z;
             fly_points_msg.fly_enemy_x = clouds[0].x;
             fly_points_msg.fly_enemy_y = clouds[0].y;
-            z=clouds[0].z;
+            fly_points_msg.fly_enemy_z = clouds[0].z;
         }   
         std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
         std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
@@ -188,7 +191,7 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
     double diff_x = fly_points_msg.fly_enemy_x - lidar_x;
     double diff_y = fly_points_msg.fly_enemy_y - lidar_y;
-    double diff_z = z - lidar_z;
+    double diff_z = fly_points_msg.fly_enemy_z - lidar_z;
     double distance = std::sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);//计算距离
     std::cout<<"飞机距离"<<distance<<std::endl;
     fly_distance_pub_->publish(std_msgs::msg::Float64().set__data(distance));

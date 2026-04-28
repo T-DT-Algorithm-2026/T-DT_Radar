@@ -34,6 +34,8 @@ class RadarUsartSender : public BaseUsartSender {
 
     uint16_t radar_enemy_x[6];
     uint16_t radar_enemy_y[6];
+    uint16_t radar_ally_x[6];
+    uint16_t radar_ally_y[6];
 
     int16_t frame_id;
     uint16_t CRC16CheckSum;
@@ -55,8 +57,14 @@ class RadarUsartSender : public BaseUsartSender {
       send_data.radar_enemy_x[i] = msg->radar_enemy_x[i]*100;
       send_data.radar_enemy_y[i] = msg->radar_enemy_y[i]*100;
     }
+    for(int i = 0; i < 6; i++) {
+      send_data.radar_ally_x[i] = msg->radar_ally_x[i]*100;
+      send_data.radar_ally_y[i] = msg->radar_ally_y[i]*100;
+    }
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
     usartSend_(&send_data, sizeof(send_data));
+    std::cout<<"ally"<<send_data.radar_ally_x[1]<<" "<<send_data.radar_ally_y[1]<<std::endl;
+    std::cout<<"enemy"<<send_data.radar_enemy_x[1]<<" "<<send_data.radar_enemy_y[1]<<std::endl;
     TDT_INFO("Send Radar Data");
   }
 };

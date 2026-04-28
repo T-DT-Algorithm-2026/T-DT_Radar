@@ -17,6 +17,7 @@
 #include "sensor_msgs/msg/compressed_image.hpp"
 #include "vision_interface/msg/fly_detect.hpp"
 #include "vision_interface/msg/resolve_result.hpp"
+#include "vision_interface/msg/detect_fly.hpp"
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
@@ -34,6 +35,8 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/utilities.hpp>
 
+#include <sensor_msgs/msg/compressed_image.hpp>
+
 namespace tdt_radar {
 
 struct KeyPoints 
@@ -47,35 +50,25 @@ class DetectFly final : public rclcpp::Node {
 public:
     explicit DetectFly(const rclcpp::NodeOptions& options);
     void callback(const std::shared_ptr<sensor_msgs::msg::Image> msg);
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;
-    rclcpp::Publisher<vision_interface::msg::ResolveResult>::SharedPtr resolve_pub;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr player_control_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;//相机图片
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr player_control_pub_;//暂停
+    rclcpp::Publisher<vision_interface::msg::DetectFly>::SharedPtr fly_pub_;//检测点
 
-    void createTrackbars();
-    cv::Point2f grad_search(const cv::Mat& img, const cv::Point2f& center, const cv::Point2f& direction);
-    KeyPoints pca_points(const std::vector<cv::Point>& contours, const cv::Mat& img);
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr debug_img_pub_;//调试图片
+
     cv::Rect getSafeRect(cv::Mat& image, cv::Rect& rect);
+    bool getLineCenter(const std::vector<cv::Point2f>& pts, cv::Point2f& center);
 
 private:
-    // int h_min = 0, h_max = 95;
-    // int s_min = 0, s_max = 125;
-    int h_min = 57, h_max = 172;
-    int s_min = 0, s_max = 191;
-    int v_min = 200, v_max = 255;
-    int g_min =0 , g_max =255;
-
     std::shared_ptr<Infer<yolo::BoxArray>> fly;
     std::string fly_path;
 
-    double e=0;
-    int de = 1;
+    cv::Point2f target_point;
 
-    std::string save_dir_;
-    bool save_images_{true};
+    std::string save_dir_ = "./saved_images";
     int image_save_counter_{0};
+    bool save_images_ = false;
     std::chrono::steady_clock::time_point last_save_time_;
-
-    // int id=0;
 };
 }  // namespace tdt_radar
 

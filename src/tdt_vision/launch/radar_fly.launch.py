@@ -79,7 +79,7 @@ def generate_launch_description():
                 radar_resolve_node,
                 foxglove_node,
                 debug_node,
-                record_node
+                # record_node
             ],
             output='both',
             emulate_tty=True,

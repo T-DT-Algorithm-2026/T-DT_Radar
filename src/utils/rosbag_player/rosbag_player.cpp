@@ -101,8 +101,8 @@ private:
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
             // RCLCPP_INFO(this->get_logger(), "Processed one message, duration: %d ms", duration);
-            if((duration < 100)&&(duration > 1)) {
-                std::this_thread::sleep_for(100ms - std::chrono::milliseconds(duration));
+            if((duration < 10)&&(duration > 1)) {
+                std::this_thread::sleep_for(10ms - std::chrono::milliseconds(duration));
             }
         }
         RCLCPP_INFO(this->get_logger(), "No more messages in the bag.");

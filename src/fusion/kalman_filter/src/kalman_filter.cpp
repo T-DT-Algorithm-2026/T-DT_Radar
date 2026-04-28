@@ -22,7 +22,7 @@ void KalmanFilter::match_callback(const vision_interface::msg::MatchInfo::Shared
 {
     this->match_info = *msg;
     RCLCPP_INFO(this->get_logger(), "Match_info_callback");
-}//获取信息？相当于裁判系统？
+}//裁判系统的消息
 
 void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg)//？获取点位信息？
 {
