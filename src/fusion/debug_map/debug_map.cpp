@@ -34,6 +34,7 @@ namespace tdt_radar {
             this->match_info = *msg;
             if(msg->self_color==1)
             match_info.self_color = 2;
+            // std::cout<<"self_color:"<<(int *)match_info.self_color<<std::endl;
         }
 
         void show_map(){
@@ -102,14 +103,17 @@ namespace tdt_radar {
         void callback(const std::shared_ptr<vision_interface::msg::DetectResult> msg){
             auto now = std::chrono::system_clock::now();
             double time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
-            for(int i = 0; i<6; i++){
-                if(msg->blue_x[i]*msg->blue_y[i]){
+            for(int i = 0; i<6; i++)
+            {
+                if(msg->blue_x[i]*msg->blue_y[i])
+                {
                     blue_point[i] = cv::Point2f(msg->blue_x[i], msg->blue_y[i]);
                     blue_time[i] = time;
                     blue_update[i] = time;
 
                 }
-                if(msg->red_x[i]*msg->red_y[i]){
+                if(msg->red_x[i]*msg->red_y[i])
+                {
                     red_point[i] = cv::Point2f(msg->red_x[i], msg->red_y[i]);
                     red_time[i] = time;
                     red_update[i] = time;
@@ -117,79 +121,115 @@ namespace tdt_radar {
             }
             show_map();
             vision_interface::msg::RadarWarn radar_warn;
-            if(hero_count1>10){
+            if(hero_count1>10)
+            {
                 radar_warn.hero_state = 1;
                 radar_warn_pub->publish(radar_warn);
             }
-            else if(hero_count2>10){
+            else if(hero_count2>10)
+            {
                 radar_warn.hero_state = 2;
                 radar_warn_pub->publish(radar_warn);
             }
             //1是吊射 2是自己家
-            if(match_info.self_color==0){//自己是蓝色 发送红色信息
-                if(red_point[0].x>(28-8.668)){
+            if(match_info.self_color==0)
+            {//自己是蓝色 发送红色信息
+                if(red_point[0].x>(28-8.668))
+                {
                     hero_count1++;
                     hero_count2--;
-                }else
-                if(red_point[0].x<(28-20.3)&&red_point[0].x>(28-25.075)&&red_point[0].y<15&&red_point[0].y>10.3){
+                }
+                else if(red_point[0].x<(28-20.3)&&red_point[0].x>(28-25.075)&&red_point[0].y<15&&red_point[0].y>10.3)
+                {
                     hero_count1--;
                     hero_count2++;
-                }else{
+                }
+                else
+                {
                     hero_count1--;
                     hero_count2--;
                 }
             }
-            if(match_info.self_color==2){//自己是红色 发送蓝色信息
-                if(blue_point[0].x<8.668){
+            if(match_info.self_color==2)
+            {//自己是红色 发送蓝色信息
+                if(blue_point[0].x<8.668)
+                {
                     hero_count1++;
                     hero_count2--;
-                }else
-                if(blue_point[0].x>20.3&&blue_point[0].x<25.075&&blue_point[0].y>0&&blue_point[0].y<(15-10.3)){
+                }
+                else if(blue_point[0].x>20.3&&blue_point[0].x<25.075&&blue_point[0].y>0&&blue_point[0].y<(15-10.3))
+                {
                     hero_count1--;
                     hero_count2++;
-                }else{
+                }
+                else
+                {
                     hero_count1--;
                     hero_count2--;
                 }
             }
 
             vision_interface::msg::Radar2Sentry radar2sentry;
-            if(match_info.self_color==0){//自己是蓝色 发送红色信息
-                for(int i=0;i<6;i++){
-                    if(!relax[i]){
-                        if(match_info.marks[i]>=117){
+            if(match_info.self_color==0)
+            {//自己是蓝色 发送红色信息
+                for(int i=0;i<6;i++)
+                {
+                    if(!relax[i])
+                    {
+                        if(match_info.marks[i]>=117)
+                        {
                             relax[i]=true;
                             relax_time[i] = time;
                         } 
-                        else{
-                            if(time-red_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                            radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                            radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                        else
+                        {
+                            if(time-red_update[i]<0.5)
+                            {
+                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
+                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
+                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
+                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             }
+                        }
                             // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
                             //     radar2sentry.radar_enemy_x[i] = 28-14.556;
                             //     radar2sentry.radar_enemy_y[i] = 6.947;
                             // }
-                        }
-                    }else{
+                    }
+                    else{
                         //当mark在(105,117)间隔0.4s发送一次
-                        if(match_info.marks[i]<105){
+                        if(match_info.marks[i]<105)
+                        {
                             relax[i]=false;
-                            if(time-red_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                            radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                            radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                            if(time-red_update[i]<0.5)
+                            {
+                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
+                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
+                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
+                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             } 
-                        }else if(time-relax_time[i]>0.35){
+                        }
+                        else if(time-relax_time[i]>0.35)
+                        {
                             relax_time[i] = time;
-                            if(time-red_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = red_point[i].y; 
-                            radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                            radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                            if(time-red_update[i]<0.5)
+                            {
+                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
+                                radar2sentry.radar_enemy_y[i] = red_point[i].y; 
+                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
+                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
+                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             }
                         }
                     }
@@ -208,6 +248,10 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
+                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             }
                             // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
                             //     radar2sentry.radar_enemy_x[i] = 14.556;
@@ -223,6 +267,10 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
+                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             } 
                         }else if(time-relax_time[i]>0.35){
                             relax_time[i] = time;
@@ -231,6 +279,10 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
+                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
                             } 
                         }
                     }

@@ -1,0 +1,506 @@
+T_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.37305 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.03223 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.73535 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.35059 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.2959 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.63672 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.15332 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.93359 pitch=1.93359
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.37305 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.94434 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.69141 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.91113 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.2959 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.68066 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.15332 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.80176 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.88965 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.3291 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.94434 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.64746 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.30664 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.35059 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.2959 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.68066 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.19727 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.88965 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.80176 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:36 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.02148 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.41699 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.03223 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.69141 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.7793 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.20801 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.54883 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.06543 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.66992 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.85645 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.60352 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.21875 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.04297 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.47168 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.8125 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=2.37305
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.88965 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.15332 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.72461 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.38379 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.04297 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.08691 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.55957 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.90039 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.66992 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.97754 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.50488 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.20801 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.21875 pitch=1.93359
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.69141 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.03223 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.97754 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.80176 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.06543 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.54883 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.25195 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=1.49414
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.1748 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.69141 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.03223 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.93359 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.97754 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.50488 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.16406 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.21875 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.73535 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.07617 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.97754 pitch=2.37305
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.93359 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.07617 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.82324 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.25195 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.63672 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.15332 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.80176 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.88965 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.90039 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.55957 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.21875 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.99902 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.38379 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.8125 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.19727 pitch=2.37305
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=1.93359
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.19727 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.8125 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.47168 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.13086 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.99902 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.38379 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.76855 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.19727 pitch=2.37305
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=1.93359
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.24121 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.8125 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.47168 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.13086 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.75781
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.35059 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.95508 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.38379 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.72461 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.24121 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.88965 pitch=1.93359
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.85645 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.55957 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.1748 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.35059 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.95508 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.33984 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.76855 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.19727 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.28516 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.8125 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.47168 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.08691 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.48242 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.04297 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.47168 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.85645 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.24121 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.8457 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.66992 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.06543 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.54883 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.2959 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.95508 pitch=1.49414
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.43848 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.21875 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.73535 pitch=2.10938
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.07617 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.97754 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.71387 pitch=2.02148
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.93359 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=1.62598
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.16406 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.86719 pitch=1.49414
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.53809
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.57031 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.2627 pitch=1.8457
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.7793 pitch=1.97754
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.16406 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.54883 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.06543 pitch=2.3291
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.80176 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=1.75781 pitch=2.15332
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.02148 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.50488 pitch=1.71387
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.16406 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.91113 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.39453 pitch=1.58203
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.66992
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.52637 pitch=1.80176
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=4.1748 pitch=1.88965
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.69141 pitch=2.06543
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=3.07617 pitch=2.19727
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.46094 pitch=2.24121
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+Recive Gimbal Data: yaw=2.02148 pitch=2.28516
+T-DT LOG | Tue Mar 24 22:02:37 2026 | INFO    | /home/robot/T-DT_Radar/src/roborts_center_usart/include/roborts_center_usart/recver/gimbal_usart_recver.h:64 | Gimbal Received&&Pub!
+^C[INFO] [1774360957.419944848] [rclcpp]: signal_handler(signum=2)
+T-DT LOG | Tue Mar 24 22:02:37 2026 | WARNING | /home/robot/T-DT_Radar/src/roborts_center_usart/src/main.cpp:6 | Exit by Ctrl+C
+➜  T-DT_Radar git:(main) ✗ 

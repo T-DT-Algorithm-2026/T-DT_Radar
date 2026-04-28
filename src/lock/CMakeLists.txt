@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(tdt_lock)
 
 # 1. 显式查找 OpenCV，确保包含 calib3d 模块
-find_package(OpenCV REQUIRED COMPONENTS core calib3d imgproc)
+find_package(OpenCV REQUIRED COMPONENTS core calib3d imgproc highgui)
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()

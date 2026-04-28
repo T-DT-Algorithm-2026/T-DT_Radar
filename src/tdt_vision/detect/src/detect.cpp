@@ -162,7 +162,7 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     image_sub = this->create_subscription<sensor_msgs::msg::Image>(
             "camera1/image", rclcpp::SensorDataQoS(),
             std::bind(&Detect::callback, this, std::placeholders::_1));
-    fly_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+    fly_sub = this->create_subscription<vision_interface::msg::FlyPoints>(
         "/livox/lidar_fly_cluster", rclcpp::SensorDataQoS(),
         std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
@@ -387,19 +387,31 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
               << std::endl;
     
-    if(fly_point.z&&fly_point.x&&fly_point.y)
-    {
-        cv::Point2f fly_2d = get_2d(fly_point);
-        int width = 400;  // 宽度
-        int height = 300;  // 高度
+// if(fly_point.z && fly_point.x && fly_point.y)
+// {
+//     cv::Point2f fly_2d = get_2d(fly_point);
 
-        // 计算左上角和右下角
-        cv::Point top_left(fly_2d.x - width / 2, fly_2d.y - height / 2);
-        cv::Point bottom_right(fly_2d.x + width / 2, fly_2d.y + height / 2);
+//     // --- 越界拉回逻辑：确保输出永远是 1440x1080 ---
+//     int crop_w = 339;
+//     int crop_h = 254;
 
-        // 绘制矩形
-        cv::rectangle(img, top_left, bottom_right, cv::Scalar(0, 0, 255), 2);  // 红色矩形，2个像素的线宽
-    }
+//     // 1. 初步计算左上角 (让中心对准目标)
+//     int x = static_cast<int>(fly_2d.x - crop_w / 2);
+//     int y = static_cast<int>(fly_2d.y - crop_h / 2);
+
+//     // 2. 越界拉回：如果左/上出界，设为0；如果右/下出界，设为最大允许值
+//     x = std::max(0, std::min(x, img.cols - crop_w));
+//     y = std::max(0, std::min(y, img.rows - crop_h));
+
+//     // 3. 裁剪并保存
+//     cv::Rect roi(x, y, crop_w, crop_h);
+//     // cv::imwrite("/home/robot/桌面/Radar_date/test10/" + std::to_string(count_img++) + ".png", img(roi));
+//     // ------------------------------------------
+
+//     // 原有逻辑
+//     cv::rectangle(img, cv::Point(fly_2d.x - 200, fly_2d.y - 150), 
+//                   cv::Point(fly_2d.x + 200, fly_2d.y + 150), cv::Scalar(0, 0, 255), 2);
+// }
 
     cv::Mat final_img;
     cv::resize(img, final_img, cv::Size(1536, 1125));
@@ -411,17 +423,11 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
 }
 
 
-void Detect::fly_callback(const std::shared_ptr<sensor_msgs::msg::PointCloud2> msg)
+void Detect::fly_callback(const std::shared_ptr<vision_interface::msg::FlyPoints> msg)
 {
-    pcl::PointCloud<pcl::PointXYZ> cloud;
-    pcl::fromROSMsg(*msg, cloud);
-    for(auto & point : cloud.points)
-    {
-        fly_point.x = point.x;
-        fly_point.y = point.y-15;
-        fly_point.z = point.z;
-        break; // 只取第一个点   
-    }
+    fly_point.x = msg->fly_enemy_x;
+    fly_point.y = msg->fly_enemy_y - 15;
+    fly_point.z = msg->fly_enemy_z;
     // std::cout << "Fly Point: (" << fly_point.x << ", " << fly_point.y << ", " << fly_point.z << ")\n";
 }
 }  // namespace tdt_radar

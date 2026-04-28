@@ -25,8 +25,8 @@ def generate_launch_description():
             parameters=[
                 {
                     "rosbag_file":
-                    '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
-                    # '/home/robot/ros2bag/rosbag_0803_1742/bag_0803_1748_03/bag_0803_1748_03_0.db3'
+                    # '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
+                    '/home/robot/ros2bag/rosbag_0801_2002/bag_0801_2005_23'
 
 
         
