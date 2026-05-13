@@ -146,7 +146,7 @@ class GimbalUsartSender : public BaseUsartSender {
     
 //     // 强制写入你需要的死值
 //     send_data.yaw = 0.0f;
-//     send_data.pitch = -1.0f;
+//     send_data.pitch = 0.0f;
 //     send_data.is_fire = 1;
 //     send_data.force_flag = 0;
     

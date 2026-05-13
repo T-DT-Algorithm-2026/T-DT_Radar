@@ -21,8 +21,9 @@ def generate_launch_description():
             plugin=plugin,
             name='rosbag_player_node',
             parameters=[ {'rosbag_file': 
-                '/home/robot/ros2bag/rosbag_0801_2002/bag_0801_2005_23'
-                # '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
+                # '/home/robot/ros2bag/rosbag_0801_2002/bag_0801_2005_23'
+                '/home/robot/ros2bag/全明星赛第一局bag/全明星赛第一局/rosbag.db3'
+                # '/home/robot/T-DT_Radar/ros2bags/radar_record0501_1909_06/bag_0501_1912_08'
 
                 }],
             extra_arguments=[{'use_intra_process_comms': True}]

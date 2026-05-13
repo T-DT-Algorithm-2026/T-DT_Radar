@@ -14,7 +14,7 @@ namespace tdt_radar{
         fly_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar_fly", 10, std::bind(&Cluster::fly_callback, this, std::placeholders::_1));
         pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_cluster", 10);
         fly_pub_ = this->create_publisher<vision_interface::msg::FlyPoints>("/livox/lidar_fly_cluster", 10);
-        fly_distance_pub_ = this->create_publisher<std_msgs::msg::Float64>("/livox/lidar_fly_distance", 10);
+        fly_enemy_point_pub_ = this->create_publisher<geometry_msgs::msg::Point32>("/livox/lidar_fly_point", 10);
     }
 
 
@@ -159,8 +159,8 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_enemy_y = 0.0;
             fly_points_msg.fly_enemy_z = 0.0;
         }
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
-        std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_enemy_x <<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
+        // std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
+        // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
     }
     if(clouds.size() >= 2)
     {
@@ -183,18 +183,18 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_enemy_y = clouds[0].y;
             fly_points_msg.fly_enemy_z = clouds[0].z;
         }   
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
-        std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
+        // std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<")"<<std::endl;
+        // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
     }
     std::cout<<"成功"<<std::endl;
     fly_pub_->publish(fly_points_msg);
 
-    double diff_x = fly_points_msg.fly_enemy_x - lidar_x;
-    double diff_y = fly_points_msg.fly_enemy_y - lidar_y;
-    double diff_z = fly_points_msg.fly_enemy_z - lidar_z;
-    double distance = std::sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);//计算距离
-    std::cout<<"飞机距离"<<distance<<std::endl;
-    fly_distance_pub_->publish(std_msgs::msg::Float64().set__data(distance));
+    geometry_msgs::msg::Point32 enemy_point;
+    enemy_point.x = fly_points_msg.fly_enemy_x - lidar_x;
+    enemy_point.y = fly_points_msg.fly_enemy_y - lidar_y;
+    enemy_point.z = -(fly_points_msg.fly_enemy_z - lidar_z);
+    std::cout<<enemy_point.x<<","<<enemy_point.y<<","<<enemy_point.z<<std::endl;
+    fly_enemy_point_pub_->publish(enemy_point);
     // std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     // RCLCPP_INFO(this->get_logger(), "Fly callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
 }

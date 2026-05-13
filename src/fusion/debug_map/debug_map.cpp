@@ -25,6 +25,8 @@ namespace tdt_radar {
                 "/match_info", 10, std::bind(&DebugMap::save_match_info, this, std::placeholders::_1));
             fly_sub = this->create_subscription<vision_interface::msg::FlyPoints>(
                 "/livox/lidar_fly_cluster", 10, std::bind(&DebugMap::fly_callback, this, std::placeholders::_1));
+            // radio_sub = this->create_subscription<vision_interface::msg::CameraResult>(
+                // "/radio_point", 10, std::bind(&DebugMap::radio_callback, this, std::placeholders::_1));
             radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>("/hero_state", 10);
             debug_map_pub = this->create_publisher<sensor_msgs::msg::Image>("/map_2d", 10);
             radar2sentry_pub = this->create_publisher<vision_interface::msg::Radar2Sentry>("/Radar2Sentry", rclcpp::SensorDataQoS());
@@ -303,6 +305,7 @@ namespace tdt_radar {
         rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar2sentry_pub;
         rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr match_info_sub;//打标用
         rclcpp::Subscription<vision_interface::msg::FlyPoints>::SharedPtr fly_sub;//飞机坐标用
+        // rclcpp::Subscription<vision_interface::msg::CameraResult>::SharedPtr radio_sub;//radio坐标
 
         double blue_time[6];//单位s
         double red_time[6];//单位s

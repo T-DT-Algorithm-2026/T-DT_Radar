@@ -8,3 +8,6 @@ config/merged_bag/*
 *.engine
 
 ros2bags/
+
+rect_1/
+rect_2/

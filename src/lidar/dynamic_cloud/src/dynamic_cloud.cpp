@@ -10,7 +10,7 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
     RCLCPP_INFO(this->get_logger(), "Dynamic_cloud Node start");
     //从pcd读取map
     auto temp_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2025.pcd", *temp_cloud) == -1)
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/map.pcd", *temp_cloud) == -1)
     {
         PCL_ERROR("Couldn't read file map.pcd \n");
     }
@@ -195,7 +195,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }//点云筛选
     // std::cout << "filter time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     pcl::PointCloud<pcl::PointXYZ> dynamic_pointcloud;
-    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.1,12);//提取动态点云
+    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.05,12);//提取动态点云
     ///TODO: 点云积分的代码比较重复，需要重构成一个class，维护那些积分的点云
 
     if(accumulate_count<accumulate_time){

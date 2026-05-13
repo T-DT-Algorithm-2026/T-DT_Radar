@@ -49,6 +49,8 @@ private:
     std::string yolo_path;
     std::string armor_path;
     std::string classify_path;
+
+    std::vector<cv::Point2f> locate_points;  // 存储 4 个像素点
 };
 class Car {
 public:
