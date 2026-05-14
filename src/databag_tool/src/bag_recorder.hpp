@@ -398,7 +398,7 @@ void BagRecoder::work()
       std::string path_to_check = "/"; // Use root directory for Linux
       long int available_disk_space_gb = get_available_disk_space_gb(path_to_check);
       // std::cout<<"available_disk_space_gb:"<<available_disk_space_gb<<"\n";
-      if (available_disk_space_gb < 12) {
+      if (available_disk_space_gb < 2) {
         std::cout<<"available_disk_space_gb:"<<available_disk_space_gb<<"\n";
         std::cerr << "磁盘空间不足12G，停止录制" << std::endl;
         rclcpp::shutdown();  // 停止录制

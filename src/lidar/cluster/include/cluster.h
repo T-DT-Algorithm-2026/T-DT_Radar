@@ -31,7 +31,7 @@ class Cluster : public rclcpp::Node
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr fly_sub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
     rclcpp::Publisher<vision_interface::msg::FlyPoints>::SharedPtr fly_pub_;
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr fly_distance_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Point32>::SharedPtr fly_enemy_point_pub_;
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
     void fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> accumulated_clouds_;

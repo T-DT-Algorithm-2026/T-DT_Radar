@@ -14,13 +14,16 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
+
     def get_camera_node(package, plugin):
         return ComposableNode(
             package=package,
             plugin=plugin,
-            name='vision_camera_node',
+            name='camera_node',
+            parameters=[{'config_path': '/home/robot/T-DT_Radar/config/config.json', 'auto_start': True}],
             extra_arguments=[{'use_intra_process_comms': True}]
         )
+        
     def get_radar_calib_node(package, plugin):
         return ComposableNode(
             package=package,
@@ -49,12 +52,10 @@ def generate_launch_description():
     # 创建节点描述
     calib_node = get_radar_calib_node('tdt_vision', 'tdt_radar::Calibrate')
 
-    hik_camera_node = get_camera_node('tdt_vision', 'tdt_vision::NodeCamera')
-
-
+    camera_node = get_camera_node('tdt_vision', 'tdt_vision::TDTCameraNode')
 
     # 创建节点容器
-    cam_detector = get_camera_detector_container(hik_camera_node,calib_node)
+    cam_detector = get_camera_detector_container(camera_node,calib_node)
 
     return LaunchDescription([
             cam_detector

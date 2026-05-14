@@ -11,7 +11,7 @@ void on_exit([[maybe_unused]]int sig) {
 
 int main(int argc, char** argv) {
   signal(SIGINT, on_exit);
-  tdtusart::CenterUsart usart("/dev/ttyUSB0",
+  tdtusart::CenterUsart usart("/dev/ttyACM0",
                               921600);  // 进行串口的重映射与波特率设置
   UsartPtr = &usart;
   setlocale(LC_ALL, "");

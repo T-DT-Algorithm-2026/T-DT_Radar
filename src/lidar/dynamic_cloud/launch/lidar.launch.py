@@ -70,22 +70,22 @@ def generate_launch_description():
             emulate_tty=True,
             on_exit=Shutdown(),
         )
-        
+        user
     
     # 创建节点描述
     localization_node = get_localization_node('localization', 'tdt_radar::Localization')
     dynamic_cloud_node = get_dynamic_cloud_node('dynamic_cloud', 'tdt_radar::DynamicCloud')
     cluster_node = get_cluster_node('cluster', 'tdt_radar::Cluster')
     kalman_filter_node = get_kalman_filter_node('kalman_filter', 'tdt_radar::KalmanFilter')
-    # foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
+    foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
 
     # 创建节点容器
     lidar_detector = get_container(
                                     localization_node,
                                     dynamic_cloud_node,
                                     cluster_node,
-                                    kalman_filter_node
-                                    # foxglove_node
+                                    kalman_filter_node,
+                                    foxglove_node
                                    )
     # cmd = launch.actions.ExecuteProcess(cmd=['ros2', 'bag', 'play', 'config/merged_bag/merged_bag_0.db3', '--loop', '--start-offset', '250'])
 

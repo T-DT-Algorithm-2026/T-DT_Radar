@@ -20,6 +20,12 @@ Lock::Lock(const rclcpp::NodeOptions& options)
     fs2.release();
 
 
+    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
+    static_tf_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(*this);
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());    
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);//广播
+    publish_static_tf();//发布标定的tf
+
     gimbal_sub = this->create_subscription<gimbal_interface::msg::GimbalAngle>(
         "gimbalUsartData", 10, std::bind(&Lock::gimbal_callback, this, std::placeholders::_1));
 
@@ -28,6 +34,12 @@ Lock::Lock(const rclcpp::NodeOptions& options)
 
     fly_sub = this->create_subscription<vision_interface::msg::DetectFly>(
         "detect_fly", 10, std::bind(&Lock::callback, this, std::placeholders::_1));
+
+    lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>(
+        "/livox/lidar_fly_point", 10, std::bind(&Lock::lidar_callback, this, std::placeholders::_1));
+
+    last_msg_time_ = this->now();
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Lock::timer_callback, this));
 
     RCLCPP_INFO(this->get_logger(), "Lock System Initialized with TF Support");
 }
@@ -52,6 +64,7 @@ void Lock::gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr m
 
 void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 {
+    last_msg_time_ = this->now();
     std::chrono::steady_clock::time_point begin =std::chrono::steady_clock::now();
     rclcpp::Time time_stamp = msg->header.stamp;
     double t = rclcpp::Time(msg->header.stamp).seconds();
@@ -150,12 +163,118 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
     // std::cout << "Lock Time: " << time_used.count() * 1000 << "ms" << std::endl;
-
-
-    //cv::imshow("lock_test", img);
+    
+    // cv::imshow("lock_test", img);
     cv::waitKey(1);
 
 }
+
+void Lock::timer_callback()
+{
+    // 如果超过 0.5 秒没有收到消息，则认为目标丢失，调用 find_callback
+    if ((this->now() - last_msg_time_).seconds() > 0.5)
+    {
+        find_callback();
+    }
+}
+
+void Lock::find_callback()
+{
+    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "未接收到 detect_fly 消息，执行 find_callback 进行第一次锁定");
+    double t = rclcpp::Time(this->now()).seconds();
+    Gimbal gimbal = find_closest_time(t);
+
+    // 目标坐标在云台基座 (base_link) 坐标系下
+    geometry_msgs::msg::PointStamped point_base;
+    point_base.header.stamp = this->now();
+    point_base.header.frame_id = "pitch_link";
+    point_base.point.x = fly_pos.y;
+    point_base.point.y = -fly_pos.x;
+    point_base.point.z = fly_pos.z;
+
+    geometry_msgs::msg::PointStamped point_cam;
+    try 
+    {
+        // 转换到 camera_link 坐标系，在此坐标系下由于已包含 publish_static_tf 的平移偏置，
+        // 我们直接计算目标点相对于相机光轴的偏差角，即可天然补偿不共轴带来的误差
+        point_cam = tf_buffer_->transform(point_base, "camera_link", tf2::durationFromSec(0.1));
+    } 
+    catch (tf2::TransformException &ex) 
+    {
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "TF Error: %s", ex.what());
+        return;
+    }
+
+    float cx = point_cam.point.x;
+    float cy = point_cam.point.y;
+    float cz = point_cam.point.z;
+
+    float dist_horizontal = std::sqrt(cx * cx + cy * cy);
+    
+    // 在 camera_link 下 (X前, Y左, Z上)，计算目标偏离光轴的角度
+    // 偏航误差 (yaw_err) 是 Y 与 X 的夹角
+    float yaw_err = std::atan2(cy, cx); 
+    // 俯仰误差 (pitch_err) 是 Z 与水平面 的夹角
+    float pitch_err = std::atan2(cz, dist_horizontal);
+
+    float yaw_err_deg = yaw_err * (180.0f / CV_PI);
+    float pitch_err_deg = pitch_err * (180.0f / CV_PI);
+
+    // 将误差补偿到当前云台角度上，得到最终的绝对命令角度
+    float target_yaw = yaw_err_deg;
+    float target_pitch = pitch_err_deg;
+
+    gimbal_interface::msg::GimbalAngle gimbal_msg;
+    gimbal_msg.header.stamp = this->now();
+    gimbal_msg.header.frame_id = "yaw_link"; 
+    gimbal_msg.yaw = target_yaw;   
+    gimbal_msg.pitch = target_pitch;
+    gimbal_msg.is_fire = 1;
+    gimbal_msg.force_flag = 1;
+
+    gimbal_pub->publish(gimbal_msg);
+}
+
+
+void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
+{
+    fly_pos.x = msg->x;
+    fly_pos.y = msg->y;
+    fly_pos.z = msg->z;
+}
+
+void Lock::publish_static_tf() 
+{
+    geometry_msgs::msg::TransformStamped t;
+    t.header.frame_id = "pitch_link";
+    t.child_frame_id = "camera_link";
+    t.header.stamp = this->now();
+
+    // 转换 OpenCV tvec 到 ROS2 translation (米)
+    // t.transform.translation.x = cam2pitch_tvec_.at<double>(0);
+    // t.transform.translation.y = cam2pitch_tvec_.at<double>(1);
+    // t.transform.translation.z = cam2pitch_tvec_.at<double>(2);
+    t.transform.translation.x = 0.064974;
+    t.transform.translation.y = 0.0524;
+    t.transform.translation.z = 0.04785;
+
+    // 转换 OpenCV rvec 到 ROS2 Quaternion
+    cv::Mat R;
+    cv::Rodrigues(cam2pitch_rvec_, R);
+    tf2::Matrix3x3 tf2_R(R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
+                         R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
+                         R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2));
+    tf2::Quaternion q;
+    tf2_R.getRotation(q);
+    t.transform.rotation.x = q.x();
+    t.transform.rotation.y = q.y();
+    t.transform.rotation.z = q.z();
+    t.transform.rotation.w = q.w();
+
+    static_tf_broadcaster_->sendTransform(t);
+}
+
+
 
 Gimbal Lock::find_closest_time(double target_time)
 {

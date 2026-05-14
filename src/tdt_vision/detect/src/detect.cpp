@@ -106,6 +106,10 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     fs["classify_path"] >> classify_path;
     fs.release();
 
+    fs.open("./config/locate_points.yaml", cv::FileStorage::READ);
+    fs["locate_points"] >> locate_points;
+    fs.release();//读取参数
+
     std::ifstream file1(yolo_path.c_str());
     if (!file1.good()) {
         system("python3 src/utils/onnx2trt.py "
@@ -178,6 +182,25 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         std::chrono::steady_clock::now();
     std::cout << "Detecting..." << std::endl;
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
+    
+    static int frame_count = 0;
+    frame_count++;
+    if (frame_count % 100 == 0 && locate_points.size() == 4) {
+        cv::Rect rect1(locate_points[0], locate_points[1]);
+        cv::Rect rect2(locate_points[2], locate_points[3]);
+        
+        // Ensure rectangles are within image bounds
+        rect1 &= cv::Rect(0, 0, img.cols, img.rows);
+        rect2 &= cv::Rect(0, 0, img.cols, img.rows);
+        
+        if (rect1.area() > 0) {
+            cv::imwrite("./rect_1/rect1_" + std::to_string(frame_count) + ".jpg", img(rect1));
+        }
+        if (rect2.area() > 0) {
+            cv::imwrite("./rect_2/rect2_" + std::to_string(frame_count) + ".jpg", img(rect2));
+        }
+    }
+
     tdt_radar::Image image(img.data, img.cols, img.rows);
 
     auto result = yolo->forward(image);
