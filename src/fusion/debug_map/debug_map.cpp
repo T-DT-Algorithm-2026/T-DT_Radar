@@ -192,9 +192,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
                                 radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                                 radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                         }
                             // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
@@ -214,9 +214,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
                                 radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                                 radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }
                         else if(time-relax_time[i]>0.35)
@@ -229,9 +229,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
                                 radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                                 radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                         }
                     }
@@ -251,9 +251,9 @@ namespace tdt_radar {
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
                             radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                             radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                             // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
                             //     radar2sentry.radar_enemy_x[i] = 14.556;
@@ -270,9 +270,9 @@ namespace tdt_radar {
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
                             radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                             radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }else if(time-relax_time[i]>0.35){
                             relax_time[i] = time;
@@ -282,9 +282,9 @@ namespace tdt_radar {
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
                             radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = 15-fly_enemy_point.y;
+                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
                             radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = 15-fly_ally_point.y;
+                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }
                     }

@@ -24,9 +24,9 @@ class KeyUsartSender : public BaseUsartSender {
 
     // 关键修改：创建一个定时器，主动、周期性地触发发送函数。
     // 这里设置为 10 毫秒 (100Hz) 发送一次，你可以根据电控需求修改这个频率
-    // timer_ = node->create_wall_timer(
-    //     std::chrono::milliseconds(10), 
-    //     std::bind(&KeyUsartSender::TimerCallback, this));
+    timer_ = node->create_wall_timer(
+        std::chrono::milliseconds(10), 
+        std::bind(&KeyUsartSender::TimerCallback, this));
   }
 
 #pragma pack(1)
@@ -50,11 +50,14 @@ class KeyUsartSender : public BaseUsartSender {
   // 新增：定时器回调函数，不需要传入 msg 参数
   void TimerCallback() {
     KeyData send_data;
-    send_data.cmd = 1; // 这里你可以设置一个固定的命令字，或者根据需要修改为动态值
+    send_data.cmd = 2; // 这里你可以设置一个固定的命令字，或者根据需要修改为动态值
     // 这里同样可以设置 key 数组的值，或者保持为默认的0，根据你的协议需求来定
-    for(int i = 0; i < 6; i++) {
-      send_data.key[i] = 1; // 或者设置为 msg->key[i] 如果你有对应的 ROS 消息字段
-    }
+    send_data.key[0] = '5';
+    send_data.key[1] = '7';
+    send_data.key[2] = 'A';
+    send_data.key[3] = 'h';
+    send_data.key[4] = 'P';
+    send_data.key[5] = 'P';// 示例：设置第一个按键状态为1，表示按下
 
     
     // send_data.time_stamp = tdttoolkit::Time::GetTimeNow() / 1e3;

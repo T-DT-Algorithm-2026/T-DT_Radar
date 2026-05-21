@@ -33,6 +33,7 @@ public:
 
         pointcloud_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10);
         image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera1/image", rclcpp::SensorDataQoS());
+        image2_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS());
         match_info_publisher_ = this->create_publisher<vision_interface::msg::MatchInfo>("/match_info", 10);
         // 订阅控制话题，用于 pause/resume/toggle
         control_sub_ = this->create_subscription<std_msgs::msg::String>(
@@ -78,14 +79,11 @@ private:
             }
             // 处理 CompressedImage 消息
             else if (bag_message->topic_name == "/compressed_image") {
-                auto image_msg = std::make_shared<sensor_msgs::msg::CompressedImage>();
-                rclcpp::Serialization<sensor_msgs::msg::CompressedImage> serialization;
-                rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
-                serialization.deserialize_message(&serialized_msg, image_msg.get());
-                auto img = cv::imdecode(image_msg->data, cv::IMREAD_COLOR);
-                auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img).toImageMsg();
-                msg->header.stamp = ros_time;
-                image_publisher_->publish(*msg);
+                publish_compressed_image(bag_message, image_publisher_, ros_time);
+            }
+            // 处理第二路 CompressedImage 消息
+            else if (bag_message->topic_name == "/compressed_image2") {
+                publish_compressed_image(bag_message, image2_publisher_, ros_time);
             }
             // 处理match_info消息
             else if (bag_message->topic_name == "/match_info") {
@@ -107,6 +105,28 @@ private:
         }
         RCLCPP_INFO(this->get_logger(), "No more messages in the bag.");
         rclcpp::shutdown();
+    }
+
+    void publish_compressed_image(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message,
+        const rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr &publisher,
+        const rclcpp::Time &stamp) {
+        auto image_msg = std::make_shared<sensor_msgs::msg::CompressedImage>();
+        rclcpp::Serialization<sensor_msgs::msg::CompressedImage> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, image_msg.get());
+
+        auto img = cv::imdecode(image_msg->data, cv::IMREAD_COLOR);
+        if (img.empty()) {
+            RCLCPP_WARN(this->get_logger(), "Failed to decode compressed image from topic %s",
+                        bag_message->topic_name.c_str());
+            return;
+        }
+
+        auto header = image_msg->header;
+        header.stamp = stamp;
+        auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
+        publisher->publish(*msg);
     }
 
     void control_callback(const std_msgs::msg::String::SharedPtr msg) {
@@ -132,6 +152,7 @@ private:
 
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image2_publisher_;
     rclcpp::Publisher<vision_interface::msg::MatchInfo>::SharedPtr match_info_publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr control_sub_;
     rosbag2_cpp::Reader reader_;

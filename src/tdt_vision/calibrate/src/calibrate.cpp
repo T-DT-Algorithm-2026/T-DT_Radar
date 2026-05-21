@@ -18,16 +18,16 @@ namespace tdt_radar {
         fs["dist_coeffs"] >> dist_coeffs;
         fs.release();
 
-        // real_points.push_back(right_low);
-        // real_points.push_back(midle);
-        // real_points.push_back(buffer);
-        // real_points.push_back(right_behind);
-        // real_points.push_back(left_behind);
-        real_points.push_back(self_FORTRESS);
-        real_points.push_back(self_Tower);
-        real_points.push_back(enemy_Base);
-        real_points.push_back(enemy_Tower);
-        real_points.push_back(enemy_High);
+        real_points.push_back(right_low);
+        real_points.push_back(midle);
+        real_points.push_back(buffer);
+        real_points.push_back(right_behind);
+        real_points.push_back(left_behind);
+        // real_points.push_back(self_FORTRESS);
+        // real_points.push_back(self_Tower);
+        // real_points.push_back(enemy_Base);
+        // real_points.push_back(enemy_Tower);
+        // real_points.push_back(enemy_High);
         parser_ = new parser();
         
         RCLCPP_INFO(this->get_logger(),"\n" 
@@ -69,6 +69,7 @@ namespace tdt_radar {
         if(is_calibrating){
             cv::putText(img, std::to_string(pick_points.size()), cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             cv::putText(img, "Press 'n' to add good point", cv::Point(50, 400), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
+            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             if(pick_points.size() == real_points.size()){
                 solve();
                 parser_->Change_Matrix();
@@ -78,30 +79,26 @@ namespace tdt_radar {
             parser_->draw_ui(img);
             cv::putText(img, "Locate Mode: " + std::to_string(locate_points.size()) + "/4", cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 255, 0), 2);
             cv::putText(img, "Click and press 'n' to save", cv::Point(50, 300), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 255, 0), 2);
-        }
-        else{
-            parser_->draw_ui(img);
-            cv::putText(img,"Press Enter to Calibrate !!!",cv::Point(50,200),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,0,255),2);
-            cv::putText(img,"Press 'P' to Locate !!!",cv::Point(50,300),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,255,0),2);
-        }
-
-        if(is_location){
+            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             if(locate_points.size() == 4){
                 store_locate();
                 draw_locate(img);
             }
         }
-        else
-        {
+        else{
+            parser_->draw_ui(img);
             draw_locate(img);
-        }
-
+            cv::putText(img,"Press Enter to Calibrate !!!",cv::Point(50,200),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,0,255),2);
+            cv::putText(img,"Press 'P' to Locate !!!",cv::Point(50,300),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,255,0),2);
+        }  
+            
         auto temp = img.clone();
         cv::resize(img, img, cv::Size(1536, 1125));
         cv::imshow("calibrate", img);
         //按下回车键，开始标定
         auto key =cv::waitKey(10);
-        switch (key) {
+        switch (key)
+        {
             case 13:
                 is_calibrating = true;
                 break;
@@ -112,7 +109,7 @@ namespace tdt_radar {
                 break;
             default:
                 break;
-        }       
+        }      
     }
 
     void Calibrate::compressed_callback(const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
@@ -124,6 +121,7 @@ namespace tdt_radar {
         if(is_calibrating){
             cv::putText(img, std::to_string(pick_points.size()), cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             cv::putText(img, "Press 'n' to add good point", cv::Point(50, 400), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
+            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             if(pick_points.size() == real_points.size()){
                 solve();
                 parser_->Change_Matrix();
@@ -133,6 +131,7 @@ namespace tdt_radar {
             parser_->draw_ui(img);
             cv::putText(img, "Locate Mode: " + std::to_string(locate_points.size()) + "/4", cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 255, 0), 2);
             cv::putText(img, "Click and press 'n' to save", cv::Point(50, 300), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 255, 0), 2);
+            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
             if(locate_points.size() == 4){
                 store_locate();
                 draw_locate(img);
@@ -236,15 +235,6 @@ namespace tdt_radar {
             y *= 1.3333333333 * 2;
             std::cout << "x:" << x << " y:" << y << std::endl;
             locate_points.push_back(cv::Point2f(x, y));
-            
-            if (locate_points.size() == 4) {
-                cv::FileStorage fs("./config/locate_points.yaml", cv::FileStorage::WRITE);
-                fs << "locate_points" << locate_points;
-                fs.release();
-                is_location = false;
-                std::cout << "Saved 4 locate_points to config/locate_points.yaml!" << std::endl;
-            }
-           
         }
             break;
 
@@ -273,11 +263,13 @@ namespace tdt_radar {
         fs.release();
         pick_points.clear();
         is_calibrating = false;
+        std::cout<<"标定完毕！\n";
     }
 
     void Calibrate::store_locate() {
         cv::FileStorage fs("./config/locate_points.yaml", cv::FileStorage::WRITE);
         fs << "locate_points" << locate_points;
+        std::cout<<"基地前哨坐标储存完毕！\n";
         fs.release();
         is_location = false;
     }

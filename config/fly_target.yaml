@@ -1,4 +1,8 @@
 %YAML:1.0
 ---
-target_x: 1048.32
-target_y: 455.76
+dist1:9
+target_x1:837
+target_y1:534
+dist2:15.75
+target_x2:834
+target_y2:500

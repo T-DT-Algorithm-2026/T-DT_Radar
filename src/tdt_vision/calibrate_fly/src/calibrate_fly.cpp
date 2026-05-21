@@ -14,7 +14,7 @@ namespace tdt_radar {
 
         
         image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-                "camera1/image", rclcpp::SensorDataQoS(),
+                "camera2/image", rclcpp::SensorDataQoS(),
                 std::bind(&CalibrateFly::callback, this, std::placeholders::_1));
         compressed_image_sub = this->create_subscription<sensor_msgs::msg::CompressedImage>(
                 "compressed_image", rclcpp::SensorDataQoS(),
@@ -138,11 +138,11 @@ namespace tdt_radar {
     }
 
     void CalibrateFly::solve(){
-        cv::FileStorage fs;
-        fs.open("/home/robot/T-DT_Radar/config/fly_target.yaml", cv::FileStorage::WRITE);
-        fs << "target_x" << pick_point_fly.x;
-        fs << "target_y" << pick_point_fly.y;
-        fs.release();
+        // cv::FileStorage fs;
+        // fs.open("/home/robot/T-DT_Radar/config/fly_target.yaml", cv::FileStorage::WRITE);
+        // fs << "target_x" << pick_point_fly.x;
+        // fs << "target_y" << pick_point_fly.y;
+        // fs.release();
         
         std::cout << "Successfully saved fly target coordinate to /home/robot/T-DT_Radar/config/fly_target.yaml" << std::endl;
         

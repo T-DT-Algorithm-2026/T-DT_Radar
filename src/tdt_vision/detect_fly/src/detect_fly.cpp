@@ -39,13 +39,29 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
         std::cout<<"Load yolo engine!"<<std::endl;
     }
     std::cout << "fly_path:" << fly_path << "\n";
-    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.6f, 0.45f);
+    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.7f, 0.45f);
     std::cout << "Load fly_yolo engine success!" << std::endl;
 
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
-    fs2["target_x"] >> target_point.x;
-    fs2["target_y"] >> target_point.y;
+    fs2["dist1"] >> dist1;
+    fs2["target_x1"] >> target_x1;
+    fs2["target_y1"] >> target_y1;
+    fs2["dist2"] >> dist2;
+    fs2["target_x2"] >> target_x2;
+    fs2["target_y2"] >> target_y2;
+    
+    // 使用反比例函数模型：u = A/D + B
+    float inv_d1 = 1.0f / dist1;
+    float inv_d2 = 1.0f / dist2;
+    if (std::abs(inv_d1 - inv_d2) > 1e-5) 
+    {
+        A_x = (target_x1 - target_x2) / (inv_d1 - inv_d2);
+        B_x = target_x1 - A_x * inv_d1;
+        A_y = (target_y1 - target_y2) / (inv_d1 - inv_d2);
+        B_y = target_y1 - A_y * inv_d1;
+        std::cout << "Dynamic Target Loaded! Ax=" << A_x << ", Bx=" << B_x << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+    }
     fs2.release();
 
     if (save_images_) 
@@ -54,12 +70,23 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     }
     last_save_time_ = std::chrono::steady_clock::now() - std::chrono::milliseconds(500);
     
-    image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera1/image", rclcpp::SensorDataQoS(),std::bind(&DetectFly::callback, this, std::placeholders::_1));
+    image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS(),std::bind(&DetectFly::callback, this, std::placeholders::_1));
     player_control_pub_ = this->create_publisher<std_msgs::msg::String>("/rosbag_player/control", 10);
     fly_pub_ = this->create_publisher<vision_interface::msg::DetectFly>("detect_fly", 10);
     debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_image/compressed", rclcpp::SensorDataQoS());
+    lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>("/livox/lidar_fly_point", 10, std::bind(&DetectFly::lidar_callback, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "Detect_fly node has been started.");
 
+}
+
+void DetectFly::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
+{
+    float distance = std::sqrt(msg->x * msg->x + msg->y * msg->y + msg->z * msg->z);
+    lidar_time = this->now();
+    
+    // 如果启用了动态靶心，根据当前距离实时更新 target_point
+    target_point.x = A_x / distance + B_x;
+    target_point.y = A_y / distance + B_y;
 }
 
 void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
@@ -90,7 +117,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     auto result = fly->forward(image);
     if (result.size() == 0) 
     {
-        RCLCPP_INFO(this->get_logger(), "No Fly!");
+        // RCLCPP_INFO(this->get_logger(), "No Fly!");
         // sensor_msgs::msg::CompressedImage compressed_msg;
         // compressed_msg.header.stamp = this->now();
         // compressed_msg.header.frame_id = "camera_frame"; // 随便起个名字
@@ -106,7 +133,14 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
 
         // // 发布出去
         // debug_img_pub_->publish(compressed_msg);
-        cv::circle(img, cv::Point(1048.32, 455.76), 1, cv::Scalar(255, 0, 255), -1); //准心
+        if((this->now().seconds() - lidar_time.seconds()) < 1)
+        {
+            cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
+        }
+        else
+        {
+            cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
+        }
         cv::imshow("detect_fly", img);
         cv::waitKey(1);
         // std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
@@ -123,7 +157,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     for(int i=0;i<result.size();i++)
     {
         
-        auto fly_rect = cv::Rect(result[i].left, result[i].top,result[i].right - result[i].left, result[i].bottom - result[i].top);
+        auto fly_rect = cv::Rect(result[i].left, result[i].top,result[i].right - result[i].left, result[i].bottom - result[i].top);//1376
         cv::rectangle(img, fly_rect, cv::Scalar(0, 255, 0), 1);
         cv::Rect safe_rect = getSafeRect(img, fly_rect);
         roi = img(safe_rect);
@@ -208,11 +242,18 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         fly_pub_->publish(test_msg);
         std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
         std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
-        std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
+        // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
         cv::circle(img, cv::Point2f(test_msg.x, test_msg.y), 1, cv::Scalar(255, 255, 0), -1);
     }
 
-    cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
+    if((this->now().seconds() - lidar_time.seconds()) < 1)
+    {
+        cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
+    }
+    else
+    {
+        cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
+    } //准心
     // std::cout<<"target_point:"<<target_point.x<<","<<target_point.y<<std::endl;
 
     cv::imshow("detect_fly", img);
@@ -233,7 +274,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // cv::imencode(".jpg", img, compressed_msg.data, compression_params);
 
     // // 发布出去
-    // debug_img_pub_->publish(compressed_msg);
+    // debug_img_pub_->publish(compress的ed_msg);
 
 
     // 如果按下了空格 (32) 或 'p'jiuzant
@@ -258,7 +299,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // }
     std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
-    std::cout << "Detect Fly Time2: " << time_used.count() * 1000 << "ms" << std::endl;
+    // std::cout << "Detect Fly Time2: " << time_used.count() * 1000 << "ms" << std::endl;
 }
 
 cv::Rect DetectFly::getSafeRect(cv::Mat& image, cv::Rect& rect)

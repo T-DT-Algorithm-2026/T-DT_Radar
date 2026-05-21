@@ -15,8 +15,26 @@ Lock::Lock(const rclcpp::NodeOptions& options)
 
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
-    fs2["target_x"] >> target_x;
-    fs2["target_y"] >> target_y;
+
+    fs2["dist1"] >> dist1;
+    fs2["target_x1"] >> target_x1;
+    fs2["target_y1"] >> target_y1;
+    fs2["dist2"] >> dist2;
+    fs2["target_x2"] >> target_x2;
+    fs2["target_y2"] >> target_y2;
+    
+    // 使用反比例函数模型：u = A/D + B
+    float inv_d1 = 1.0f / dist1;
+    float inv_d2 = 1.0f / dist2;
+    if (std::abs(inv_d1 - inv_d2) > 1e-5) 
+    {
+        A_x = (target_x1 - target_x2) / (inv_d1 - inv_d2);
+        B_x = target_x1 - A_x * inv_d1;
+        A_y = (target_y1 - target_y2) / (inv_d1 - inv_d2);
+        B_y = target_y1 - A_y * inv_d1;
+        std::cout << "Dynamic Target Loaded! Ax=" << A_x << ", Bx=" << B_x << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+    }
+
     fs2.release();
 
 
@@ -155,7 +173,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     gimbal_msg.header.frame_id = "yaw_link"; 
     gimbal_msg.yaw = yaw;   
     gimbal_msg.pitch = pitch;
-    gimbal_msg.is_fire = 0;
+    gimbal_msg.is_fire = 1;
     gimbal_msg.force_flag = 1;
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
@@ -172,7 +190,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 void Lock::timer_callback()
 {
     // 如果超过 0.5 秒没有收到消息，则认为目标丢失，调用 find_callback
-    if ((this->now() - last_msg_time_).seconds() > 0.5)
+    if ((this->now() - last_msg_time_).seconds() > 1)
     {
         find_callback();
     }
@@ -182,29 +200,20 @@ void Lock::find_callback()
 {
     RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "未接收到 detect_fly 消息，执行 find_callback 进行第一次锁定");
     double t = rclcpp::Time(this->now()).seconds();
-    Gimbal gimbal = find_closest_time(t);
 
     // 目标坐标在云台基座 (base_link) 坐标系下
     geometry_msgs::msg::PointStamped point_base;
     point_base.header.stamp = this->now();
     point_base.header.frame_id = "pitch_link";
-    point_base.point.x = fly_pos.y;
-    point_base.point.y = -fly_pos.x;
+    // point_base.point.x = fly_pos.y;
+    // point_base.point.y = -fly_pos.x;
+    // point_base.point.z = fly_pos.z;
+    point_base.point.x = fly_pos.x;
+    point_base.point.y = fly_pos.y;
     point_base.point.z = fly_pos.z;
-
     geometry_msgs::msg::PointStamped point_cam;
-    try 
-    {
-        // 转换到 camera_link 坐标系，在此坐标系下由于已包含 publish_static_tf 的平移偏置，
-        // 我们直接计算目标点相对于相机光轴的偏差角，即可天然补偿不共轴带来的误差
-        point_cam = tf_buffer_->transform(point_base, "camera_link", tf2::durationFromSec(0.1));
-    } 
-    catch (tf2::TransformException &ex) 
-    {
-        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "TF Error: %s", ex.what());
-        return;
-    }
-
+    // 直接使用内部缓存的静态逆变换矩阵，避免查询 TF 树带来的延时和潜在异常
+    tf2::doTransform(point_base, point_cam, static_transform_);
     float cx = point_cam.point.x;
     float cy = point_cam.point.y;
     float cz = point_cam.point.z;
@@ -220,9 +229,12 @@ void Lock::find_callback()
     float yaw_err_deg = yaw_err * (180.0f / CV_PI);
     float pitch_err_deg = pitch_err * (180.0f / CV_PI);
 
+    // 巡航逻辑
+    patrol();
+
     // 将误差补偿到当前云台角度上，得到最终的绝对命令角度
-    float target_yaw = yaw_err_deg;
-    float target_pitch = pitch_err_deg;
+    float target_yaw = yaw_err_deg + yaw_cmd_first - 2;
+    float target_pitch = pitch_err_deg + pitch_cmd_first; 
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
@@ -241,6 +253,11 @@ void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
     fly_pos.x = msg->x;
     fly_pos.y = msg->y;
     fly_pos.z = msg->z;
+    float distance = std::sqrt(fly_pos.x * fly_pos.x + fly_pos.y * fly_pos.y + fly_pos.z * fly_pos.z);
+    
+    // 如果启用了动态靶心，根据当前距离实时更新 target_x 和 target_y
+    target_x = A_x / distance + B_x;
+    target_y = A_y / distance + B_y;
 }
 
 void Lock::publish_static_tf() 
@@ -272,6 +289,24 @@ void Lock::publish_static_tf()
     t.transform.rotation.w = q.w();
 
     static_tf_broadcaster_->sendTransform(t);
+
+    // 提前计算逆变换并保存到 static_transform_，
+    // 供 find_callback 中将 target 坐标从 pitch_link 转回 camera_link 使用
+    tf2::Transform tf2_trans;
+    tf2_trans.setOrigin(tf2::Vector3(t.transform.translation.x, t.transform.translation.y, t.transform.translation.z));
+    tf2_trans.setRotation(q);
+    
+    tf2::Transform tf2_inv = tf2_trans.inverse();
+    
+    static_transform_.header.frame_id = "camera_link";  // 源坐标系
+    static_transform_.child_frame_id = "pitch_link";    // 目标坐标系
+    static_transform_.transform.translation.x = tf2_inv.getOrigin().x();
+    static_transform_.transform.translation.y = tf2_inv.getOrigin().y();
+    static_transform_.transform.translation.z = tf2_inv.getOrigin().z();
+    static_transform_.transform.rotation.x = tf2_inv.getRotation().x();
+    static_transform_.transform.rotation.y = tf2_inv.getRotation().y();
+    static_transform_.transform.rotation.z = tf2_inv.getRotation().z();
+    static_transform_.transform.rotation.w = tf2_inv.getRotation().w();
 }
 
 
@@ -321,6 +356,46 @@ Gimbal Lock::find_closest_time(double target_time)
     interp_gimbal.yaw = it_before->yaw + ratio * (it_after->yaw - it_before->yaw);
 
     return interp_gimbal;
+}
+
+
+void Lock::patrol()
+{
+    // 巡航逻辑: 绕目标点做正方形巡逻
+    float step = 0.05f;
+    float max_val = 1.0f;
+    float min_val = -1.0f;
+
+    switch (patrol_state_) {
+        case 0: // 向右扫 (yaw 增加)
+            yaw_cmd_first += step;
+            if (yaw_cmd_first >= max_val) {
+                yaw_cmd_first = max_val;
+                patrol_state_ = 1;
+            }
+            break;
+        case 1: // 向上扫 (pitch 增加)
+            pitch_cmd_first += step;
+            if (pitch_cmd_first >= max_val) {
+                pitch_cmd_first = max_val;
+                patrol_state_ = 2;
+            }
+            break;
+        case 2: // 向左扫 (yaw 减小)
+            yaw_cmd_first -= step;
+            if (yaw_cmd_first <= min_val) {
+                yaw_cmd_first = min_val;
+                patrol_state_ = 3;
+            }
+            break;
+        case 3: // 向下扫 (pitch 减小)
+            pitch_cmd_first -= step;
+            if (pitch_cmd_first <= min_val) {
+                pitch_cmd_first = min_val;
+                patrol_state_ = 0;
+            }
+            break;
+    }
 }
 // namespace tdt_lock
 }

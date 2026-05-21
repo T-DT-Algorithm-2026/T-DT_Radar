@@ -1,5 +1,6 @@
 radar_record:
     - /compressed_image
+    - /compressed_image2
     - /livox/lidar
     - /match_info
     - /sentry2RadarData

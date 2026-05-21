@@ -19,7 +19,10 @@
 #include "sender/message_usart_sender.h"
 #include "sender/radar_usart_sender.h"
 #include "sender/gimbal_usart_sender.h"
-#include "sender/radio_usart_sender.h"
+#include "sender/radio_hp.h"
+#include "sender/radio_fire.h"
+#include "sender/radio_state.h"
+#include "sender/radio_buff.h"
 #include "sender/key_usart_sender.h"
 
 namespace tdtusart {
@@ -33,7 +36,7 @@ static BaseUsartRecver *DataRecver[DataRecverNum + 1] = {
     // (BaseUsartRecver *)(new (VisionUsartRecver))
     };
     
-static const int DataSenderNum = 6;  // vision, commandReply
+static const int DataSenderNum = 9;  // vision, commandReply
 static BaseUsartSender *DataSender[DataSenderNum + 1] = {
     nullptr, 
     (BaseUsartSender *)(new DecisionUsartSender()),
@@ -41,7 +44,10 @@ static BaseUsartSender *DataSender[DataSenderNum + 1] = {
     (BaseUsartSender *)(new RadarUsartSender()),
     (BaseUsartSender *)(new GimbalUsartSender()),
     (BaseUsartSender *)(new KeyUsartSender()),
-    (BaseUsartSender *)(new RadioUsartSender())};
+    (BaseUsartSender *)(new RadioHpSender()),
+    (BaseUsartSender *)(new RadioFireSender()),
+    (BaseUsartSender *)(new RadioStateSender()),
+    (BaseUsartSender *)(new RadioBuffSender())};
 
 }  // namespace shared_data
 }  // namespace tdtusart

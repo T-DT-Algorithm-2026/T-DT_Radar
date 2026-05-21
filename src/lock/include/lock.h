@@ -46,6 +46,7 @@ private:
     void find_callback();
     void lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg);
     Gimbal find_closest_time(double target_time);
+    void patrol();
 
     std::mutex gimbal_mutex;
     std::deque<Gimbal> gimbal_history;
@@ -61,12 +62,21 @@ private:
     float kd = 0.03;
     float fx;
     float fy;
+    
     float target_x;
     float target_y;
+    float dist1, target_x1, target_y1;
+    float dist2, target_x2, target_y2;
+    float A_x = 0, B_x = 0;
+    float A_y = 0, B_y = 0;//激光落点计算
+
     float cx = 720.0f;
     float cy = 540.0f;//参数
     float last_dyaw = 0;
     float last_dpitch = 0;
+    float yaw_cmd_first = 0;
+    float pitch_cmd_first = 0;
+    int patrol_state_ = 0;
 
     // cv::Point3f object_fly = cv::Point3f(4.0f, 15.0f, -1.0f);
     cv::Point3f fly_pos;
@@ -79,6 +89,7 @@ private:
 
     // Parameters for non-coaxial gimbal
     cv::Mat cam2pitch_rvec_ = cv::Mat::zeros(3, 1, CV_64F); // 默认无旋转
+    geometry_msgs::msg::TransformStamped static_transform_;
     void publish_static_tf();
 };
 
