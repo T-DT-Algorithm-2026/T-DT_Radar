@@ -12,6 +12,7 @@
 #include <std_msgs/msg/string.hpp>
 #include "cv_bridge/cv_bridge.hpp"
 #include "geometry_msgs/msg/point.hpp"
+#include "geometry_msgs/msg/point32.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
 #include "opencv2/opencv.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
@@ -56,6 +57,9 @@ public:
 
     rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr debug_img_pub_;//调试图片
 
+    rclcpp::Subscription<geometry_msgs::msg::Point32>::SharedPtr lidar_sub;
+    void lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg);
+
     cv::Rect getSafeRect(cv::Mat& image, cv::Rect& rect);
     bool getLineCenter(const std::vector<cv::Point2f>& pts, cv::Point2f& center);
 
@@ -64,6 +68,10 @@ private:
     std::string fly_path;
 
     cv::Point2f target_point;
+    rclcpp::Time lidar_time;
+    float dist1, target_x1, target_y1;
+    float dist2, target_x2, target_y2;
+    float A_x, B_x, A_y, B_y;
 
     std::string save_dir_ = "./saved_images";
     int image_save_counter_{0};

@@ -2,21 +2,42 @@
     "cameras": [
         {
             "id": "camera1",
-            "guid": "",
+            "guid": "2BDFA2452651",
             "params": {
                 "ExposureAuto": "Off",
                 "GainAuto": "Off",
                 "PixelFormat": "BayerRG8",
                 "Width": 4096,
                 "Height": 3000,
-                "ExposureTime": 5500.0,
+                "ExposureTime": 2000.0,
                 "GammaEnable": true,
-                "Gamma": 0.8,
+                "Gamma": 0.6,
                 "Gain": 12.0,
                 "BalanceWhiteAuto": "Continuous",
                 "BlackLevel": 240,
                 "FrameSpecInfoMask": 40,
-                "AcquisitionFrameRateEnable": true,
+                "AcquisitionFrameRateEnable": false,
+                "AcquisitionFrameRate": 10.0,
+                "TriggerMode": "Off"
+            }
+        },
+        {
+            "id": "camera2",
+            "guid": "2BDF70434779",
+            "params": {
+                "ExposureAuto": "Off",
+                "GainAuto": "Off",
+                "PixelFormat": "BayerRG8",
+                "Width": 1440,
+                "Height": 1080,
+                "ExposureTime": 5500.0,
+                "GammaEnable": true,
+                "Gamma": 0.6,
+                "Gain": 12.0,
+                "BalanceWhiteAuto": "Continuous",
+                "BlackLevel": 240,
+                "FrameSpecInfoMask": 40,
+                "AcquisitionFrameRateEnable": false,
                 "AcquisitionFrameRate": 10.0,
                 "TriggerMode": "Off"
             }

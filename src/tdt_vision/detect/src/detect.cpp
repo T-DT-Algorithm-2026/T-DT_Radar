@@ -183,23 +183,24 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::cout << "Detecting..." << std::endl;
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
     
-    static int frame_count = 0;
-    frame_count++;
-    if (frame_count % 100 == 0 && locate_points.size() == 4) {
-        cv::Rect rect1(locate_points[0], locate_points[1]);
-        cv::Rect rect2(locate_points[2], locate_points[3]);
+    // static int frame_count = 0;
+    // frame_count++;
+    // if (frame_count % 5 == 0 && locate_points.size() == 4) {
+    //     cv::Rect rect1(locate_points[0], locate_points[1]);
+    //     cv::Rect rect2(locate_points[2], locate_points[3]);
         
-        // Ensure rectangles are within image bounds
-        rect1 &= cv::Rect(0, 0, img.cols, img.rows);
-        rect2 &= cv::Rect(0, 0, img.cols, img.rows);
+    //     rect1 &= cv::Rect(0, 0, img.cols, img.rows);
+    //     rect2 &= cv::Rect(0, 0, img.cols, img.rows);
         
-        if (rect1.area() > 0) {
-            cv::imwrite("./rect_1/rect1_" + std::to_string(frame_count) + ".jpg", img(rect1));
-        }
-        if (rect2.area() > 0) {
-            cv::imwrite("./rect_2/rect2_" + std::to_string(frame_count) + ".jpg", img(rect2));
-        }
-    }
+    //     if (rect1.area() > 0) {
+    //         cv::imwrite("/home/robot/location/out_post3/out_post" + std::to_string(frame_count) + ".png", img(rect1));
+    //     }
+    //     if (rect2.area() > 0) {
+    //         cv::imwrite("/home/robot/location/base3/base" + std::to_string(frame_count) + ".png", img(rect2));
+    //     }
+    //     cv::rectangle(img, rect1, cv::Scalar(0, 255, 0), 2);
+    //     cv::rectangle(img, rect2, cv::Scalar(255, 0, 0), 2);
+    // }
 
     tdt_radar::Image image(img.data, img.cols, img.rows);
 

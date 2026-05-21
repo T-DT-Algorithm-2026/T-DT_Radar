@@ -28,7 +28,6 @@ void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::Sh
 {
     // RCLCPP_INFO(this->get_logger(), "Detect_callback");
     rclcpp::Time time = msg->header.stamp;
-    // std::cout<<msg->blue_x[0]<<","<<msg->blue_y[0]<<std::endl;
     for(int i=0;i<6;i++)
     {
         pcl::PointXY red_point;

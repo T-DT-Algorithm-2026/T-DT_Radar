@@ -23,12 +23,6 @@ class DecisionUsartSender : public BaseUsartSender {
             10,            
             std::bind(&DecisionUsartSender::Callback, this,
                       std::placeholders::_1));
-    camera_subscriber_ =
-        node->create_subscription<vision_interface::msg::RadarWarn>(
-            "hero_state",  // topic_name,
-            10,            
-            std::bind(&DecisionUsartSender::camera_callback, this,
-                      std::placeholders::_1));
     usartSend_ = usartSend;
   }
 #pragma pack(1)
@@ -36,9 +30,8 @@ class DecisionUsartSender : public BaseUsartSender {
     uint8_t header = 0xA5;
     uint8_t type = 1;  //第二种UsartSender
 
-    uint8_t fly_state;
-    uint8_t dart_state;
-    uint8_t hero_state;
+    uint8_t base_state;//0为开花
+    uint8_t out_post_state;//1是活着
 
     int16_t frame_id;
     uint16_t CRC16CheckSum;
@@ -47,31 +40,19 @@ class DecisionUsartSender : public BaseUsartSender {
 
  private:
   // tdttoolkit::BaseCommunicator *communicator;
-  rclcpp::Subscription<vision_interface::msg::RadarWarn>::SharedPtr
-      subscriber_;
-      rclcpp::Subscription<vision_interface::msg::RadarWarn>::SharedPtr
-      camera_subscriber_;
-    DecisionData send_data;
+  rclcpp::Subscription<vision_interface::msg::RadarWarn>::SharedPtr subscriber_;
+  DecisionData send_data;
 
   std::function<bool(const void*, int)> usartSend_;
 
   int frame_id = 0;
 
-  void camera_callback(const vision_interface::msg::RadarWarn::SharedPtr msg) {
-    send_data.hero_state = msg->hero_state;
-
-    send_data.frame_id = frame_id++;
-    CRC::AppendCRC16CheckSum((uint8_t*)&(send_data), sizeof(send_data));
-    usartSend_(&send_data, sizeof(send_data));
-  }
-
-  void Callback(
-      const std::shared_ptr<const vision_interface::msg::RadarWarn>
-          msg) {
+  void Callback(const std::shared_ptr<const vision_interface::msg::RadarWarn> msg) 
+  {
 
     
-    send_data.fly_state = msg->fly_state;
-    send_data.dart_state = msg->dart_state;
+    send_data.base_state = msg->base_state;
+    send_data.out_post_state = msg->out_post_state;
 
     send_data.frame_id = frame_id++;
     CRC::AppendCRC16CheckSum((uint8_t*)&(send_data), sizeof(send_data));

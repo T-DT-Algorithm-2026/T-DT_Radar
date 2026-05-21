@@ -683,8 +683,8 @@ public:
         auto time_used4 =
             std::chrono::duration_cast<std::chrono::duration<double>>(a4 -
                                                                       a3);
-        INFO("forward and decode_kernel_invoker time: %f",
-             time_used4.count() * 1000);
+        // INFO("forward and decode_kernel_invoker time: %f",
+        //      time_used4.count() * 1000);
         std::chrono ::high_resolution_clock::time_point a5 =
             std::chrono::high_resolution_clock::now();
         vector<BoxArray> arrout(num_image);

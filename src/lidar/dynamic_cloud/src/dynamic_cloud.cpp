@@ -146,9 +146,11 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();//计时
     geometry_msgs::msg::TransformStamped transform_stamped;//储存坐标变化
     auto ta=std::chrono::steady_clock::now();
-    try{
+    try
+    {
     transform_stamped = tf_buffer_.lookupTransform("rm_frame", msg->header.frame_id, tf2::TimePointZero);}
-    catch (tf2::TransformException &ex){
+    catch (tf2::TransformException &ex)
+    {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Transform error: %s", ex.what());
         return;
     }//获取最新的坐标系变化
@@ -185,7 +187,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             // 如果在飞机识别范围内：x(14,28-3.024) y(0,1.356+2.4) z(1.7,2.5)
             if((point.x>28-0.5889-0.1885&&point.x<28-0.5889)&&(point.y>3.925&&point.y<4.525)&&(point.z>2.4722-0.859+0.1&&point.z<2.4722)||
             (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)||
-            (point.x>0.5&&point.x<15)&&(point.y>15-1.356-2.4-0.8&&point.y<15-0.2)&&(point.z>1.7&&point.z<3))
+            (point.x>0.5&&point.x<15)&&(point.y>15-2.356-2.4-0.8&&point.y<15-0.2)&&(point.z>1.7&&point.z<3))
             {
                 other_filtered_cloud.push_back(point);
             }
