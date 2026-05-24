@@ -110,7 +110,10 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {    
     auto fly_have = [](pcl::PointXYZ &point) {
         return (point.x > 1 && point.x < 27) &&
-               (point.y > 0.2 && point.y < 14.8) &&
+               (point.y > 0.2 && point.y < 6) &&
+               (point.z > 1.7 && point.z < 3)||
+               (point.x > 1 && point.x < 27) &&
+               (point.y > 9 && point.y < 14.8) &&
                (point.z > 1.7 && point.z < 3);
     };//飞机存在
 
