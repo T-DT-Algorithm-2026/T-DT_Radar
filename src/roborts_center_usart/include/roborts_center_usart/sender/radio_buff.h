@@ -8,6 +8,7 @@
 
 #include "base_usart.h"
 #include "crc_tools.h"
+#include "radio_interface/msg/buff.hpp"
 #include "roborts_utils/roborts_utils.h"
 #include "usart.h"
 
@@ -18,13 +19,11 @@ class RadioBuffSender : public BaseUsartSender {
   void init_communicator(
       std::shared_ptr<rclcpp::Node> &node,
       std::function<bool(const void *, int)> usartSend) override {
-    
+    subscriber_ = node->create_subscription<radio_interface::msg::Buff>(
+        "radio_buff",
+        rclcpp::SensorDataQoS(),
+        std::bind(&RadioBuffSender::Callback, this, std::placeholders::_1));
     usartSend_ = usartSend;
-
-    // 直接启动 10ms 定时器，不再创建订阅者
-    timer_ = node->create_wall_timer(
-        std::chrono::milliseconds(11), 
-        std::bind(&RadioBuffSender::TimerCallback, this));
   }
 
 #pragma pack(1)
@@ -38,6 +37,7 @@ class RadioBuffSender : public BaseUsartSender {
     uint8_t defence[5];
     uint8_t undefence[5];
     uint16_t attack[5];
+    uint8_t sentry_posture;
 
     int16_t frame_id;
     uint16_t CRC16CheckSum;
@@ -45,34 +45,26 @@ class RadioBuffSender : public BaseUsartSender {
 #pragma pack()
 
  private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<radio_interface::msg::Buff>::SharedPtr subscriber_;
   std::function<bool(const void *, int)> usartSend_;
   int frame_id_ = 0;
 
-  void TimerCallback() {
+  void Callback(const std::shared_ptr<const radio_interface::msg::Buff> msg) {
     RadioBuff send_data;
-    
-
-    for(int i = 0; i < 5; i++) {
-      send_data.cooldown[i] = 0;
-      send_data.defence[i] = 100;
-      send_data.undefence[i] = 0;
-      send_data.attack[i] = 150;
+    for (int i = 0; i < 5; i++) {
+      send_data.heal[i] = msg->heal[i];
+      send_data.cooldown[i] = msg->cooldown[i];
+      send_data.defence[i] = msg->defence[i];
+      send_data.undefence[i] = msg->undefence[i];
+      send_data.attack[i] = msg->attack[i];
     }
-
-    // 4. 更新基础信息
-    // send_data.time_stamp = tdttoolkit::Time::GetTimeNow() / 1e3;
+    send_data.sentry_posture = msg->sentry_posture;
     send_data.frame_id = frame_id_++;
 
-    // 5. 计算校验并发送
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
-    
     if (usartSend_) {
-        usartSend_(&send_data, sizeof(send_data));
+      usartSend_(&send_data, sizeof(send_data));
     }
-    
-    // 可选：在终端打印一下确认程序正在跑
-    // TDT_INFO("Testing: Sending fixed Radio Data at 100Hz");
   }
 };
 

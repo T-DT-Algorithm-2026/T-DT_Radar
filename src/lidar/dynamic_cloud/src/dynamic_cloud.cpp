@@ -10,7 +10,7 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
     RCLCPP_INFO(this->get_logger(), "Dynamic_cloud Node start");
     //从pcd读取map
     auto temp_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/map.pcd", *temp_cloud) == -1)
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2025.pcd", *temp_cloud) == -1)
     {
         PCL_ERROR("Couldn't read file map.pcd \n");
     }
@@ -25,10 +25,8 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
 
     sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10, std::bind(&DynamicCloud::callback, this, std::placeholders::_1));
     pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_dynamic", 10);
-    other_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_other", 10);
     fly_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_fly", 10);
 
-    detect_pub_ = this->create_publisher<vision_interface::msg::RadarWarn>("/lidar_detect", 10);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Dynamic Cloud Launch!");
 }
 
@@ -110,33 +108,12 @@ void TransformCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud, pcl::PointCloud
 
 void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {    
-    vision_interface::msg::RadarWarn lidar_detect;
-    auto dart_cloud_filter = [](pcl::PointXYZ &point) {
-        return (point.x > 28 - 0.5889 - 0.1885 && point.x < 28 - 0.5889) &&
-               (point.y > 3.925 && point.y < 4.525) &&
-               (point.z > 2.4722 - 0.859 +0.1&& point.z < 2.4722);
-    };//飞镖检测
-    auto fly_safe_filter = [](pcl::PointXYZ &point) {
-        return (point.x > 28-2.775 && point.x < 27.5) &&
-                (point.y > 0.2 && point.y < 2.2) &&
-                (point.z > 1.7 && point.z < 3);
-    };//飞机起飞
-
-    auto fly_warn_filter = [](pcl::PointXYZ &point) {
-        return (point.x > 19.83 && point.x < 28-2.7) &&
-               (point.y > 0.2 && point.y < 1.356 + 2.4 + 0.8) &&
-               (point.z > 1.7 && point.z < 3);
-    };//飞机飞到半场
-
-    auto fly_alarm_filter = [](pcl::PointXYZ &point) {
-        return (point.x > 13 && point.x < 20.5) &&
-               (point.y > 0.2 && point.y < 1.356 + 2.4 + 0.8) &&
-               (point.z > 1.7 && point.z < 3);
-    };//飞机飞到中场
-
     auto fly_have = [](pcl::PointXYZ &point) {
         return (point.x > 1 && point.x < 27) &&
-               (point.y > 0.2 && point.y < 14.8) &&
+               (point.y > 0.2 && point.y < 6) &&
+               (point.z > 1.7 && point.z < 3)||
+               (point.x > 1 && point.x < 27) &&
+               (point.y > 9 && point.y < 14.8) &&
                (point.z > 1.7 && point.z < 3);
     };//飞机存在
 
@@ -183,11 +160,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))
         )
         {
-            // 如果在飞镖识别范围内：x(28-0.5889-0.1885,28-0.5889) y(3.925,4.525),z(2.7422-0.859,2.7422)
-            // 如果在飞机识别范围内：x(14,28-3.024) y(0,1.356+2.4) z(1.7,2.5)
-            if((point.x>28-0.5889-0.1885&&point.x<28-0.5889)&&(point.y>3.925&&point.y<4.525)&&(point.z>2.4722-0.859+0.1&&point.z<2.4722)||
-            (point.x>13&&point.x<27.5)&&(point.y>0.2&&point.y<1.356+2.4+0.8)&&(point.z>1.7&&point.z<3)||
-            (point.x>0.5&&point.x<15)&&(point.y>15-2.356-2.4-0.8&&point.y<15-0.2)&&(point.z>1.7&&point.z<3))
+            if(fly_have(point))
             {
                 other_filtered_cloud.push_back(point);
             }
@@ -198,7 +171,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     // std::cout << "filter time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     pcl::PointCloud<pcl::PointXYZ> dynamic_pointcloud;
     GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.05,12);//提取动态点云
-    ///TODO: 点云积分的代码比较重复，需要重构成一个class，维护那些积分的点云
 
     if(accumulate_count<accumulate_time){
         accumulated_clouds_.push_back(dynamic_pointcloud.makeShared());
@@ -229,8 +201,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     output.header.stamp = msg->header.stamp;
     pub_->publish(output);//发布动态点云(车)
 
-    pcl::toROSMsg(other_accumulated_cloud, output);
-    other_pub_->publish(output);//发布动态点云(飞镖和飞机)
     //筛除飞机点云并发布
     pcl::PointCloud<pcl::PointXYZ> fly_cloud;
     for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
@@ -244,73 +214,6 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     fly_cloud.header.frame_id = "rm_frame";
     pcl::toROSMsg(fly_cloud, output);
     fly_pub_->publish(output);//发布动态点云(飞机)
-
-    // 筛出飞镖点云
-    pcl::PointCloud<pcl::PointXYZ> dart_cloud;
-    for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
-    {
-        auto &point = other_accumulated_cloud.points[i];
-        if (dart_cloud_filter(point))
-        {
-            dart_cloud.push_back(point);
-        }
-    }
-    if(dart_cloud.size()>5){
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Find dart cloud!");
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Dart cloud size: %d", dart_cloud.size());
-        lidar_detect.dart_state = 1;
-    }
-
-    pcl::PointCloud<pcl::PointXYZ> fly_safe_cloud;
-    pcl::PointCloud<pcl::PointXYZ> fly_warn_cloud;
-    pcl::PointCloud<pcl::PointXYZ> fly_alarm_cloud;
-    for (size_t i = 0; i < other_accumulated_cloud.size(); i++)
-    {
-        auto &point = other_accumulated_cloud.points[i];
-        if (fly_safe_filter(point))
-        {
-            fly_safe_cloud.push_back(point);
-        }
-        if (fly_warn_filter(point))
-        {
-            fly_warn_cloud.push_back(point);
-        }
-        if (fly_alarm_filter(point))
-        {
-            fly_alarm_cloud.push_back(point);
-        }
-    }
-    if(fly_safe_cloud.size()>40){
-        lidar_detect.fly_state = 1;
-    }
-
-    if(fly_warn_cloud.size()>40){
-        lidar_detect.fly_state = 2;
-    }
-
-    if(fly_alarm_cloud.size()>40){
-        lidar_detect.fly_state = 3;
-    }
-    
-    switch (lidar_detect.fly_state)
-    {
-    case 0:
-        break;
-    case 1:
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Safe fly object detected!");
-        break;
-    case 2:
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Warn fly object detected!");
-        break;
-    case 3:
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Alarm fly object detected!");
-        break;
-    default:
-        break;
-    }
-
-    
-    detect_pub_->publish(lidar_detect);
     // std::cout << "publish time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "cloud size: %d", accumulated_cloud.points.size());
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

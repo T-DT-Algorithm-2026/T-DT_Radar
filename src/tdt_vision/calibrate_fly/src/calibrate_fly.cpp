@@ -17,7 +17,7 @@ namespace tdt_radar {
                 "camera2/image", rclcpp::SensorDataQoS(),
                 std::bind(&CalibrateFly::callback, this, std::placeholders::_1));
         compressed_image_sub = this->create_subscription<sensor_msgs::msg::CompressedImage>(
-                "compressed_image", rclcpp::SensorDataQoS(),
+                "compressed_image2", rclcpp::SensorDataQoS(),
                 std::bind(&CalibrateFly::compressed_callback, this, std::placeholders::_1));
         std::cout<<"Calibrate Fly end"<<std::endl;
     }

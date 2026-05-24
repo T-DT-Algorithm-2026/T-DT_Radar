@@ -3,6 +3,7 @@
 #include <vector>
 #include <deque>
 #include <mutex>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 #include "gimbal_interface/msg/gimbal_angle.hpp"
 #include "vision_interface/msg/resolve_result.hpp"
@@ -15,6 +16,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/point32.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
 #include "rclcpp_components/register_node_macro.hpp"
@@ -79,7 +81,13 @@ private:
     int patrol_state_ = 0;
 
     // cv::Point3f object_fly = cv::Point3f(4.0f, 15.0f, -1.0f);
-    cv::Point3f fly_pos;
+    cv::Point3f fly_pos = cv::Point3f(0.0f, 0.0f, 0.0f);
+    bool lidar_valid = false;
+    bool radar_angle_valid = false;
+    float radar_yaw = 0.0f;
+    float radar_pitch = 0.0f;
+    float radar_yaw_limit = 2.0f;
+    float radar_pitch_limit = 2.0f;
 
     // TF related
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

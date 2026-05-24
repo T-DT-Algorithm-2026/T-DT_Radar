@@ -1,0 +1,15 @@
+uint16 remaining_coin
+uint16 total_coin
+uint8 supply_area_occupied
+uint8 central_highland_status
+uint8 trapezoid_highland_occupied
+uint8 sentry_patrol_status
+uint8 front_sentry_gain_status
+uint8 base_gain_occupied
+uint8 enemy_front_channel_detected
+uint8 enemy_back_channel_detected
+uint8 own_front_channel_detected
+uint8 own_back_channel_detected
+uint8 highland_upper_detected
+uint8 flying_slope_back_detected
+uint8 highway_upper_detected

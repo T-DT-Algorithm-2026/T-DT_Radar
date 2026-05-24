@@ -15,6 +15,7 @@
 #include "sensor_msgs/msg/compressed_image.hpp"
 #include "vision_interface/msg/detect_result.hpp"
 #include "vision_interface/msg/fly_points.hpp"
+#include "vision_interface/msg/radar_warn.hpp"
 #include "yolos.hpp"
 #include "BaseInfer.hpp"
 #include <fstream>
@@ -42,6 +43,7 @@ private:
     std::shared_ptr<Infer<yolo::BoxArray>>     armor_yolo;
     std::shared_ptr<Infer<int>> classifier;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr pub;
+    rclcpp::Publisher<vision_interface::msg::RadarWarn>::SharedPtr radar_warn_pub;
 
     bool        if_rosbag = false;
     int         EnemyColor;  // 0为蓝色 2为红色

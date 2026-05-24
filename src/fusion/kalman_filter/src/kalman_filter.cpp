@@ -12,8 +12,8 @@ KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node
     radar_pub_ = this->create_publisher<vision_interface::msg::Radar2Sentry>("/radar2sentry", 10);
     radar_detect_pub_ = this->create_publisher<vision_interface::msg::DetectResult>("/kalman_detect", 10);
     sub_detect_= this->create_subscription<vision_interface::msg::DetectResult>("/resolve_result", rclcpp::SensorDataQoS(), std::bind(&KalmanFilter::detect_callback, this, std::placeholders::_1));
-    sub_lidar_ = this->create_subscription<vision_interface::msg::RadarWarn>("/lidar_detect", 10, std::bind(&KalmanFilter::lidar_callback, this, std::placeholders::_1));
     sub_match_ = this->create_subscription<vision_interface::msg::MatchInfo>("/match_info", 10, std::bind(&KalmanFilter::match_callback, this, std::placeholders::_1));
+    sub_radio_ = this->create_subscription<radio_interface::msg::Position>("robot_position", 10, std::bind(&KalmanFilter::radio_callback, this, std::placeholders::_1));
     
     RCLCPP_INFO(this->get_logger(), "Kalman_filter_Node has been started.");
 }
@@ -23,6 +23,35 @@ void KalmanFilter::match_callback(const vision_interface::msg::MatchInfo::Shared
     this->match_info = *msg;
     RCLCPP_INFO(this->get_logger(), "Match_info_callback");
 }//裁判系统的消息
+
+void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPtr msg)
+{
+    int target_start = -1;
+    if(match_info.self_color == 0)
+    {
+        target_start = 6;
+    }
+    else if(match_info.self_color == 1 || match_info.self_color == 2)
+    {
+        target_start = 0;
+    }
+
+    if(target_start < 0)
+    {
+        return;
+    }
+
+    auto radio_time = std::chrono::steady_clock::now();
+    for(int i = 0; i < 6; i++)
+    {
+        pcl::PointXY radio_point;
+        radio_point.x = static_cast<float>(msg->x[i]) / 100.0f;
+        radio_point.y = static_cast<float>(msg->y[i]) / 100.0f;
+        int radio_color = target_start == 0 ? 0 : 2;
+        arr[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
+    }
+    std::cout << "Radio_callback: Received radio position data." << std::endl;
+}
 
 void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg)//？获取点位信息？
 {
@@ -66,13 +95,6 @@ void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::Sh
     //     }
     // }
 }//获取相机的检测结果，雷达与相机进行匹配
-
-
-void KalmanFilter::lidar_callback(const vision_interface::msg::RadarWarn::SharedPtr msg)
-{
-    this->lidar_detect = *msg;
-    // RCLCPP_INFO(this->get_logger(), "Lidar_detect_callback");
-}//获取预警信息
 
 
 void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -330,4 +352,3 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 }
 }//namespace tdt_radar
 RCLCPP_COMPONENTS_REGISTER_NODE(tdt_radar::KalmanFilter)
-

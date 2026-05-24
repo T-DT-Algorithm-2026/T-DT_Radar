@@ -5,7 +5,6 @@
 #include <opencv4/opencv2/opencv.hpp>
 #include <vision_interface/msg/detect_result.hpp>
 #include <vision_interface/msg/radar2_sentry.hpp>
-#include <vision_interface/msg/radar_warn.hpp>
 #include <vision_interface/msg/match_info.hpp>
 #include <vision_interface/msg/fly_points.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -27,7 +26,6 @@ namespace tdt_radar {
                 "/livox/lidar_fly_cluster", 10, std::bind(&DebugMap::fly_callback, this, std::placeholders::_1));
             // radio_sub = this->create_subscription<vision_interface::msg::CameraResult>(
                 // "/radio_point", 10, std::bind(&DebugMap::radio_callback, this, std::placeholders::_1));
-            radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>("/hero_state", 10);
             debug_map_pub = this->create_publisher<sensor_msgs::msg::Image>("/map_2d", 10);
             radar2sentry_pub = this->create_publisher<vision_interface::msg::Radar2Sentry>("/Radar2Sentry", rclcpp::SensorDataQoS());
             cv::resize(map, map, cv::Size(28*25, 15*25));
@@ -122,54 +120,6 @@ namespace tdt_radar {
                 }
             }
             show_map();
-            vision_interface::msg::RadarWarn radar_warn;
-            if(hero_count1>10)
-            {
-                radar_warn.hero_state = 1;
-                radar_warn_pub->publish(radar_warn);
-            }
-            else if(hero_count2>10)
-            {
-                radar_warn.hero_state = 2;
-                radar_warn_pub->publish(radar_warn);
-            }
-            //1是吊射 2是自己家
-            if(match_info.self_color==0)
-            {//自己是蓝色 发送红色信息
-                if(red_point[0].x>(28-8.668))
-                {
-                    hero_count1++;
-                    hero_count2--;
-                }
-                else if(red_point[0].x<(28-20.3)&&red_point[0].x>(28-25.075)&&red_point[0].y<15&&red_point[0].y>10.3)
-                {
-                    hero_count1--;
-                    hero_count2++;
-                }
-                else
-                {
-                    hero_count1--;
-                    hero_count2--;
-                }
-            }
-            if(match_info.self_color==2)
-            {//自己是红色 发送蓝色信息
-                if(blue_point[0].x<8.668)
-                {
-                    hero_count1++;
-                    hero_count2--;
-                }
-                else if(blue_point[0].x>20.3&&blue_point[0].x<25.075&&blue_point[0].y>0&&blue_point[0].y<(15-10.3))
-                {
-                    hero_count1--;
-                    hero_count2++;
-                }
-                else
-                {
-                    hero_count1--;
-                    hero_count2--;
-                }
-            }
 
             vision_interface::msg::Radar2Sentry radar2sentry;
             if(match_info.self_color==0)
@@ -202,7 +152,8 @@ namespace tdt_radar {
                             //     radar2sentry.radar_enemy_y[i] = 6.947;
                             // }
                     }
-                    else{
+                    else
+                    {
                         //当mark在(105,117)间隔0.4s发送一次
                         if(match_info.marks[i]<105)
                         {
@@ -301,7 +252,6 @@ namespace tdt_radar {
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr detect_result_sub;
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr camera_detect_sub;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_map_pub;
-        rclcpp::Publisher<vision_interface::msg::RadarWarn>::SharedPtr radar_warn_pub;
         rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar2sentry_pub;
         rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr match_info_sub;//打标用
         rclcpp::Subscription<vision_interface::msg::FlyPoints>::SharedPtr fly_sub;//飞机坐标用
@@ -316,9 +266,6 @@ namespace tdt_radar {
         double blue_update[6];
         double red_update[6];
 
-        int hero_count1;
-        int hero_count2;
-        
         cv::Point2f blue_point[6];
         cv::Point2f red_point[6];
 

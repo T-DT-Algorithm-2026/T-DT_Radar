@@ -17,6 +17,7 @@
   <depend>pcl_msgs</depend>
   <depend>OpenCV</depend>
   <depend>vision_interface</depend>
+  <depend>radio_interface</depend>
   <depend>rclcpp_components</depend>
 
   <test_depend>ament_lint_auto</test_depend>

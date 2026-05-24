@@ -8,6 +8,7 @@
 
 #include "base_usart.h"
 #include "crc_tools.h"
+#include "radio_interface/msg/state.hpp"
 #include "roborts_utils/roborts_utils.h"
 #include "usart.h"
 
@@ -18,13 +19,11 @@ class RadioStateSender : public BaseUsartSender {
   void init_communicator(
       std::shared_ptr<rclcpp::Node> &node,
       std::function<bool(const void *, int)> usartSend) override {
-    
+    subscriber_ = node->create_subscription<radio_interface::msg::State>(
+        "radio_state",
+        rclcpp::SensorDataQoS(),
+        std::bind(&RadioStateSender::Callback, this, std::placeholders::_1));
     usartSend_ = usartSend;
-
-    // 直接启动 10ms 定时器，不再创建订阅者
-    timer_ = node->create_wall_timer(
-        std::chrono::milliseconds(13), 
-        std::bind(&RadioStateSender::TimerCallback, this));
   }
 
 #pragma pack(1)
@@ -62,40 +61,35 @@ class RadioStateSender : public BaseUsartSender {
 #pragma pack()
 
  private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<radio_interface::msg::State>::SharedPtr subscriber_;
   std::function<bool(const void *, int)> usartSend_;
   int frame_id_ = 0;
 
-  void TimerCallback() {
+  void Callback(const std::shared_ptr<const radio_interface::msg::State> msg) {
     RadioState send_data;
-    
-    // ==========================================
-    // 在这里设定你想测试的固定数据
-    // ==========================================
-    
-    // 1. 测试占领信息 (例如：己方占领前哨站和堡垒)
     send_data.event_status.raw_data = 0;
-    send_data.event_status.fields.outpost = 2;   // 2 代表己方
-    send_data.event_status.fields.fortress = 2;
-    send_data.event_status.fields.base = 1;      // 1 代表已占领
-    
-    // 2. 测试数值数据
-    send_data.economy = 2000;
-    send_data.uneconomy = 500;
+    send_data.event_status.fields.supply_zone = msg->supply_area_occupied;
+    send_data.event_status.fields.center_highland = msg->central_highland_status;
+    send_data.event_status.fields.trapezoid_highland = msg->trapezoid_highland_occupied;
+    send_data.event_status.fields.fortress = msg->sentry_patrol_status;
+    send_data.event_status.fields.outpost = msg->front_sentry_gain_status;
+    send_data.event_status.fields.base = msg->base_gain_occupied;
+    send_data.event_status.fields.tunnel_enemy_front = msg->enemy_front_channel_detected;
+    send_data.event_status.fields.tunnel_enemy_back = msg->enemy_back_channel_detected;
+    send_data.event_status.fields.tunnel_self_front = msg->own_front_channel_detected;
+    send_data.event_status.fields.tunnel_self_back = msg->own_back_channel_detected;
+    send_data.event_status.fields.module_highland = msg->highland_upper_detected;
+    send_data.event_status.fields.module_fly_ramp_back = msg->flying_slope_back_detected;
+    send_data.event_status.fields.module_highway_upper = msg->highway_upper_detected;
 
-    // 4. 更新基础信息
-    // send_data.time_stamp = tdttoolkit::Time::GetTimeNow() / 1e3;
+    send_data.economy = msg->remaining_coin;
+    send_data.uneconomy = msg->total_coin;
     send_data.frame_id = frame_id_++;
 
-    // 5. 计算校验并发送
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
-    
     if (usartSend_) {
-        usartSend_(&send_data, sizeof(send_data));
+      usartSend_(&send_data, sizeof(send_data));
     }
-    
-    // 可选：在终端打印一下确认程序正在跑
-    // TDT_INFO("Testing: Sending fixed Radio Data at 100Hz");
   }
 };
 

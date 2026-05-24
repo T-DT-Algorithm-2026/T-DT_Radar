@@ -16,7 +16,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 #include <pcl/filters/passthrough.h>
-#include <vision_interface/msg/radar_warn.hpp>
 
 namespace tdt_radar{
 class DynamicCloud : public rclcpp::Node
@@ -33,9 +32,7 @@ class DynamicCloud : public rclcpp::Node
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> other_accumulated_clouds_;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr other_pub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr fly_pub_;
-    rclcpp::Publisher<vision_interface::msg::RadarWarn>::SharedPtr detect_pub_;
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
     void GetDynamicCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud,pcl::PointCloud<pcl::PointXYZ> &output_cloud,float threshold,int thread_num);
     pcl::KdTreeFLANN<pcl::PointXYZ> kd_Tree;

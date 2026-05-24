@@ -18,16 +18,16 @@ namespace tdt_radar {
         fs["dist_coeffs"] >> dist_coeffs;
         fs.release();
 
-        real_points.push_back(right_low);
-        real_points.push_back(midle);
-        real_points.push_back(buffer);
-        real_points.push_back(right_behind);
-        real_points.push_back(left_behind);
-        // real_points.push_back(self_FORTRESS);
-        // real_points.push_back(self_Tower);
-        // real_points.push_back(enemy_Base);
-        // real_points.push_back(enemy_Tower);
-        // real_points.push_back(enemy_High);
+        // real_points.push_back(right_low);
+        // real_points.push_back(midle);
+        // real_points.push_back(buffer);
+        // real_points.push_back(right_behind);
+        // real_points.push_back(left_behind);
+        real_points.push_back(self_FORTRESS);
+        real_points.push_back(self_Tower);
+        real_points.push_back(enemy_Base);
+        real_points.push_back(enemy_Tower);
+        real_points.push_back(enemy_High);
         parser_ = new parser();
         
         RCLCPP_INFO(this->get_logger(),"\n" 

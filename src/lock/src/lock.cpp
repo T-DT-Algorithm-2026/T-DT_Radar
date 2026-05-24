@@ -165,6 +165,12 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     yaw = (yaw + final_yaw)*180.0/CV_PI;
     pitch = (pitch + final_pitch)*180.0/CV_PI;
 
+    if(radar_angle_valid)
+    {
+        yaw = std::clamp(yaw, radar_yaw - radar_yaw_limit, radar_yaw + radar_yaw_limit);
+        pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
+    }
+
     std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
     std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI<<std::endl;
 
@@ -189,6 +195,33 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 
 void Lock::timer_callback()
 {
+    if(lidar_valid)
+    {
+        geometry_msgs::msg::PointStamped point_base;
+        point_base.header.stamp = this->now();
+        point_base.header.frame_id = "pitch_link";
+        point_base.point.x = fly_pos.x;
+        point_base.point.y = fly_pos.y;
+        point_base.point.z = fly_pos.z;
+
+        geometry_msgs::msg::PointStamped point_cam;
+        tf2::doTransform(point_base, point_cam, static_transform_);
+        float cx = point_cam.point.x;
+        float cy = point_cam.point.y;
+        float cz = point_cam.point.z;
+        float dist_horizontal = std::sqrt(cx * cx + cy * cy);
+
+        if(dist_horizontal > 1e-3)
+        {
+            float yaw_err = std::atan2(cy, cx); 
+            float pitch_err = std::atan2(cz, dist_horizontal);
+
+            radar_yaw = yaw_err * (180.0f / CV_PI) - 2;
+            radar_pitch = pitch_err * (180.0f / CV_PI);
+            radar_angle_valid = true;
+        }
+    }
+
     // 如果超过 0.5 秒没有收到消息，则认为目标丢失，调用 find_callback
     if ((this->now() - last_msg_time_).seconds() > 1)
     {
@@ -199,42 +232,17 @@ void Lock::timer_callback()
 void Lock::find_callback()
 {
     RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "未接收到 detect_fly 消息，执行 find_callback 进行第一次锁定");
-    double t = rclcpp::Time(this->now()).seconds();
-
-    // 目标坐标在云台基座 (base_link) 坐标系下
-    geometry_msgs::msg::PointStamped point_base;
-    point_base.header.stamp = this->now();
-    point_base.header.frame_id = "pitch_link";
-    // point_base.point.x = fly_pos.y;
-    // point_base.point.y = -fly_pos.x;
-    // point_base.point.z = fly_pos.z;
-    point_base.point.x = fly_pos.x;
-    point_base.point.y = fly_pos.y;
-    point_base.point.z = fly_pos.z;
-    geometry_msgs::msg::PointStamped point_cam;
-    // 直接使用内部缓存的静态逆变换矩阵，避免查询 TF 树带来的延时和潜在异常
-    tf2::doTransform(point_base, point_cam, static_transform_);
-    float cx = point_cam.point.x;
-    float cy = point_cam.point.y;
-    float cz = point_cam.point.z;
-
-    float dist_horizontal = std::sqrt(cx * cx + cy * cy);
-    
-    // 在 camera_link 下 (X前, Y左, Z上)，计算目标偏离光轴的角度
-    // 偏航误差 (yaw_err) 是 Y 与 X 的夹角
-    float yaw_err = std::atan2(cy, cx); 
-    // 俯仰误差 (pitch_err) 是 Z 与水平面 的夹角
-    float pitch_err = std::atan2(cz, dist_horizontal);
-
-    float yaw_err_deg = yaw_err * (180.0f / CV_PI);
-    float pitch_err_deg = pitch_err * (180.0f / CV_PI);
+    if(!radar_angle_valid)
+    {
+        return;
+    }
 
     // 巡航逻辑
     patrol();
 
     // 将误差补偿到当前云台角度上，得到最终的绝对命令角度
-    float target_yaw = yaw_err_deg + yaw_cmd_first - 2;
-    float target_pitch = pitch_err_deg + pitch_cmd_first; 
+    float target_yaw = radar_yaw + yaw_cmd_first; // 雷达偏移补偿，经验值
+    float target_pitch = radar_pitch + pitch_cmd_first; 
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
@@ -253,11 +261,15 @@ void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
     fly_pos.x = msg->x;
     fly_pos.y = msg->y;
     fly_pos.z = msg->z;
+    lidar_valid = true;
     float distance = std::sqrt(fly_pos.x * fly_pos.x + fly_pos.y * fly_pos.y + fly_pos.z * fly_pos.z);
     
     // 如果启用了动态靶心，根据当前距离实时更新 target_x 和 target_y
-    target_x = A_x / distance + B_x;
-    target_y = A_y / distance + B_y;
+    if(distance > 1e-3)
+    {
+        target_x = A_x / distance + B_x;
+        target_y = A_y / distance + B_y;
+    }
 }
 
 void Lock::publish_static_tf() 

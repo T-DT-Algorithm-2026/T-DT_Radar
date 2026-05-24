@@ -25,7 +25,7 @@ namespace tdt_radar {
 class Localization : public rclcpp::Node {
 public:
     Localization(const rclcpp::NodeOptions& node_options) : Node("localization", node_options) {
-        std::string target_pcd_file = "config/map.pcd";
+        std::string target_pcd_file = "config/RM2025.pcd";
         // 从pcd读取场地点云
         target_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
         if (pcl::io::loadPCDFile(target_pcd_file, *target_cloud_)) {

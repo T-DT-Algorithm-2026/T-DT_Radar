@@ -6,7 +6,6 @@ radar_record:
     - /sentry2RadarData
     - /Radar2Sentry
     # - /hero_state
-    - /lidar_detect
     - /gimbalUsartData
     # - /GimbalPub
 
