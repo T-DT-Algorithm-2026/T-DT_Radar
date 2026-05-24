@@ -12,7 +12,6 @@ KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node
     radar_pub_ = this->create_publisher<vision_interface::msg::Radar2Sentry>("/radar2sentry", 10);
     radar_detect_pub_ = this->create_publisher<vision_interface::msg::DetectResult>("/kalman_detect", 10);
     sub_detect_= this->create_subscription<vision_interface::msg::DetectResult>("/resolve_result", rclcpp::SensorDataQoS(), std::bind(&KalmanFilter::detect_callback, this, std::placeholders::_1));
-    sub_lidar_ = this->create_subscription<vision_interface::msg::RadarWarn>("/lidar_detect", 10, std::bind(&KalmanFilter::lidar_callback, this, std::placeholders::_1));
     sub_match_ = this->create_subscription<vision_interface::msg::MatchInfo>("/match_info", 10, std::bind(&KalmanFilter::match_callback, this, std::placeholders::_1));
     sub_radio_ = this->create_subscription<radio_interface::msg::Position>("robot_position", 10, std::bind(&KalmanFilter::radio_callback, this, std::placeholders::_1));
     
@@ -96,13 +95,6 @@ void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::Sh
     //     }
     // }
 }//获取相机的检测结果，雷达与相机进行匹配
-
-
-void KalmanFilter::lidar_callback(const vision_interface::msg::RadarWarn::SharedPtr msg)
-{
-    this->lidar_detect = *msg;
-    // RCLCPP_INFO(this->get_logger(), "Lidar_detect_callback");
-}//获取预警信息
 
 
 void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
