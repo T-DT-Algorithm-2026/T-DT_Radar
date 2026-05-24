@@ -171,6 +171,8 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
         std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
+    radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>(
+        "lidar_detect", 10);
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
 }
 
@@ -182,25 +184,49 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         std::chrono::steady_clock::now();
     std::cout << "Detecting..." << std::endl;
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
-    
-    // static int frame_count = 0;
-    // frame_count++;
-    // if (frame_count % 5 == 0 && locate_points.size() == 4) {
-    //     cv::Rect rect1(locate_points[0], locate_points[1]);
-    //     cv::Rect rect2(locate_points[2], locate_points[3]);
+
+    if (locate_points.size() == 4) 
+    {
+        cv::Rect rect1(locate_points[0], locate_points[1]);
+        cv::Rect rect2(locate_points[2], locate_points[3]);
         
-    //     rect1 &= cv::Rect(0, 0, img.cols, img.rows);
-    //     rect2 &= cv::Rect(0, 0, img.cols, img.rows);
-        
-    //     if (rect1.area() > 0) {
-    //         cv::imwrite("/home/robot/location/out_post3/out_post" + std::to_string(frame_count) + ".png", img(rect1));
-    //     }
-    //     if (rect2.area() > 0) {
-    //         cv::imwrite("/home/robot/location/base3/base" + std::to_string(frame_count) + ".png", img(rect2));
-    //     }
-    //     cv::rectangle(img, rect1, cv::Scalar(0, 255, 0), 2);
-    //     cv::rectangle(img, rect2, cv::Scalar(255, 0, 0), 2);
-    // }
+        rect1 &= cv::Rect(0, 0, img.cols, img.rows);
+        rect2 &= cv::Rect(0, 0, img.cols, img.rows);
+
+        auto count_high_v = [&img](const cv::Rect& rect) {
+            if (rect.area() <= 0) {
+                return 0;
+            }
+
+            cv::Mat hsv_img;
+            cv::cvtColor(img(rect), hsv_img, cv::COLOR_BGR2HSV);
+            std::vector<cv::Mat> hsv_channels;
+            cv::split(hsv_img, hsv_channels);
+            cv::Mat v_mask;
+            cv::inRange(hsv_channels[2], 180, 255, v_mask);
+            return cv::countNonZero(v_mask);
+        };
+
+        int rect1_count = count_high_v(rect1);
+        int rect2_count = count_high_v(rect2);
+        int roi_count_sum = rect1_count + rect2_count;
+
+        std::cout << "Locate ROI V>=180 count: rect1=" << rect1_count
+                  << ", rect2=" << rect2_count
+                  << ", sum=" << roi_count_sum << std::endl;
+
+        vision_interface::msg::RadarWarn lidar_detect;
+        lidar_detect.base_state = 1;
+        lidar_detect.out_post_state = roi_count_sum > 10 ? 1 : 0;
+        radar_warn_pub->publish(lidar_detect);
+
+        cv::rectangle(img, rect1, cv::Scalar(0, 255, 0), 2);
+        cv::rectangle(img, rect2, cv::Scalar(255, 0, 0), 2);
+        cv::putText(img, std::to_string(rect1_count), rect1.tl(),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 125), 2);
+        cv::putText(img, std::to_string(rect2_count), rect2.tl(),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 0, 0), 2);
+    }
 
     tdt_radar::Image image(img.data, img.cols, img.rows);
 
