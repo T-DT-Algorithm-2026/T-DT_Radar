@@ -1,27 +1,11 @@
-import os
-import sys
-import yaml
-from ament_index_python.packages import get_package_share_directory
-
-sys.path.append(os.path.join(get_package_share_directory('tdt_vision'), 'launch'))
-
-from launch_ros.descriptions import ComposableNode
-from launch_ros.actions import ComposableNodeContainer, Node
-from launch.actions import TimerAction, Shutdown
 from launch import LaunchDescription
-from ament_index_python.packages import get_package_share_directory
+from launch.actions import TimerAction
+from launch_ros.actions import LoadComposableNodes
+from launch_ros.descriptions import ComposableNode
+
 
 def generate_launch_description():
 
-    def get_camera_node(package, plugin):
-        return ComposableNode(
-            package=package,
-            plugin=plugin,
-            name='camera_node',
-            parameters=[{'config_path': '/home/robot/T-DT_Radar/config/config.json', 'auto_start': True}],
-            extra_arguments=[{'use_intra_process_comms': True}]
-        )
-        
     def get_radar_detect_fly_node(package, plugin):
         return ComposableNode(
             package=package,
@@ -29,52 +13,36 @@ def generate_launch_description():
             name='radar_detect_fly_node',
             extra_arguments=[{'use_intra_process_comms': True}]
         )
-        
-    def get_debug_node(package, plugin):
+
+    def get_lock_node(package, plugin):
         return ComposableNode(
             package=package,
             plugin=plugin,
-            name='debug_node',
+            name='lock_node',
             extra_arguments=[{'use_intra_process_comms': True}]
         )
-        
-    def get_record_node(package, plugin):
-        return ComposableNode(
-            package=package,
-            plugin=plugin,
-            name='record_node',
-            parameters=[ ] ,
-            extra_arguments=[{'use_intra_process_comms': True}]
-        )        
 
-    def get_camera_detector_container(camera_node,radar_detect_fly_node,debug_node,record_node):
-        return ComposableNodeContainer(
-            name='camera_detector_container',
-            namespace='',
-            package='rclcpp_components',
-            executable='component_container',
-            composable_node_descriptions=[
-                #变向设置启动顺序
-                camera_node,
-                radar_detect_fly_node,
-                debug_node,
-                # record_node
+    def get_radar_loader(radar_detect_fly_node, lock_node):
+        return TimerAction(
+            period=1.0,
+            actions=[
+                LoadComposableNodes(
+                    target_container='camera_detector_container',
+                    composable_node_descriptions=[
+                        #变向设置启动顺序
+                        radar_detect_fly_node,
+                        lock_node,
+                    ],
+                )
             ],
-            output='both',
-            emulate_tty=True,
-            on_exit=Shutdown(),
         )
-
 
     # 创建节点描述
-    camera_node = get_camera_node('tdt_vision', 'tdt_vision::TDTCameraNode')
     radar_detect_fly_node = get_radar_detect_fly_node('tdt_vision', 'tdt_radar::DetectFly')
-    tdt_debug_node = get_debug_node('tdt_vision', 'tdt_vision::NodeDebug')
-    record_node = get_record_node('databag_tool', 'BagRecorderNode')
+    lock_node = get_lock_node('tdt_lock', 'tdt_lock::Lock')
 
-
-    # 创建节点容器
-    cam_detector = get_camera_detector_container(camera_node,radar_detect_fly_node,tdt_debug_node,record_node)
+    # 加载到已有的相机检测容器中
+    radar_loader = get_radar_loader(radar_detect_fly_node, lock_node)
     return LaunchDescription([
-            cam_detector,
+            radar_loader,
         ])

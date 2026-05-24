@@ -9,6 +9,7 @@
 
 #include "base_usart.h"
 #include "crc_tools.h"
+#include "radio_interface/msg/password.hpp"
 #include "roborts_utils/roborts_utils.h"
 #include "usart.h"
 
@@ -18,15 +19,11 @@ class KeyUsartSender : public BaseUsartSender {
   void init_communicator(
       std::shared_ptr<rclcpp::Node> &node,
       std::function<bool(const void *, int)> usartSend) override {
-    
-    // 保存发送函数句柄
+    subscriber_ = node->create_subscription<radio_interface::msg::Password>(
+        "key_usart_sender",
+        rclcpp::SensorDataQoS(),
+        std::bind(&KeyUsartSender::Callback, this, std::placeholders::_1));
     usartSend_ = usartSend;
-
-    // 关键修改：创建一个定时器，主动、周期性地触发发送函数。
-    // 这里设置为 10 毫秒 (100Hz) 发送一次，你可以根据电控需求修改这个频率
-    timer_ = node->create_wall_timer(
-        std::chrono::milliseconds(10), 
-        std::bind(&KeyUsartSender::TimerCallback, this));
   }
 
 #pragma pack(1)
@@ -43,35 +40,21 @@ class KeyUsartSender : public BaseUsartSender {
 #pragma pack()
 
  private:
-  // 将原来的 subscriber_ 替换为 timer_
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<radio_interface::msg::Password>::SharedPtr subscriber_;
   std::function<bool(const void *, int)> usartSend_;
+  int frame_id_ = 0;
 
-  // 新增：定时器回调函数，不需要传入 msg 参数
-  void TimerCallback() {
+  void Callback(const std::shared_ptr<const radio_interface::msg::Password> msg) {
     KeyData send_data;
-    send_data.cmd = 2; // 这里你可以设置一个固定的命令字，或者根据需要修改为动态值
-    // 这里同样可以设置 key 数组的值，或者保持为默认的0，根据你的协议需求来定
-    send_data.key[0] = '5';
-    send_data.key[1] = '7';
-    send_data.key[2] = 'A';
-    send_data.key[3] = 'h';
-    send_data.key[4] = 'P';
-    send_data.key[5] = 'P';// 示例：设置第一个按键状态为1，表示按下
+    send_data.cmd = 1;
+    for (int i = 0; i < 6; i++) {
+      send_data.key[i] = msg->password[i];
+    }
+    send_data.frame_id = frame_id_++;
 
-    
-    // send_data.time_stamp = tdttoolkit::Time::GetTimeNow() / 1e3;
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
-    
-    // // 打印调试信息
-    // std::cout << "Gimbal Auto Send -> yaw: " << send_data.yaw 
-    //           << ", pitch: " << send_data.pitch 
-    //           << ", is_fire: " << send_data.is_fire << "\r" << std::flush;
-    // std::cout<<"single"<<std::endl;
-
-    // 执行串口发送
     if (usartSend_) {
-        usartSend_(&send_data, sizeof(send_data));
+      usartSend_(&send_data, sizeof(send_data));
     }
   }
 };

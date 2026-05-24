@@ -74,7 +74,7 @@ class SentryUsartRecver : public BaseUsartRecver {
     marker.pose.position.z = 0.1;
     marker_pub_->publish(marker);
 
-    TDT_INFO("Sentry Received&&Pub!");
+    // TDT_INFO("Sentry Received&&Pub!");
   }
   visualization_msgs::msg::Marker marker;
 

@@ -20,7 +20,7 @@ def generate_launch_description():
             package=package,
             plugin=plugin,
             name='camera_node',
-            parameters=[{'config_path': '/home/robot/T-DT_Radar/config/config.json', 'auto_start': True}],
+            parameters=[{'config_path': './config/config.json', 'auto_start': True}],
             extra_arguments=[{'use_intra_process_comms': True}]
         )
         

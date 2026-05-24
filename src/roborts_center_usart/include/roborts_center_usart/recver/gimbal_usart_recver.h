@@ -52,7 +52,7 @@ class GimbalUsartRecver : public BaseUsartRecver {
     usrtPub.force_flag = gimbal_data->force_flag;
     usrtPub.header.stamp = tdttoolkit::Time::GetRosTimeByTime(gimbal_data->time_stamp*1e6);
     // std::cout<<"cameraID:"<<gimbal_data->cameraID<<"signal:"<<gimbal_data->recieve_request_signal;
-    std::cout<<"Recive Gimbal Data: yaw="<<usrtPub.yaw<<" pitch="<<usrtPub.pitch<<std::endl;
+    // std::cout<<"Recive Gimbal Data: yaw="<<usrtPub.yaw<<" pitch="<<usrtPub.pitch<<std::endl;
     // std::cout<<"time:"<<usrtPub.header.stamp.sec << "." << usrtPub.header.stamp.nanosec<<std::endl;
 
     // 1. 构造时钟对象（建议使用 ROS 时钟，以便兼容仿真和回放）
@@ -65,7 +65,7 @@ class GimbalUsartRecver : public BaseUsartRecver {
     // std::cout << "Seconds: " << (uint32_t)now.seconds() << "." << (now.nanoseconds() % 1000000000) << std::endl;
 
     gimbalUsartData->publish(usrtPub);
-    TDT_INFO("Gimbal Received&&Pub!");
+    // TDT_INFO("Gimbal Received&&Pub!");
   }
   
   rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbalUsartData;

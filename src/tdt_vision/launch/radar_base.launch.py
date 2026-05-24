@@ -9,10 +9,11 @@ from launch_ros.descriptions import ComposableNode
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch.actions import TimerAction, Shutdown
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
+
     def get_camera_node(package, plugin):
         return ComposableNode(
             package=package,
@@ -22,34 +23,60 @@ def generate_launch_description():
             extra_arguments=[{'use_intra_process_comms': True}]
         )
 
-    def get_calibrate_fly_node(package, plugin):
+    def get_foxglove_node(package, plugin):
         return ComposableNode(
             package=package,
             plugin=plugin,
-            name='radar_calibrate_fly_node',
+            name='foxglove_bridge_node',
+            parameters=[{'send_buffer_limit': 1000000000}],
             extra_arguments=[{'use_intra_process_comms': True}]
         )
 
-    def get_camera_detector_container(camera_node, calib_fly_node):
+    def get_debug_node(package, plugin):
+        return ComposableNode(
+            package=package,
+            plugin=plugin,
+            name='debug_node',
+            extra_arguments=[{'use_intra_process_comms': True}]
+        )
+
+    def get_record_node(package, plugin):
+        return ComposableNode(
+            package=package,
+            plugin=plugin,
+            name='record_node',
+            parameters=[],
+            extra_arguments=[{'use_intra_process_comms': True}]
+        )
+
+    def get_camera_detector_container(camera_node, foxglove_node, debug_node, record_node):
         return ComposableNodeContainer(
             name='camera_detector_container',
             namespace='',
             package='rclcpp_components',
             executable='component_container',
             composable_node_descriptions=[
+                #变向设置启动顺序
                 camera_node,
-                calib_fly_node
+                foxglove_node,
+                debug_node,
+                record_node
             ],
             output='both',
             emulate_tty=True,
             on_exit=Shutdown(),
         )
 
+
+    # 创建节点描述
     camera_node = get_camera_node('tdt_vision', 'tdt_vision::TDTCameraNode')
-    calib_fly_node = get_calibrate_fly_node('tdt_vision', 'tdt_radar::CalibrateFly')
+    foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
+    tdt_debug_node = get_debug_node('tdt_vision', 'tdt_vision::NodeDebug')
+    record_node = get_record_node('databag_tool', 'BagRecorderNode')
 
-    cam_detector = get_camera_detector_container(camera_node, calib_fly_node)
 
+    # 创建节点容器
+    cam_detector = get_camera_detector_container(camera_node, foxglove_node, tdt_debug_node, record_node)
     return LaunchDescription([
-            cam_detector
+            cam_detector,
         ])

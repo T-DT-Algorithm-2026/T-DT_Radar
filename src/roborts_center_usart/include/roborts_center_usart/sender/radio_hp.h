@@ -8,6 +8,7 @@
 
 #include "base_usart.h"
 #include "crc_tools.h"
+#include "radio_interface/msg/hp.hpp"
 #include "roborts_utils/roborts_utils.h"
 #include "usart.h"
 
@@ -18,13 +19,11 @@ class RadioHpSender : public BaseUsartSender {
   void init_communicator(
       std::shared_ptr<rclcpp::Node> &node,
       std::function<bool(const void *, int)> usartSend) override {
-    
+    subscriber_ = node->create_subscription<radio_interface::msg::Hp>(
+        "radio_hp",
+        rclcpp::SensorDataQoS(),
+        std::bind(&RadioHpSender::Callback, this, std::placeholders::_1));
     usartSend_ = usartSend;
-
-    // 直接启动 10ms 定时器，不再创建订阅者
-    // timer_ = node->create_wall_timer(
-    //     std::chrono::milliseconds(10), 
-    //     std::bind(&RadioHpSender::TimerCallback, this));
   }
 
 #pragma pack(1)
@@ -41,31 +40,21 @@ class RadioHpSender : public BaseUsartSender {
 #pragma pack()
 
  private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<radio_interface::msg::Hp>::SharedPtr subscriber_;
   std::function<bool(const void *, int)> usartSend_;
   int frame_id_ = 0;
 
-  void TimerCallback() {
+  void Callback(const std::shared_ptr<const radio_interface::msg::Hp> msg) {
     RadioHp send_data;
-
-    // 3. 测试数组数据 (全部赋相同的值或者递增值)
-    for(int i = 0; i < 6; i++) {
-      send_data.hp[i] = 1 + i; // 1000, 1001...
+    for (int i = 0; i < 6; i++) {
+      send_data.hp[i] = msg->hp[i];
     }
-
-    // 4. 更新基础信息
-    // send_data.time_stamp = tdttoolkit::Time::GetTimeNow() / 1e3;
     send_data.frame_id = frame_id_++;
 
-    // 5. 计算校验并发送
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
-    
     if (usartSend_) {
-        usartSend_(&send_data, sizeof(send_data));
+      usartSend_(&send_data, sizeof(send_data));
     }
-    
-    // 可选：在终端打印一下确认程序正在跑
-    // TDT_INFO("Testing: Sending fixed Radio Data at 100Hz");
   }
 };
 

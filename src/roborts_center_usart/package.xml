@@ -22,6 +22,7 @@
   <depend>vision_interface</depend>
   <depend>visualization_msgs</depend>
   <depend>gimbal_interface</depend>
+  <depend>radio_interface</depend>
   
   <depend>roborts_utils</depend>
 
