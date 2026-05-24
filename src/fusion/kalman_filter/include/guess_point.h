@@ -19,55 +19,26 @@ public:
         {
             currentkf = std::make_shared<Kalman_filter_plus>(*KFs);  // 将裸指针转为智能指针
         }
-
-        // if (KFs && !lastkf) 
-        // {
-        //     currentkf = std::make_shared<Kalman_filter_plus>(*KFs);  // 将裸指针转为智能指针
-        // }//3
-        // else if (lastkf.get() == KFs) 
-        // {
-        //     currentkf = lastkf; 
-
-        // }//1
-        // else if (lastkf.get() != KFs && lastkf&&!currentkf) 
-        // {
-        //     float score_new = choice(KFs, point);
-        //     float score_old = choice(lastkf.get(), point);  // 获取裸指针用于计算
-        //     if (score_new > score_old) 
-        //     {
-        //         currentkf = std::make_shared<Kalman_filter_plus>(*KFs);  // 更新智能指针
-        //     }
-        //     else 
-        //     {
-        //         currentkf = lastkf; 
-        //     }
-        // }//2
-        // else if (currentkf&&currentkf.get() != KFs)
-        // {
-        //     float score_new = choice(KFs, point);
-        //     float score_old = choice(currentkf.get(), point);  // 获取裸指针用于计算
-        //     if (score_new > score_old) 
-        //     {
-        //         currentkf = std::make_shared<Kalman_filter_plus>(*KFs);  // 更新智能指针
-        //     }
-        // }//4
-        // else
-        // {
-        //     currentkf = nullptr;
-        // }        
     }
 
-    void test()
+    void set_radio_point(
+        const pcl::PointXY &input,
+        int input_color,
+        int input_number,
+        std::chrono::steady_clock::time_point input_time)
     {
-        // std::cout<<"color:";
-        // // std::cout<<color<<std::endl;
-        // std::cout<<"number";
-        // std::cout<<number<<std::endl;
-        // // std::cout<<"send_point";
-        // // std::cout<<send_point.x<<","<<send_point.y<<std::endl;
-        // std::cout<<"point";
-        // std::cout<<point.x<<","<<point.y<<std::endl;  
+        if(input.x == 0 && input.y == 0)
+        {
+            has_radio_point = false;
+            return;
+        }
+        radio_point = input;
+        radio_color = input_color;
+        radio_number = input_number;
+        radio_timer = input_time;
+        has_radio_point = true;
     }
+
 
     void deal_car() 
     {
@@ -81,26 +52,12 @@ public:
             currentkf = nullptr;
             timer = std::chrono::steady_clock::now();
         }
-        else if(in_zone1(point)) 
+        else if(radio_is_valid())
         {
-            float dt=get_time();
-            send_point = pcl::PointXY{point.x + dt*1, point.y};
-            if(send_point.x>14.5)
-            {
-                send_point.x=14.5;
-            }
-            if(dt>5.0)
-            {
-                send_point = pcl::PointXY{0, 0};
-            }
-        }
-        else if(in_zone2(point)) 
-        {
-            send_point = pcl::PointXY{4, 12};
-        }
-        else if(in_zone(point)||in_zone3(point)||in_zone4(point)) 
-        {
-            send_point = pcl::PointXY{point.x, point.y};
+            point = radio_point;
+            send_point = pcl::PointXY{radio_point.x, radio_point.y};
+            color = radio_color;
+            number = radio_number;
         }
         else 
         {
@@ -118,12 +75,12 @@ private:
     // std::shared_ptr<Kalman_filter_plus> lastkf;     // 使用智能指针
     pcl::PointXY point;
     std::chrono::steady_clock::time_point timer;             // 当前点
-
-    float choice(Kalman_filter_plus* kf, pcl::PointXY point) 
-    {
-        float distance = dist(kf->predict_point, point);
-        return kf->catch_last_time / (kf->miss_last_time );
-    }
+    pcl::PointXY radio_point{0, 0};
+    std::chrono::steady_clock::time_point radio_timer;
+    bool has_radio_point = false;
+    int radio_color = -1;
+    int radio_number = -1;
+    float radio_timeout = 0.5;
 
     float get_time() 
     { //两帧之间时间
@@ -134,49 +91,18 @@ private:
         return t;
     }
 
-    bool in_zone(pcl::PointXY point) 
+    bool radio_is_valid()
     {
-        if (point.x > 11 && point.x < 20 && point.y > 2 && point.y < 4) 
+        if(!has_radio_point)
         {
-            return true;
+            return false;
         }
-        return false;
-    }
-
-    bool in_zone1(pcl::PointXY point) 
-    {
-        if (point.x > 11 && point.x <= 13 && point.y > 13 && point.y < 14) 
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - radio_timer);
+        if(duration.count() / 1000.0 > radio_timeout)
         {
-            return true;
+            has_radio_point = false;
+            return false;
         }
-        return false;
-    }
-
-
-    bool in_zone2(pcl::PointXY point) 
-    {
-        if (point.x > 8 && point.x < 9.5 && point.y > 13 && point.y < 15) 
-        {
-            return true;
-        }
-        return false;
-    }
-
-    bool in_zone3(pcl::PointXY point) 
-    {
-        if (point.x > 18 && point.x < 22 && point.y > 12 && point.y < 13) 
-        {
-            return true;
-        }
-        return false;
-    }
-
-    bool in_zone4(pcl::PointXY point) 
-    {
-        if (point.x > 21 && point.x < 24 && point.y > 14 && point.y < 15) 
-        {
-            return true;
-        }
-        return false;
+        return true;
     }
 };

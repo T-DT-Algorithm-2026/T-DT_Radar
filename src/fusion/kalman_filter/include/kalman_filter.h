@@ -15,6 +15,7 @@
 #include <vision_interface/msg/radar2_sentry.hpp>
 #include <vision_interface/msg/radar_warn.hpp>
 #include <vision_interface/msg/match_info.hpp>
+#include <radio_interface/msg/position.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <Eigen/Dense>
 #include <limits>
@@ -32,6 +33,7 @@ class KalmanFilter :public rclcpp::Node
     rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr sub_detect_;
     rclcpp::Subscription<vision_interface::msg::RadarWarn>::SharedPtr sub_lidar_;
     rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr sub_match_;
+    rclcpp::Subscription<radio_interface::msg::Position>::SharedPtr sub_radio_;
     rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar_pub_;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr radar_detect_pub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
@@ -39,6 +41,7 @@ class KalmanFilter :public rclcpp::Node
     void detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg);
     void lidar_callback(const vision_interface::msg::RadarWarn::SharedPtr msg);
     void match_callback(const vision_interface::msg::MatchInfo::SharedPtr msg);
+    void radio_callback(const radio_interface::msg::Position::SharedPtr msg);
     std::vector<Kalman_filter_plus> KFs;
     car arr[12];
     vision_interface::msg::RadarWarn lidar_detect;
