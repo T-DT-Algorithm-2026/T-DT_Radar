@@ -46,6 +46,11 @@ namespace tdt_radar {
         // cv::Point3f buffer = cv::Point3f(13.296, -8, 2.246);
         // cv::Point3f right_behind = cv::Point3f(24.6, -4, 0.57);
         // cv::Point3f left_behind = cv::Point3f(22.7, -12.52,0.436);
+        // cv::Point3f self_FORTRESS   = cv::Point3f(5.487, -7.5, 0.0);
+        // cv::Point3f self_Tower = cv::Point3f(10.718, -11.36, 0.521);
+        // cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.243);
+        // cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.746);
+        // cv::Point3f enemy_High = cv::Point3f(22.31, -12.1, 0.6);
 
         
         explicit Calibrate(const rclcpp::NodeOptions &options);

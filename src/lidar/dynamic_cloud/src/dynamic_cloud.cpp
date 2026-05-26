@@ -111,10 +111,10 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     auto fly_have = [](pcl::PointXYZ &point) {
         return (point.x > 1 && point.x < 27) &&
                (point.y > 0.2 && point.y < 6) &&
-               (point.z > 1.7 && point.z < 3)||
+               (point.z > 1.9 && point.z < 3)||
                (point.x > 1 && point.x < 27) &&
                (point.y > 9 && point.y < 14.8) &&
-               (point.z > 1.7 && point.z < 3);
+               (point.z > 1.9 && point.z < 3);
     };//飞机存在
 
     auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();
@@ -156,8 +156,8 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             //或者y(11,12),x(23,24)不要
             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
             //画四个直线切割大资源岛
-            ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
-            (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))
+            ((21.5-2.6/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.6/sqrt(2))&&
+            (-6.5-1.05/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+1.05/sqrt(2)))
         )
         {
             if(fly_have(point))
