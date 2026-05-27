@@ -39,7 +39,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
         std::cout<<"Load yolo engine!"<<std::endl;
     }
     std::cout << "fly_path:" << fly_path << "\n";
-    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.7f, 0.45f);
+    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.6f, 0.45f);
     std::cout << "Load fly_yolo engine success!" << std::endl;
 
     cv::FileStorage fs2;
@@ -148,103 +148,104 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         // std::cout << "Detect Fly Time: " << time_used.count() * 1000 << "ms" << std::endl;
         return;
     }
+    auto best_result = std::max_element(
+        result.begin(), result.end(),
+        [](const yolo::Box& a, const yolo::Box& b) {
+            return a.confidence < b.confidence;
+        });
     if(result.size() > 1) 
     {
-        RCLCPP_INFO(this->get_logger(), "Too Many Fly!");
+        RCLCPP_INFO(this->get_logger(), "Too Many Fly! Select confidence: %.3f", best_result->confidence);
     }
     // std::cout<<"Detect Fly Num:"<<result.size()<<std::endl;
 
-    for(int i=0;i<result.size();i++)
+    auto fly_rect = cv::Rect(best_result->left, best_result->top,best_result->right - best_result->left, best_result->bottom - best_result->top);//1376
+    cv::rectangle(img, fly_rect, cv::Scalar(0, 255, 0), 1);
+    cv::Rect safe_rect = getSafeRect(img, fly_rect);
+    roi = img(safe_rect);
+
+    //预处理
+    cv::Mat hsv_img, bin_img;
+    cv::cvtColor(roi, hsv_img, cv::COLOR_BGR2HSV);     
+    std::vector<cv::Mat> hsv_channels;
+    cv::split(hsv_img, hsv_channels); 
+    cv::Mat v_channel = hsv_channels[2]; 
+    cv::threshold(v_channel, bin_img, 220, 255, cv::THRESH_BINARY);
+
+    float refined_x = fly_rect.x + fly_rect.width / 2.0f; 
+    float refined_y = fly_rect.y + fly_rect.height / 2.0f;
+
+    //找质心
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(bin_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);       
+    std::vector<cv::Point2f> centroids;
+    for (const auto& contour : contours) 
     {
-        
-        auto fly_rect = cv::Rect(result[i].left, result[i].top,result[i].right - result[i].left, result[i].bottom - result[i].top);//1376
-        cv::rectangle(img, fly_rect, cv::Scalar(0, 255, 0), 1);
-        cv::Rect safe_rect = getSafeRect(img, fly_rect);
-        roi = img(safe_rect);
-
-        //预处理
-        cv::Mat hsv_img, bin_img;
-        cv::cvtColor(roi, hsv_img, cv::COLOR_BGR2HSV);     
-        std::vector<cv::Mat> hsv_channels;
-        cv::split(hsv_img, hsv_channels); 
-        cv::Mat v_channel = hsv_channels[2]; 
-        cv::threshold(v_channel, bin_img, 220, 255, cv::THRESH_BINARY);
-
-        float refined_x = fly_rect.x + fly_rect.width / 2.0f; 
-        float refined_y = fly_rect.y + fly_rect.height / 2.0f;
-
-        //找质心
-        std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(bin_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);       
-        std::vector<cv::Point2f> centroids;
-        for (const auto& contour : contours) 
-        {
-            if (cv::contourArea(contour) > 5.0) 
-            { 
-                cv::Moments M = cv::moments(contour);
-                if (M.m00 > 0) 
-                {
-                    centroids.push_back(cv::Point2f(M.m10 / M.m00, M.m01 / M.m00));
-                }
+        if (cv::contourArea(contour) > 5.0) 
+        { 
+            cv::Moments M = cv::moments(contour);
+            if (M.m00 > 0) 
+            {
+                centroids.push_back(cv::Point2f(M.m10 / M.m00, M.m01 / M.m00));
             }
         }
-
-        if (centroids.size() >= 2) 
-        {
-            // Step 3: 动态上下半区分组
-            float mean_y = 0.0f;
-            for (const  auto& pt : centroids) 
-            {
-                mean_y += pt.y;
-            }
-            mean_y /= centroids.size();
-            std::vector<cv::Point2f> upper_pts;
-            std::vector<cv::Point2f> lower_pts;
-            for (const auto& pt : centroids) 
-            {
-                if (pt.y < mean_y) 
-                {
-                    upper_pts.push_back(pt);
-                }
-                else 
-                {
-                    lower_pts.push_back(pt);
-                }
-            }
-
-            //拟合直线中心
-            cv::Point2f upper_center, lower_center;
-            bool has_upper = getLineCenter(upper_pts, upper_center);
-            bool has_lower = getLineCenter(lower_pts, lower_center);
-
-            //得到中心
-            if (has_upper && has_lower) 
-            {
-                refined_x = safe_rect.x + (upper_center.x + lower_center.x) / 2.0f;
-                refined_y = safe_rect.y + (upper_center.y + lower_center.y) / 2.0f;
-            } 
-            else if (has_upper) 
-            { 
-                refined_x = safe_rect.x + upper_center.x;
-                refined_y = safe_rect.y + upper_center.y;
-            } 
-            else if (has_lower) 
-            {
-                refined_x = safe_rect.x + lower_center.x;
-                refined_y = safe_rect.y + lower_center.y;
-            }// 极限情况：一面被全遮挡
-        }
-
-        vision_interface::msg::DetectFly test_msg;
-        test_msg.x = refined_x;
-        test_msg.y = refined_y;
-        test_msg.header.stamp = time_stamp;
-        fly_pub_->publish(test_msg);
-        std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
-        std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
-        // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
-        cv::circle(img, cv::Point2f(test_msg.x, test_msg.y), 1, cv::Scalar(255, 255, 0), -1);
     }
+
+    if (centroids.size() >= 2) 
+    {
+        // Step 3: 动态上下半区分组
+        float mean_y = 0.0f;
+        for (const  auto& pt : centroids) 
+        {
+            mean_y += pt.y;
+        }
+        mean_y /= centroids.size();
+        std::vector<cv::Point2f> upper_pts;
+        std::vector<cv::Point2f> lower_pts;
+        for (const auto& pt : centroids) 
+        {
+            if (pt.y < mean_y) 
+            {
+                upper_pts.push_back(pt);
+            }
+            else 
+            {
+                lower_pts.push_back(pt);
+            }
+        }
+
+        //拟合直线中心
+        cv::Point2f upper_center, lower_center;
+        bool has_upper = getLineCenter(upper_pts, upper_center);
+        bool has_lower = getLineCenter(lower_pts, lower_center);
+
+        //得到中心
+        if (has_upper && has_lower) 
+        {
+            refined_x = safe_rect.x + (upper_center.x + lower_center.x) / 2.0f;
+            refined_y = safe_rect.y + (upper_center.y + lower_center.y) / 2.0f;
+        } 
+        else if (has_upper) 
+        { 
+            refined_x = safe_rect.x + upper_center.x;
+            refined_y = safe_rect.y + upper_center.y;
+        } 
+        else if (has_lower) 
+        {
+            refined_x = safe_rect.x + lower_center.x;
+            refined_y = safe_rect.y + lower_center.y;
+        }// 极限情况：一面被全遮挡
+    }
+
+    vision_interface::msg::DetectFly test_msg;
+    test_msg.x = refined_x;
+    test_msg.y = refined_y;
+    test_msg.header.stamp = time_stamp;
+    fly_pub_->publish(test_msg);
+    std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
+    // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
+    cv::circle(img, cv::Point2f(test_msg.x, test_msg.y), 1, cv::Scalar(255, 255, 0), -1);
 
     if((this->now().seconds() - lidar_time.seconds()) < 1)
     {

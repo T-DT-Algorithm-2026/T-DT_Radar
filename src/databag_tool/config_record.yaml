@@ -7,7 +7,13 @@ radar_record:
     - /Radar2Sentry
     # - /hero_state
     - /gimbalUsartData
-    # - /GimbalPub
+    - /GimbalPub
+    - /lidar_detect
+    - /key_usart_sender
+    - /radio_buff
+    - /radio_fire
+    - /radio_hp
+    - /radio_state
 
 # 设置 数据集文件夹 相对于本yaml文件所在文件夹的储存位置：path = "...src/databag_tool/" + bags_relative_path , 用于 record 和 merge
 bags_relative_path: ../../ros2bags/
