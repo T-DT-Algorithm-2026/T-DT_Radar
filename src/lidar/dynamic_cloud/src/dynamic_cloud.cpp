@@ -10,7 +10,7 @@ DynamicCloud::DynamicCloud(const rclcpp::NodeOptions& node_options):rclcpp::Node
     RCLCPP_INFO(this->get_logger(), "Dynamic_cloud Node start");
     //从pcd读取map
     auto temp_cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2025.pcd", *temp_cloud) == -1)
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>("config/RM2026.pcd", *temp_cloud) == -1)
     {
         PCL_ERROR("Couldn't read file map.pcd \n");
     }
@@ -109,10 +109,10 @@ void TransformCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud, pcl::PointCloud
 void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {    
     auto fly_have = [](pcl::PointXYZ &point) {
-        return (point.x > 1 && point.x < 27) &&
+        return (point.x > 1 && point.x < 16.7) &&
                (point.y > 0.2 && point.y < 6) &&
                (point.z > 1.9 && point.z < 3)||
-               (point.x > 1 && point.x < 27) &&
+               (point.x > 11.3 && point.x < 27) &&
                (point.y > 9 && point.y < 14.8) &&
                (point.z > 1.9 && point.z < 3);
     };//飞机存在
@@ -170,7 +170,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }//点云筛选
     // std::cout << "filter time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     pcl::PointCloud<pcl::PointXYZ> dynamic_pointcloud;
-    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.05,12);//提取动态点云
+    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.1,12);//提取动态点云
 
     if(accumulate_count<accumulate_time){
         accumulated_clouds_.push_back(dynamic_pointcloud.makeShared());

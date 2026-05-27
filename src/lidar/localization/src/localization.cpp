@@ -25,7 +25,7 @@ namespace tdt_radar {
 class Localization : public rclcpp::Node {
 public:
     Localization(const rclcpp::NodeOptions& node_options) : Node("localization", node_options) {
-        std::string target_pcd_file = "config/RM2025.pcd";
+        std::string target_pcd_file = "config/RM2026.pcd";
         // 从pcd读取场地点云
         target_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
         if (pcl::io::loadPCDFile(target_pcd_file, *target_cloud_)) {
@@ -140,7 +140,7 @@ private:
         // std::cout << "calib time   : " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "[msec]" << std::endl;
         RCLCPP_WARN(this->get_logger(), "calib result : %f", registration->getFitnessScore());
 
-        if(registration->getFitnessScore()<2){
+        if(registration->getFitnessScore()<0.2){
         has_aligned_ = true;}
 
         //打印变换矩阵

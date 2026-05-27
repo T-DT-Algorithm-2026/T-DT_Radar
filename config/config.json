@@ -9,14 +9,14 @@
                 "PixelFormat": "BayerRG8",
                 "Width": 4096,
                 "Height": 3000,
-                "ExposureTime": 2000.0,
+                "ExposureTime": 3500.0,
                 "GammaEnable": true,
-                "Gamma": 0.6,
-                "Gain": 12.0,
+                "Gamma": 0.8,
+                "Gain": 8.0,
                 "BalanceWhiteAuto": "Continuous",
                 "BlackLevel": 240,
                 "FrameSpecInfoMask": 40,
-                "AcquisitionFrameRateEnable": false,
+                "AcquisitionFrameRateEnable": true,
                 "AcquisitionFrameRate": 10.0,
                 "TriggerMode": "Off"
             }

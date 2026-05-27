@@ -36,21 +36,21 @@ namespace tdt_radar {
         std::vector<cv::Point3f> real_points;
         
 
-        cv::Point3f self_FORTRESS   = cv::Point3f(5.471, -7.5, 0.0);
-        cv::Point3f self_Tower = cv::Point3f(10.936, -11.161, 0.868);
-        cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.24524);
-        cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.745);
-        cv::Point3f enemy_High = cv::Point3f(20.20, -10.8, 0.8);
+        // cv::Point3f self_FORTRESS   = cv::Point3f(5.471, -7.5, 0.0);
+        // cv::Point3f self_Tower = cv::Point3f(10.936, -11.161, 0.868);
+        // cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.24524);
+        // cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.745);
+        // cv::Point3f enemy_High = cv::Point3f(20.20, -10.8, 0.8);
         // cv::Point3f right_low = cv::Point3f(7.23, -11.635, 0.18);
         // cv::Point3f midle= cv::Point3f(10.206, -5.92, 0.338);
         // cv::Point3f buffer = cv::Point3f(13.296, -8, 2.246);
         // cv::Point3f right_behind = cv::Point3f(24.6, -4, 0.57);
         // cv::Point3f left_behind = cv::Point3f(22.7, -12.52,0.436);
-        // cv::Point3f self_FORTRESS   = cv::Point3f(5.487, -7.5, 0.0);
-        // cv::Point3f self_Tower = cv::Point3f(10.718, -11.36, 0.521);
-        // cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.243);
-        // cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.746);
-        // cv::Point3f enemy_High = cv::Point3f(22.31, -12.1, 0.6);
+        cv::Point3f self_FORTRESS   = cv::Point3f(5.487, -7.5, 0.0);
+        cv::Point3f self_Tower = cv::Point3f(10.718, -11.36, 0.521);
+        cv::Point3f enemy_Base  = cv::Point3f(25.49, -7.5, 1.243);
+        cv::Point3f enemy_Tower =cv::Point3f(16.925, -3.625, 1.746);
+        cv::Point3f enemy_High = cv::Point3f(22.31, -12.1, 0.6);
 
         
         explicit Calibrate(const rclcpp::NodeOptions &options);

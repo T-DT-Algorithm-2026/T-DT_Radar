@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 # 当接收到SIGINT信号时，结束脚本执行
-trap "echo 'Script terminated by user'; exit" SIGINT
+trap "echo 'Script terminated by user'; exec zsh" SIGINT
 export time=$(date +%Y-%m-%d-%H-%M-%S)
 
 # 获取脚本所在的绝对路径

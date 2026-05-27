@@ -10,7 +10,7 @@ PROGRAM="ros2 run roborts_center_usart roborts_center_usart"
 source ./install/setup.zsh
 
 # 当接收到SIGINT信号时，结束脚本执行
-trap "echo 'Script terminated by user'; exit" SIGINT
+trap "echo 'Script terminated by user'; exec zsh" SIGINT
 trap "exit;" SIGHUP
 while true
 do
