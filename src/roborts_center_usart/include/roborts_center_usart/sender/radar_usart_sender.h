@@ -61,8 +61,8 @@ class RadarUsartSender : public BaseUsartSender {
       send_data.radar_ally_x[i] = msg->radar_ally_x[i]*100;
       send_data.radar_ally_y[i] = msg->radar_ally_y[i]*100;
     }
-            std::cout<<"ally"<<send_data.radar_ally_x[0]<<" "<<send_data.radar_ally_y[0]<<std::endl;
-    std::cout<<"enemy"<<send_data.radar_enemy_x[0]<<" "<<send_data.radar_enemy_y[0]<<std::endl;
+    //         std::cout<<"ally"<<send_data.radar_ally_x[0]<<" "<<send_data.radar_ally_y[0]<<std::endl;
+    // std::cout<<"enemy"<<send_data.radar_enemy_x[0]<<" "<<send_data.radar_enemy_y[0]<<std::endl;
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
 
     usartSend_(&send_data, sizeof(send_data));

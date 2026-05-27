@@ -182,7 +182,8 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     //           << std::endl;
     std::chrono::steady_clock::time_point begin =
         std::chrono::steady_clock::now();
-    std::cout << "Detecting..." << std::endl;
+    // std::cout << "Detecting..." << std::endl;
+    TDT_INFO("Detect!");
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
 
     if (locate_points.size() == 4) 
@@ -211,9 +212,9 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         int rect2_count = count_high_v(rect2);
         int roi_count_sum = rect1_count + rect2_count;
 
-        std::cout << "Locate ROI V>=180 count: rect1=" << rect1_count
-                  << ", rect2=" << rect2_count
-                  << ", sum=" << roi_count_sum << std::endl;
+        // std::cout << "Locate ROI V>=180 count: rect1=" << rect1_count
+        //           << ", rect2=" << rect2_count
+        //           << ", sum=" << roi_count_sum << std::endl;
 
         vision_interface::msg::RadarWarn lidar_detect;
         lidar_detect.base_state = 1;
@@ -434,8 +435,8 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
                                                                   begin);
     // RCLCPP_INFO(this->get_logger(), "Time used: %fms",
     // time_used.count()*1000);
-    std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
-              << std::endl;
+    // std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
+    //           << std::endl;
     
 // if(fly_point.z && fly_point.x && fly_point.y)
 // {

@@ -62,7 +62,7 @@ class GimbalUsartSender : public BaseUsartSender {
 
     if (delta_t > 0) {
         double frequency = 1.0 / delta_t;
-        std::cout << "Real-time Frequency: " << frequency << " Hz" << std::endl;
+        // std::cout << "Real-time Frequency: " << frequency << " Hz" << std::endl;
     }
     // --- 实时频率计算结束 ---
     GimbalData send_data;
@@ -70,7 +70,7 @@ class GimbalUsartSender : public BaseUsartSender {
     send_data.pitch = -msg->pitch;
     send_data.is_fire = msg->is_fire;
     send_data.force_flag = msg->force_flag;
-    std::cout<<"Send Gimbal Data: yaw="<<send_data.yaw<<" pitch="<<send_data.pitch<<std::endl;
+    // std::cout<<"Send Gimbal Data: yaw="<<send_data.yaw<<" pitch="<<send_data.pitch<<std::endl;
     // send_data.yaw = 0;
     // send_data.pitch = 0;
     // send_data.is_fire = 1;

@@ -216,8 +216,8 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     fly_pub_->publish(output);//发布动态点云(飞机)
     // std::cout << "publish time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "cloud size: %d", accumulated_cloud.points.size());
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Dynamic callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
+//     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Dynamic callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
 }
 }//namespace tdt_radar
 

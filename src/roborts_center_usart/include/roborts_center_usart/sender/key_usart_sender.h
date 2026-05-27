@@ -46,9 +46,10 @@ class KeyUsartSender : public BaseUsartSender {
 
   void Callback(const std::shared_ptr<const radio_interface::msg::Password> msg) {
     KeyData send_data;
-    send_data.cmd = 1;
+    send_data.cmd = 2;
     for (int i = 0; i < 6; i++) {
       send_data.key[i] = msg->password[i];
+      // send_data.key[i] = msg->password[5 - i];
     }
     send_data.frame_id = frame_id_++;
 

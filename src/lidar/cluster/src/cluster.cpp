@@ -84,14 +84,14 @@ void Cluster::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     output.header.frame_id = "rm_frame";
     output.header.stamp = msg->header.stamp;
     pub_->publish(output);
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    RCLCPP_INFO(this->get_logger(), "Cluster callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
+//     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//     RCLCPP_INFO(this->get_logger(), "Cluster callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
 }
 
 
 void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-    std::cout<<"找到飞机"<<std::endl;
+    // std::cout<<"找到飞机"<<std::endl;
     try 
     {
         transform_stamped = tf_buffer_.lookupTransform("rm_frame", "livox_frame", tf2::TimePointZero);
@@ -110,7 +110,7 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     double lidar_x = transform_stamped.transform.translation.x;
     double lidar_y = transform_stamped.transform.translation.y;
     double lidar_z = transform_stamped.transform.translation.z;
-    std::cout << "雷达在地图中的坐标: " << lidar_x <<" "<< lidar_y <<" "<< lidar_z <<std::endl;
+    // std::cout << "雷达在地图中的坐标: " << lidar_x <<" "<< lidar_y <<" "<< lidar_z <<std::endl;
 
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud);
@@ -176,7 +176,8 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_enemy_y = 0.0;
             fly_points_msg.fly_enemy_z = 0.0;
         }
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
+        // std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
+        RCLCPP_INFO(this->get_logger(), "检测到一个飞机");
         // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
     }
     if(clouds.size() >= 2)
@@ -200,10 +201,11 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_enemy_y = clouds[0].y;
             fly_points_msg.fly_enemy_z = clouds[0].z;
         }   
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
+        // std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
+        RCLCPP_INFO(this->get_logger(), "检测到多个飞机");
         // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
     }
-    std::cout<<"成功"<<std::endl;
+    // std::cout<<"成功"<<std::endl;
     fly_pub_->publish(fly_points_msg);
 
     tf2::Quaternion q(

@@ -67,7 +67,7 @@ class MessageUsartSender : public BaseUsartSender {
     send_data.frame_id = frame_id++;
     CRC::AppendCRC16CheckSum((uint8_t *)&(send_data), sizeof(send_data));
     usartSend_(&send_data, sizeof(send_data));
-    TDT_INFO("Send Message");
+    // TDT_INFO("Send Message");
   }
 };
 
