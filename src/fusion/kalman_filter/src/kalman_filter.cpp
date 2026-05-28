@@ -55,6 +55,7 @@ void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPt
         int radio_color = target_start == 0 ? 0 : 2;
         arr[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
     }
+    publish_car_results(this->now());
     std::cout << "Radio_callback: Received radio position data." << std::endl;
 }
 
@@ -125,7 +126,10 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         cloud_xy->points.push_back(point_xy);
     }//三维传二维？
     if(cloud_xy->points.size() == 0)
+    {
+        publish_car_results(time);
         return;//没有点的处理
+    }
     for(auto &kf : KFs) 
     {
         kf.update_predict_point();//先验//提供预测点，无测量点//雷达点
@@ -238,122 +242,141 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 }
                 // kf.test();
             }//为赋值给car作准备
-            for (auto &kf : KFs) 
-            {
-                if(kf.new_id>=0&&kf.new_id<12)
-                {
-                    arr[kf.new_id].getcar(&kf);
-                } 
-            }
-            for(auto &car: arr)
-            {
-                car.deal_car();
-                // car.test();
-            }
         }//卡尔曼匹配
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-        for(int i = KFs.size() - 1; i >= 0; i--) 
-        {
-            if ((KFs[i].miss_last_time) > 1.5) 
-            {
-                KFs.erase(KFs.begin() + i);
-                // std::cout<<"delete kf"<<std::endl;
-            } 
-            else 
-            {
-                // if(KFs[i].has_updated)
-                // {
-                pcl::PointXYZRGB point;
-                point.x = KFs[i].predict_point.x;
-                point.y = KFs[i].predict_point.y;
-                point.z = 1.5;//？这是什么依据？
-                // int color = KFs[i].get_color();
-                int color = KFs[i].now_color;
-                switch (color) {
-                    case 0:
-                        point.b = 255;
-                        break;
-
-                    case 2:
-                        point.r = 255;
-                        break;
-                    
-                    default:
-                        point.r = KFs[i].color[0];
-                        point.g = KFs[i].color[1];
-                        point.b = KFs[i].color[2];
-                        break;
-                }
-                cloud_filtered->points.push_back(point);
-                // }
-            }//赋予颜色
-        }
-
-        cloud_filtered->header.frame_id = "rm_frame";
-        sensor_msgs::msg::PointCloud2 output;
-        pcl::toROSMsg(*cloud_filtered, output);
-        output.header.frame_id = "rm_frame";
-        output.header.stamp = msg->header.stamp;
-        pub_->publish(output);///livox/lidar_kalman//制作测试作用
-        auto end_time = std::chrono::steady_clock::now();
-        float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
-        // RCLCPP_INFO(this->get_logger(), "Kalman Callback time is %f ms", dur_time);
-        vision_interface::msg::DetectResult detect_msg;
-        for(auto car: arr)//从前到后
-        {
-            if(car.send_point.x==0&&car.send_point.y==0)continue;
-            if(car.color == 0)//蓝色
-            {
-                int number= car.number;
-                detect_msg.blue_x[number] = car.send_point.x;
-                detect_msg.blue_y[number] = car.send_point.y;
-            }
-            if(car.color == 2)//红色
-            {
-                int number= car. number;
-                detect_msg.red_x[number] = car.send_point.x;
-                detect_msg.red_y[number] = car.send_point.y;
-            }
-        }
-        // if(match_info.self_color==0)
-        // {
-        //     detect_msg.blue_x[4]=point_fly.x;
-        //     detect_msg.blue_y[4]=point_fly.y;
-        // }
-        // if(match_info.self_color==2)
-        // {
-        //     detect_msg.red_x[4]=point_fly.x;
-        //     detect_msg.red_y[4]=point_fly.y;
-        // }
-        if(match_info.self_color==0)
-        {
-            for(int i=0;i<6;i++)
-            {
-                if(detect_msg.blue_x[i]!=0&&detect_msg.blue_y[i]!=0)
-                {
-                    detect_msg.blue_x[i]=28-detect_msg.blue_x[i];
-                    detect_msg.blue_y[i]=15-detect_msg.blue_y[i];
-                }
-                if(detect_msg.red_x[i]!=0&&detect_msg.red_y[i]!=0)
-                {
-                    detect_msg.red_x[i]=28-detect_msg.red_x[i];
-                    detect_msg.red_y[i]=15-detect_msg.red_y[i];
-                }
-            }
-        }//优先发布新匹配的点
-        radar_detect_pub_->publish(detect_msg);///kalman_detect
-
-        vision_interface::msg::Radar2Sentry radar_msg;
-        if(match_info.self_color==0)
-        {
-            for(int i=0;i<6;i++)
-            {
-                radar_msg.radar_enemy_x[i]=detect_msg.red_x[i];
-                radar_msg.radar_enemy_y[i]=detect_msg.red_y[i];
-            }
-        }    
-        radar_pub_->publish(radar_msg);///radar2sentry
     }
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
+    for(int i = KFs.size() - 1; i >= 0; i--)
+    {
+        if ((KFs[i].miss_last_time) > 1.5)
+        {
+            KFs.erase(KFs.begin() + i);
+            // std::cout<<"delete kf"<<std::endl;
+        }
+        else
+        {
+            // if(KFs[i].has_updated)
+            // {
+            pcl::PointXYZRGB point;
+            point.x = KFs[i].predict_point.x;
+            point.y = KFs[i].predict_point.y;
+            point.z = 1.5;//？这是什么依据？
+            // int color = KFs[i].get_color();
+            int color = KFs[i].now_color;
+            switch (color) {
+                case 0:
+                    point.b = 255;
+                    break;
+
+                case 2:
+                    point.r = 255;
+                    break;
+
+                default:
+                    point.r = KFs[i].color[0];
+                    point.g = KFs[i].color[1];
+                    point.b = KFs[i].color[2];
+                    break;
+            }
+            cloud_filtered->points.push_back(point);
+            // }
+        }//赋予颜色
+    }
+
+    cloud_filtered->header.frame_id = "rm_frame";
+    sensor_msgs::msg::PointCloud2 output;
+    pcl::toROSMsg(*cloud_filtered, output);
+    output.header.frame_id = "rm_frame";
+    output.header.stamp = msg->header.stamp;
+    pub_->publish(output);///livox/lidar_kalman//制作测试作用
+    auto end_time = std::chrono::steady_clock::now();
+    float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
+    // RCLCPP_INFO(this->get_logger(), "Kalman Callback time is %f ms", dur_time);
+    publish_car_results(time);
+}
+
+void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
+{
+    for (auto &kf : KFs)
+    {
+        if(kf.new_id>=0&&kf.new_id<12)
+        {
+            arr[kf.new_id].getcar(&kf);
+        }
+    }
+
+    for(auto &car: arr)
+    {
+        car.deal_car();
+        // car.test();
+    }
+
+    vision_interface::msg::DetectResult detect_msg;
+    detect_msg.header.stamp = stamp;
+    detect_msg.header.frame_id = "rm_frame";
+    for(const auto &car: arr)//从前到后
+    {
+        if(car.send_point.x==0&&car.send_point.y==0)continue;
+        if(car.number < 0 || car.number >= 6)continue;
+        if(car.color == 0)//蓝色
+        {
+            int number= car.number;
+            detect_msg.blue_x[number] = car.send_point.x;
+            detect_msg.blue_y[number] = car.send_point.y;
+        }
+        if(car.color == 2)//红色
+        {
+            int number= car.number;
+            detect_msg.red_x[number] = car.send_point.x;
+            detect_msg.red_y[number] = car.send_point.y;
+        }
+    }
+    // if(match_info.self_color==0)
+    // {
+    //     detect_msg.blue_x[4]=point_fly.x;
+    //     detect_msg.blue_y[4]=point_fly.y;
+    // }
+    // if(match_info.self_color==2)
+    // {
+    //     detect_msg.red_x[4]=point_fly.x;
+    //     detect_msg.red_y[4]=point_fly.y;
+    // }
+    if(match_info.self_color==0)
+    {
+        for(int i=0;i<6;i++)
+        {
+            if(detect_msg.blue_x[i]!=0&&detect_msg.blue_y[i]!=0)
+            {
+                detect_msg.blue_x[i]=28-detect_msg.blue_x[i];
+                detect_msg.blue_y[i]=15-detect_msg.blue_y[i];
+            }
+            if(detect_msg.red_x[i]!=0&&detect_msg.red_y[i]!=0)
+            {
+                detect_msg.red_x[i]=28-detect_msg.red_x[i];
+                detect_msg.red_y[i]=15-detect_msg.red_y[i];
+            }
+        }
+    }//优先发布新匹配的点
+    radar_detect_pub_->publish(detect_msg);///kalman_detect
+
+    vision_interface::msg::Radar2Sentry radar_msg;
+    for(int i=0;i<6;i++)
+    {
+        if(match_info.self_color==0)
+        {
+            radar_msg.radar_enemy_x[i]=detect_msg.red_x[i];
+            radar_msg.radar_enemy_y[i]=detect_msg.red_y[i];
+            radar_msg.radar_ally_x[i]=detect_msg.blue_x[i];
+            radar_msg.radar_ally_y[i]=detect_msg.blue_y[i];
+        }
+        else if(match_info.self_color==2)
+        {
+            radar_msg.radar_enemy_x[i]=detect_msg.blue_x[i];
+            radar_msg.radar_enemy_y[i]=detect_msg.blue_y[i];
+            radar_msg.radar_ally_x[i]=detect_msg.red_x[i];
+            radar_msg.radar_ally_y[i]=detect_msg.red_y[i];
+        }
+    }
+    radar_pub_->publish(radar_msg);///radar2sentry
 }
 }//namespace tdt_radar
 RCLCPP_COMPONENTS_REGISTER_NODE(tdt_radar::KalmanFilter)

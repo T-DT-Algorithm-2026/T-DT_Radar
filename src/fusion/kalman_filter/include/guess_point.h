@@ -42,27 +42,27 @@ public:
 
     void deal_car() 
     {
-        if (currentkf&&currentkf->miss_last_time < 0.1) 
-        {
-            point = currentkf->predict_point;
-            // lastkf = currentkf;
-            send_point = pcl::PointXY{currentkf->predict_point.x, currentkf->predict_point.y};
-            color = currentkf->now_color;
-            number = currentkf->now_number;
-            currentkf = nullptr;
-            timer = std::chrono::steady_clock::now();
-        }
-        else if(radio_is_valid())
+        if(radio_is_valid())
         {
             point = radio_point;
             send_point = pcl::PointXY{radio_point.x, radio_point.y};
             color = radio_color;
             number = radio_number;
         }
+        else if (currentkf&&currentkf->miss_last_time < 0.1&&currentkf->get_time() < kalman_timeout)
+        {
+            point = currentkf->predict_point;
+            // lastkf = currentkf;
+            send_point = pcl::PointXY{currentkf->predict_point.x, currentkf->predict_point.y};
+            color = currentkf->now_color;
+            number = currentkf->now_number;
+            timer = std::chrono::steady_clock::now();
+        }
         else 
         {
             send_point = pcl::PointXY{0, 0};
         }
+        currentkf = nullptr;
         
     }
 
@@ -81,6 +81,7 @@ private:
     int radio_color = -1;
     int radio_number = -1;
     float radio_timeout = 0.5;
+    float kalman_timeout = 0.5;
 
     float get_time() 
     { //两帧之间时间
