@@ -39,7 +39,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
         std::cout<<"Load yolo engine!"<<std::endl;
     }
     std::cout << "fly_path:" << fly_path << "\n";
-    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.8f, 0.45f);
+    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.7f, 0.45f);
     std::cout << "Load fly_yolo engine success!" << std::endl;
 
     cv::FileStorage fs2;
