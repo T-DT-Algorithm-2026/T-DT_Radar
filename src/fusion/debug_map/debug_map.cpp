@@ -56,7 +56,7 @@ namespace tdt_radar {
                 }
             }
             if(fly_enemy_point.x*fly_enemy_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(28-fly_enemy_point.x)/28,clone_map.rows*(fly_enemy_point.y)/15);
+                    cv::Point2f point = cv::Point2f(clone_map.cols*(fly_enemy_point.x)/28,clone_map.rows*(15 - fly_enemy_point.y)/15);
                     cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
                     cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
                     cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
@@ -64,7 +64,7 @@ namespace tdt_radar {
                     cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
                 }
                 if(fly_ally_point.x*fly_ally_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(28-fly_ally_point.x)/28,clone_map.rows*(fly_ally_point.y)/15);
+                    cv::Point2f point = cv::Point2f(clone_map.cols*(fly_ally_point.x)/28,clone_map.rows*(15 - fly_ally_point.y)/15);
                     cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
                     cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
                     cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
@@ -141,9 +141,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_enemy_y[i] = red_point[i].y;
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                                 radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                                 radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                         }
@@ -164,9 +164,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_enemy_y[i] = red_point[i].y;
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                                 radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                                 radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }
@@ -179,9 +179,9 @@ namespace tdt_radar {
                                 radar2sentry.radar_enemy_y[i] = red_point[i].y; 
                                 radar2sentry.radar_ally_x[i] = blue_point[i].x;
                                 radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                                 radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                                 radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                         }
@@ -201,9 +201,9 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                             radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                             radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             }
                             // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
@@ -220,9 +220,9 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                             radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                             radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }else if(time-relax_time[i]>0.35){
@@ -232,9 +232,9 @@ namespace tdt_radar {
                             radar2sentry.radar_enemy_y[i] = blue_point[i].y;
                             radar2sentry.radar_ally_x[i] = red_point[i].x;
                             radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
+                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
                             radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
+                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
                             radar2sentry.radar_ally_y[4] = fly_ally_point.y;
                             } 
                         }
@@ -246,8 +246,14 @@ namespace tdt_radar {
 
         void fly_callback(const std::shared_ptr<vision_interface::msg::FlyPoints> msg)
         {
-            fly_enemy_point = cv::Point2f(msg->fly_enemy_x, msg->fly_enemy_y);
-            fly_ally_point = cv::Point2f(msg->fly_ally_x, msg->fly_ally_y);
+            if(match_info.self_color==2){
+                fly_enemy_point = cv::Point2f(msg->fly_enemy_x, msg->fly_enemy_y);
+                fly_ally_point = cv::Point2f(msg->fly_ally_x, msg->fly_ally_y);
+            }
+            else if(match_info.self_color==0){  
+            fly_enemy_point = cv::Point2f(28 - msg->fly_enemy_x, 15 - msg->fly_enemy_y);
+            fly_ally_point = cv::Point2f(28 - msg->fly_ally_x, 15 - msg->fly_ally_y);
+            }
         }
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr detect_result_sub;
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr camera_detect_sub;

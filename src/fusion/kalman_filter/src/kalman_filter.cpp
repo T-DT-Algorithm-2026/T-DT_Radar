@@ -47,6 +47,11 @@ void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPt
         pcl::PointXY radio_point;
         radio_point.x = static_cast<float>(msg->x[i]) / 100.0f;
         radio_point.y = static_cast<float>(msg->y[i]) / 100.0f;
+        if(match_info.self_color == 0)
+        {
+            radio_point.x = 28.0f - radio_point.x;
+            radio_point.y = 15.0f - radio_point.y;
+        }
         int radio_color = target_start == 0 ? 0 : 2;
         arr[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
     }
