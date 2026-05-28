@@ -9,12 +9,24 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <gimbal_interface/msg/gimbal_angle.hpp>
+#include <radio_interface/msg/buff.hpp>
+#include <radio_interface/msg/fire.hpp>
+#include <radio_interface/msg/hp.hpp>
+#include <radio_interface/msg/password.hpp>
+#include <radio_interface/msg/state.hpp>
 #include <vision_interface/msg/match_info.hpp>
+#include <vision_interface/msg/radar2_sentry.hpp>
+#include <vision_interface/msg/radar_warn.hpp>
+#include <vision_interface/msg/sentry2_radar.hpp>
+#include <csignal>
+#include <cstdlib>
 #include <thread>
 #include <std_msgs/msg/string.hpp>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <string>
 
 using namespace std::chrono_literals;
 
@@ -35,13 +47,23 @@ public:
         image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera1/image", rclcpp::SensorDataQoS());
         image2_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS());
         match_info_publisher_ = this->create_publisher<vision_interface::msg::MatchInfo>("/match_info", 10);
+        sentry2radar_publisher_ = this->create_publisher<vision_interface::msg::Sentry2Radar>("/sentry2RadarData", 10);
+        radar2sentry_publisher_ = this->create_publisher<vision_interface::msg::Radar2Sentry>("/Radar2Sentry", 10);
+        gimbal_usart_data_publisher_ = this->create_publisher<gimbal_interface::msg::GimbalAngle>("/gimbalUsartData", 10);
+        gimbal_pub_publisher_ = this->create_publisher<gimbal_interface::msg::GimbalAngle>("/GimbalPub", 10);
+        lidar_detect_publisher_ = this->create_publisher<vision_interface::msg::RadarWarn>("/lidar_detect", 10);
+        key_usart_sender_publisher_ = this->create_publisher<radio_interface::msg::Password>("/key_usart_sender", 10);
+        radio_buff_publisher_ = this->create_publisher<radio_interface::msg::Buff>("/radio_buff", 10);
+        radio_fire_publisher_ = this->create_publisher<radio_interface::msg::Fire>("/radio_fire", 10);
+        radio_hp_publisher_ = this->create_publisher<radio_interface::msg::Hp>("/radio_hp", 10);
+        radio_state_publisher_ = this->create_publisher<radio_interface::msg::State>("/radio_state", 10);
         // 订阅控制话题，用于 pause/resume/toggle
         control_sub_ = this->create_subscription<std_msgs::msg::String>(
             "rosbag_player/control", 10,
             std::bind(&RosbagPlayer::control_callback, this, std::placeholders::_1));
         signal(SIGINT, on_exit);
         // 创建一个新的线程来处理bag文件
-            reader_.open(rosbag_file);
+        reader_.open(rosbag_file);
 
         processing_thread_ = std::make_shared<std::thread>(&RosbagPlayer::play_bag, this);
     }
@@ -95,6 +117,44 @@ private:
                 serialization.deserialize_message(&serialized_msg, match_info_msg.get());
                 match_info_publisher_->publish(*match_info_msg);
             }
+            else if (bag_message->topic_name == "/sentry2RadarData") {
+                publish_serialized_message<vision_interface::msg::Sentry2Radar>(
+                    bag_message, sentry2radar_publisher_);
+            }
+            else if (bag_message->topic_name == "/Radar2Sentry") {
+                publish_serialized_message<vision_interface::msg::Radar2Sentry>(
+                    bag_message, radar2sentry_publisher_);
+            }
+            else if (bag_message->topic_name == "/gimbalUsartData") {
+                publish_gimbal_message(bag_message, gimbal_usart_data_publisher_, ros_time);
+            }
+            else if (bag_message->topic_name == "/GimbalPub") {
+                publish_gimbal_message(bag_message, gimbal_pub_publisher_, ros_time);
+            }
+            else if (bag_message->topic_name == "/lidar_detect") {
+                publish_serialized_message<vision_interface::msg::RadarWarn>(
+                    bag_message, lidar_detect_publisher_);
+            }
+            else if (bag_message->topic_name == "/key_usart_sender") {
+                publish_serialized_message<radio_interface::msg::Password>(
+                    bag_message, key_usart_sender_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_buff") {
+                publish_serialized_message<radio_interface::msg::Buff>(
+                    bag_message, radio_buff_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_fire") {
+                publish_serialized_message<radio_interface::msg::Fire>(
+                    bag_message, radio_fire_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_hp") {
+                publish_serialized_message<radio_interface::msg::Hp>(
+                    bag_message, radio_hp_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_state") {
+                publish_serialized_message<radio_interface::msg::State>(
+                    bag_message, radio_state_publisher_);
+            }
 
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -129,6 +189,29 @@ private:
         publisher->publish(*msg);
     }
 
+    template <typename MessageT>
+    void publish_serialized_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message,
+        const typename rclcpp::Publisher<MessageT>::SharedPtr &publisher) {
+        auto msg = std::make_shared<MessageT>();
+        rclcpp::Serialization<MessageT> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        publisher->publish(*msg);
+    }
+
+    void publish_gimbal_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message,
+        const rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr &publisher,
+        const rclcpp::Time &stamp) {
+        auto msg = std::make_shared<gimbal_interface::msg::GimbalAngle>();
+        rclcpp::Serialization<gimbal_interface::msg::GimbalAngle> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        msg->header.stamp = stamp;
+        publisher->publish(*msg);
+    }
+
     void control_callback(const std_msgs::msg::String::SharedPtr msg) {
         const std::string &cmd = msg->data;
         if (cmd == "pause") {
@@ -154,6 +237,16 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image2_publisher_;
     rclcpp::Publisher<vision_interface::msg::MatchInfo>::SharedPtr match_info_publisher_;
+    rclcpp::Publisher<vision_interface::msg::Sentry2Radar>::SharedPtr sentry2radar_publisher_;
+    rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar2sentry_publisher_;
+    rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_usart_data_publisher_;
+    rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_pub_publisher_;
+    rclcpp::Publisher<vision_interface::msg::RadarWarn>::SharedPtr lidar_detect_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Password>::SharedPtr key_usart_sender_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Buff>::SharedPtr radio_buff_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Fire>::SharedPtr radio_fire_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Hp>::SharedPtr radio_hp_publisher_;
+    rclcpp::Publisher<radio_interface::msg::State>::SharedPtr radio_state_publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr control_sub_;
     rosbag2_cpp::Reader reader_;
     std::shared_ptr<std::thread> processing_thread_;
