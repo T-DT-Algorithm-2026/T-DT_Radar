@@ -180,7 +180,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     gimbal_msg.yaw = yaw;   
     gimbal_msg.pitch = pitch;
     gimbal_msg.is_fire = 1;
-    gimbal_msg.force_flag = 1;
+    gimbal_msg.force_flag = 0;
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     gimbal_pub->publish(gimbal_msg);//发布数据（yaw为增量，pitch为绝对角度，相对于重力)
@@ -250,7 +250,7 @@ void Lock::find_callback()
     gimbal_msg.yaw = target_yaw;   
     gimbal_msg.pitch = target_pitch;
     gimbal_msg.is_fire = 1;
-    gimbal_msg.force_flag = 1;
+    gimbal_msg.force_flag = 0;
 
     gimbal_pub->publish(gimbal_msg);
 }

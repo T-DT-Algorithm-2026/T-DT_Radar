@@ -102,7 +102,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (save_images_) 
     {
         auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_save_time_).count() >= 300) 
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_save_time_).count() >= 200) 
         {
             std::ostringstream oss;
             oss << save_dir_ << "/" << std::setw(4) << std::setfill('0') << image_save_counter_++ << ".png";

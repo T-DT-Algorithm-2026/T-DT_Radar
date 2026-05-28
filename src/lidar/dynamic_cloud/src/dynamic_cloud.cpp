@@ -108,6 +108,7 @@ void TransformCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud, pcl::PointCloud
 
 void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {    
+    std::cout<<"ldar open"<<std::endl;
     auto fly_have = [](pcl::PointXYZ &point) {
         return (point.x > 1 && point.x < 16.7) &&
                (point.y > 0.2 && point.y < 6) &&
