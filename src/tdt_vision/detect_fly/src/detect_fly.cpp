@@ -26,8 +26,8 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     if (!file1.good()) 
     {
         system("python3 src/utils/onnx2trt.py "
-               "--onnx=model/ONNX/fly_all.onnx "
-               "--saveEngine=model/TensorRT/fly_all.engine "
+               "--onnx=model/ONNX/fly_north.onnx "
+               "--saveEngine=model/TensorRT/fly_north.engine "
                "--minBatch 1 "
                "--optBatch 1 "
                "--maxBatch 2 "
@@ -39,7 +39,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
         std::cout<<"Load yolo engine!"<<std::endl;
     }
     std::cout << "fly_path:" << fly_path << "\n";
-    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.6f, 0.45f);
+    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.8f, 0.45f);
     std::cout << "Load fly_yolo engine success!" << std::endl;
 
     cv::FileStorage fs2;

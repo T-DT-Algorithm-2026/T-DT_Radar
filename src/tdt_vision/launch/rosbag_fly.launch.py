@@ -27,7 +27,7 @@ def generate_launch_description():
                     "rosbag_file":
                     # '/home/robot/T-DT_Radar/ros2bags/radar_record0314_1413_00/merged_bag/merged_bag_0.db3'
                     # '/home/robot/T-DT_Radar/ros2bags/radar_record0326_1622_16/bag_0326_1623_16'
-                    '/home/tdt/T-DT_Radar/ros2bags/radar_record0528_1118_31/merged_bag/merged_bag_0.db3'
+                    '/home/tdt/T-DT_Radar/ros2bags/radar_record0528_1049_43/merged_bag'
 
 
                 }

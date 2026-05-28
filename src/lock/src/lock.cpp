@@ -248,9 +248,9 @@ void Lock::find_callback()
     gimbal_msg.header.stamp = this->now();
     gimbal_msg.header.frame_id = "yaw_link"; 
     gimbal_msg.yaw = target_yaw;   
-    gimbal_msg.pitch = target_pitch;
+    gimbal_msg.pitch = target_pitch; 
     gimbal_msg.is_fire = 1;
-    gimbal_msg.force_flag = 0;
+    gimbal_msg.force_flag = 1;
 
     gimbal_pub->publish(gimbal_msg);
 }
