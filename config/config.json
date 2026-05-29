@@ -12,12 +12,12 @@
                 "ExposureTime": 5500.0,
                 "GammaEnable": true,
                 "Gamma": 0.8,
-                "Gain": 8.0,
+                "Gain": 10.0,
                 "BalanceWhiteAuto": "Continuous",
                 "BlackLevel": 240,
                 "FrameSpecInfoMask": 40,
                 "AcquisitionFrameRateEnable": true,
-                "AcquisitionFrameRate": 10.0,
+                "AcquisitionFrameRate": 1,
                 "TriggerMode": "Off"
             }
         },

@@ -59,8 +59,8 @@ def generate_launch_description():
                 #变向设置启动顺序
                 camera_node,
                 foxglove_node,
-                debug_node
-                # record_node
+                debug_node,
+                record_node
             ],
             output='both',
             emulate_tty=True,

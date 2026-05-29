@@ -153,7 +153,7 @@ private:
         transform_stamped.header.stamp = this->now();
         transform_stamped.header.frame_id = "rm_frame";
         transform_stamped.child_frame_id = "livox_frame";
-        transform_stamped.transform.translation.x = transform(0, 3) - 0.00005;
+        transform_stamped.transform.translation.x = transform(0, 3);
         transform_stamped.transform.translation.y = transform(1, 3);
         transform_stamped.transform.translation.z = transform(2, 3);
         Eigen::Matrix3f rotation = transform.block<3, 3>(0, 0);

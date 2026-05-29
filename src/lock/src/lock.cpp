@@ -188,8 +188,8 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
     // std::cout << "Lock Time: " << time_used.count() * 1000 << "ms" << std::endl;
     
-    // cv::imshow("lock_test", img);
-    cv::waitKey(1);
+    // // cv::imshow("lock_test", img);
+    // cv::waitKey(1);
 
 }
 
