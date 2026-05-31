@@ -4,12 +4,14 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <chrono>
+#include <iostream>
 
 #include "base_usart.h"
 #include "crc_tools.h"
 #include "radio_interface/msg/hp.hpp"
 #include "roborts_utils/roborts_utils.h"
 #include "usart.h"
+#include "vision_interface/msg/match_info.hpp"
 
 // sender 向串口发送消息
 namespace tdtusart {
@@ -25,6 +27,12 @@ class DecisionUsartSender : public BaseUsartSender {
         rclcpp::SensorDataQoS(),
         std::bind(&DecisionUsartSender::HpCallback, this,
                   std::placeholders::_1));
+    match_info_subscriber_ =
+        node->create_subscription<vision_interface::msg::MatchInfo>(
+            "match_info",
+            rclcpp::SensorDataQoS(),
+            std::bind(&DecisionUsartSender::MatchInfoCallback, this,
+                      std::placeholders::_1));
     timer_ = node->create_wall_timer(
         kSendInterval,
         std::bind(&DecisionUsartSender::TimerCallback, this));
@@ -66,11 +74,14 @@ class DecisionUsartSender : public BaseUsartSender {
 
   // tdttoolkit::BaseCommunicator *communicator;
   rclcpp::Subscription<radio_interface::msg::Hp>::SharedPtr hp_subscriber_;
+  rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr
+      match_info_subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   std::array<HpState, kRobotCount> hp_states_;
   // 对外发送的无敌状态, 1为无敌, 0为可打
   std::array<uint8_t, kRobotCount> invincible_state_{};
+  int16_t match_time_ = -200;  // 从match_info获取的当前比赛时间
 
   std::function<bool(const void*, int)> usartSend_;
 
@@ -83,6 +94,13 @@ class DecisionUsartSender : public BaseUsartSender {
       UpdateRobotHp(i, msg->hp[i], now);
     }
     SendLatestData(now);
+  }
+
+  // match_info频率较低, 这里只取比赛时间用于打印无敌车出现的时刻
+  void MatchInfoCallback(
+      const std::shared_ptr<const vision_interface::msg::MatchInfo> msg) {
+    match_time_ = msg->match_time;
+    PrintCurrentInvincibleCars(Clock::now());
   }
 
   void TimerCallback() {
@@ -120,7 +138,7 @@ class DecisionUsartSender : public BaseUsartSender {
       state.low_after_zero_count++;
       // 连续多帧确认后, 开始30秒无敌计时
       if (state.low_after_zero_count >= kLowConfirmFrames) {
-        invincible_state_[index] = 1;
+        SetInvincible(index);
         state.invincible_until =
             state.invincible_start_time + kInvincibleDuration;
         state.low_after_zero_count = 0;
@@ -154,8 +172,52 @@ class DecisionUsartSender : public BaseUsartSender {
 
   // 清掉无敌状态和低血确认计数
   void ClearInvincible(int index) {
+    bool was_invincible = invincible_state_[index] == 1;
     invincible_state_[index] = 0;
     hp_states_[index].low_after_zero_count = 0;
+    if (was_invincible) {
+      PrintInvincibleChange(index, "解除无敌");
+    }
+  }
+
+  // 设置无敌状态, 只在0->1变化时打印一次
+  void SetInvincible(int index) {
+    if (invincible_state_[index] == 1) {
+      return;
+    }
+    invincible_state_[index] = 1;
+    PrintInvincibleChange(index, "进入无敌");
+  }
+
+  // 收到match_info时, 用裁判系统的比赛时间输出当前仍在无敌的车辆
+  void PrintCurrentInvincibleCars(Clock::time_point now) {
+    RefreshInvincibleState(now);
+
+    bool has_invincible_car = false;
+    for (int i = 0; i < kRobotCount; i++) {
+      if (invincible_state_[i] == 0) {
+        continue;
+      }
+
+      if (!has_invincible_car) {
+        std::cout << "[无敌车] 比赛时间 " << match_time_ << "s: ";
+        has_invincible_car = true;
+      }
+
+      std::cout << "第" << i + 1 << "辆车"
+                << "(radio_hp[" << i << "], hp=" << hp_states_[i].last_hp
+                << ") ";
+    }
+
+    if (has_invincible_car) {
+      std::cout << "处于无敌" << std::endl;
+    }
+  }
+
+  // 状态变化时打印, 便于直接看到哪辆车在当前比赛时间进入/解除无敌
+  void PrintInvincibleChange(int index, const char* state) {
+    std::cout << "[无敌车] 比赛时间 " << match_time_ << "s: 第" << index + 1
+              << "辆车(radio_hp[" << index << "]) " << state << std::endl;
   }
 
   // 按固定协议打包并发送给哨兵
@@ -170,13 +232,6 @@ class DecisionUsartSender : public BaseUsartSender {
       send_data.invincible_state[i] = invincible_state_[i];
     }
     send_data.frame_id = frame_id_++;
-    std::cout<<"Send Invincible State: ["<< (int)send_data.invincible_state[0] << ", "
-             << (int)send_data.invincible_state[1] << ", "
-             << (int)send_data.invincible_state[2] << ", "
-             << (int)send_data.invincible_state[3] << ", "
-             << (int)send_data.invincible_state[4] << ", "
-             << (int)send_data.invincible_state[5] << "]"
-             << std::endl;
     CRC::AppendCRC16CheckSum((uint8_t*)&(send_data), sizeof(send_data));
     usartSend_(&send_data, sizeof(send_data));
     // TDT_INFO("Send Vision Data %f %f ", send_data.yaw, send_data.pitch);
