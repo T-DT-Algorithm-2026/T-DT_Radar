@@ -27,8 +27,6 @@ namespace tdt_radar {
     static cv::Mat rvec;
     static cv::Mat tvec;
     static bool is_calibrating = false;
-    static bool is_location = false;
-    static std::vector<cv::Point2f> locate_points;
 
 
     class Calibrate final : public rclcpp::Node {
@@ -70,10 +68,6 @@ namespace tdt_radar {
         std::shared_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
 
         geometry_msgs::msg::TransformStamped transformStamped;
-
-        void store_locate();
-
-        void draw_locate(cv::Mat& img);
 
     };
     void mousecallback(int event, int x, int y, int flags, void *userdata);

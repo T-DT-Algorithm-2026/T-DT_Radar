@@ -106,10 +106,6 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     fs["classify_path"] >> classify_path;
     fs.release();
 
-    fs.open("./config/locate_points.yaml", cv::FileStorage::READ);
-    fs["locate_points"] >> locate_points;
-    fs.release();//读取参数
-
     std::ifstream file1(yolo_path.c_str());
     if (!file1.good()) {
         system("python3 src/utils/onnx2trt.py "
@@ -171,8 +167,6 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
         std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
-    radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>(
-        "lidar_detect", 10);
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
 }
 
@@ -185,49 +179,6 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // std::cout << "Detecting..." << std::endl;
     TDT_INFO("Detect!");
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
-
-    if (locate_points.size() == 4) 
-    {
-        cv::Rect rect1(locate_points[0], locate_points[1]);
-        cv::Rect rect2(locate_points[2], locate_points[3]);
-        
-        rect1 &= cv::Rect(0, 0, img.cols, img.rows);
-        rect2 &= cv::Rect(0, 0, img.cols, img.rows);
-
-        auto count_high_v = [&img](const cv::Rect& rect) {
-            if (rect.area() <= 0) {
-                return 0;
-            }
-
-            cv::Mat hsv_img;
-            cv::cvtColor(img(rect), hsv_img, cv::COLOR_BGR2HSV);
-            std::vector<cv::Mat> hsv_channels;
-            cv::split(hsv_img, hsv_channels);
-            cv::Mat v_mask;
-            cv::inRange(hsv_channels[2], 180, 255, v_mask);
-            return cv::countNonZero(v_mask);
-        };
-
-        int rect1_count = count_high_v(rect1);
-        int rect2_count = count_high_v(rect2);
-        int roi_count_sum = rect1_count + rect2_count;
-
-        // std::cout << "Locate ROI V>=180 count: rect1=" << rect1_count
-        //           << ", rect2=" << rect2_count
-        //           << ", sum=" << roi_count_sum << std::endl;
-
-        vision_interface::msg::RadarWarn lidar_detect;
-        lidar_detect.base_state = 1;
-        lidar_detect.out_post_state = roi_count_sum > 10 ? 1 : 0;
-        radar_warn_pub->publish(lidar_detect);
-
-        cv::rectangle(img, rect1, cv::Scalar(0, 255, 0), 2);
-        cv::rectangle(img, rect2, cv::Scalar(255, 0, 0), 2);
-        cv::putText(img, std::to_string(rect1_count), rect1.tl(),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 125), 2);
-        cv::putText(img, std::to_string(rect2_count), rect2.tl(),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 0, 0), 2);
-    }
 
     tdt_radar::Image image(img.data, img.cols, img.rows);
 
