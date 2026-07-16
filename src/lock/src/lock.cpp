@@ -51,7 +51,7 @@ Lock::Lock(const rclcpp::NodeOptions& options)
         "GimbalPub", rclcpp::SensorDataQoS());
 
     fly_sub = this->create_subscription<vision_interface::msg::DetectFly>(
-        "detect_fly", 10, std::bind(&Lock::callback, this, std::placeholders::_1));
+        "detect_fly", rclcpp::SensorDataQoS().keep_last(1), std::bind(&Lock::callback, this, std::placeholders::_1));
 
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>(
         "/livox/lidar_fly_point", 10, std::bind(&Lock::lidar_callback, this, std::placeholders::_1));
@@ -89,7 +89,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     Gimbal gimbal = find_closest_time(t);
     float yaw = gimbal.yaw;
     float pitch = gimbal.pitch;
-    std::cout<<"dt"<<(t-gimbal.time)<<std::endl;
+    // std::cout<<"dt"<<(t-gimbal.time)<<std::endl;
     float x = msg->x;
     float y = msg->y;
     // std::cout<<"x:"<<x<<"y:"<<y<<std::endl;
@@ -109,16 +109,16 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
         is_first = true;
     }//判断是否开启kf
 
-    cv::Mat img = cv::Mat::zeros(cv::Size(1440, 1080), CV_8UC3);
-    cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 255), -1);
-    cv::rectangle(img, cv::Point(380, 270), cv::Point(1060, 790), cv::Scalar(0, 255, 0), 3);
+    // cv::Mat img = cv::Mat::zeros(cv::Size(1440, 1080), CV_8UC3);
+    // cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 255), -1);
+    // cv::rectangle(img, cv::Point(380, 270), cv::Point(1060, 790), cv::Scalar(0, 255, 0), 3);
 
     if(is_find >= 20)
     {
         
         float dx = tan(yaw - base_yaw) * fx;
         float dy = tan(pitch - base_pitch) * fy;
-        cv::circle(img, cv::Point2f(x-dx, y-dy), 4, cv::Scalar(0, 255, 255), -1);
+        // cv::circle(img, cv::Point2f(x-dx, y-dy), 4, cv::Scalar(0, 255, 255), -1);
         pcl::PointXY abject_point(x-dx, y-dy);
         // rclcpp::Time now_time = this->now();
         cv::Point2f predict_point;//卡尔曼准备 
@@ -142,7 +142,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     {
         kf_ptr.reset();
     }
-    cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 0), -1);
+    // cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 0), -1);
 
     float yaw1 = atan2(target_x - cx, fx);
     float pitch1 = atan2(target_y - cy, fy);

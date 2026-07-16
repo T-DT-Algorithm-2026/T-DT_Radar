@@ -70,9 +70,9 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     }
     last_save_time_ = std::chrono::steady_clock::now() - std::chrono::milliseconds(500);
     
-    image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS(),std::bind(&DetectFly::callback, this, std::placeholders::_1));
+    image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS().keep_last(1),std::bind(&DetectFly::callback, this, std::placeholders::_1));
     player_control_pub_ = this->create_publisher<std_msgs::msg::String>("/rosbag_player/control", 10);
-    fly_pub_ = this->create_publisher<vision_interface::msg::DetectFly>("detect_fly", 10);
+    fly_pub_ = this->create_publisher<vision_interface::msg::DetectFly>("detect_fly", rclcpp::SensorDataQoS().keep_last(1));
     debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_image/compressed", rclcpp::SensorDataQoS());
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>("/livox/lidar_fly_point", 10, std::bind(&DetectFly::lidar_callback, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "Detect_fly node has been started.");
@@ -133,16 +133,18 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
 
         // // 发布出去
         // debug_img_pub_->publish(compressed_msg);
-        if((this->now().seconds() - lidar_time.seconds()) < 1)
-        {
-            cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
-        }
-        else
-        {
-            cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
-        }
-        cv::imshow("detect_fly", img);
-        cv::waitKey(1);
+
+        // if((this->now().seconds() - lidar_time.seconds()) < 1)
+        // {
+        //     cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
+        // }
+        // else
+        // {
+        //     cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
+        // }
+        // cv::imshow("detect_fly", img);
+        // cv::waitKey(1);
+
         // std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
         // std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
         // std::cout << "Detect Fly Time: " << time_used.count() * 1000 << "ms" << std::endl;

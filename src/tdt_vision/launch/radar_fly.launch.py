@@ -1,4 +1,9 @@
+import os
+
 from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 
 
@@ -23,10 +28,20 @@ def generate_launch_description():
         )
 
     # 创建节点描述
+    radar_base_launch_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory('tdt_vision'),
+                'launch',
+                'radar_base.launch.py',
+            )
+        ]),
+    )
     radar_detect_fly_node = get_radar_detect_fly_node('tdt_vision', 'radar_detect_fly_node')
     lock_node = get_lock_node('tdt_lock', 'lock_node')
 
     return LaunchDescription([
+            radar_base_launch_cmd,
             radar_detect_fly_node,
             lock_node,
         ])
