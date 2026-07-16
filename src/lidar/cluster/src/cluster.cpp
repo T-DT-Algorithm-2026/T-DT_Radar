@@ -116,7 +116,7 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     tree->setInputCloud(cloud);
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
     ec.setClusterTolerance (0.25);
-    ec.setMinClusterSize (40);
+    ec.setMinClusterSize (20);
     ec.setMaxClusterSize (1000);
     ec.setSearchMethod (tree);
     ec.setInputCloud (cloud);
@@ -166,6 +166,7 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_ally_x = 0.0;
             fly_points_msg.fly_ally_y = 0.0;
             fly_points_msg.fly_ally_z = 0.0;
+             RCLCPP_INFO(this->get_logger(), "检测到一个敌方飞机");
         }
         else
         {
@@ -175,9 +176,9 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             fly_points_msg.fly_enemy_x = 0.0;
             fly_points_msg.fly_enemy_y = 0.0;
             fly_points_msg.fly_enemy_z = 0.0;
+            RCLCPP_INFO(this->get_logger(), "检测到一个我方飞机");
         }
         // std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
-        RCLCPP_INFO(this->get_logger(), "检测到一个飞机");
         // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
     }
     if(clouds.size() >= 2)

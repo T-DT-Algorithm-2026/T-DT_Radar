@@ -165,11 +165,11 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     yaw = (yaw + final_yaw)*180.0/CV_PI;
     pitch = (pitch + final_pitch)*180.0/CV_PI;
 
-    if(radar_angle_valid)
-    {
-        yaw = std::clamp(yaw, radar_yaw - radar_yaw_limit, radar_yaw + radar_yaw_limit);
-        pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
-    }
+    // if(radar_angle_valid)
+    // {
+    //     yaw = std::clamp(yaw, radar_yaw - radar_yaw_limit, radar_yaw + radar_yaw_limit);
+    //     pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
+    // }
 
     std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
     std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI<<std::endl;
@@ -217,7 +217,7 @@ void Lock::timer_callback()
             float pitch_err = std::atan2(cz, dist_horizontal);
 
             radar_yaw = yaw_err * (180.0f / CV_PI) - 2;
-            radar_pitch = pitch_err * (180.0f / CV_PI);
+            radar_pitch = pitch_err * (180.0f / CV_PI) +0.2;
             radar_angle_valid = true;
         }
     }
@@ -243,6 +243,7 @@ void Lock::find_callback()
     // 将误差补偿到当前云台角度上，得到最终的绝对命令角度
     float target_yaw = radar_yaw + yaw_cmd_first; // 雷达偏移补偿，经验值
     float target_pitch = radar_pitch + pitch_cmd_first; 
+    std::cout<<"target_yaw: "<<target_yaw<<" , "<<"target_pitch: "<<target_pitch<<std::endl;
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
@@ -375,8 +376,8 @@ void Lock::patrol()
 {
     // 巡航逻辑: 绕目标点做正方形巡逻
     float step = 0.05f;
-    float max_val = 1.0f;
-    float min_val = -1.0f;
+    float max_val = 2.2f;
+    float min_val = -2.0f;
 
     switch (patrol_state_) {
         case 0: // 向右扫 (yaw 增加)

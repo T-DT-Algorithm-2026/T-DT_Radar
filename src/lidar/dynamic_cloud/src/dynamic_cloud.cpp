@@ -110,12 +110,12 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {    
     std::cout<<"ldar open"<<std::endl;
     auto fly_have = [](pcl::PointXYZ &point) {
-        return (point.x > 1 && point.x < 16.7) &&
-               (point.y > 0.2 && point.y < 6) &&
-               (point.z > 1.9 && point.z < 3)||
-               (point.x > 11.3 && point.x < 27) &&
-               (point.y > 9 && point.y < 14.8) &&
-               (point.z > 1.9 && point.z < 3);
+        return (point.x > 12 && point.x < 27) &&
+               (point.y > 0.5 && point.y < 6) &&
+               (point.z > 1.7 && point.z < 3)||
+               (point.x > 1 && point.x < 16) &&
+               (point.y > 9 && point.y < 14.5) &&
+               (point.z > 1.7 && point.z < 3);
     };//飞机存在
 
     auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();

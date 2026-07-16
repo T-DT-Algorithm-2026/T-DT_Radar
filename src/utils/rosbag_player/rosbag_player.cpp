@@ -121,10 +121,10 @@ private:
                 publish_serialized_message<vision_interface::msg::Sentry2Radar>(
                     bag_message, sentry2radar_publisher_);
             }
-            // else if (bag_message->topic_name == "/Radar2Sentry") {
-            //     publish_serialized_message<vision_interface::msg::Radar2Sentry>(
-            //         bag_message, radar2sentry_publisher_);
-            // }
+            else if (bag_message->topic_name == "/Radar2Sentry") {
+                publish_serialized_message<vision_interface::msg::Radar2Sentry>(
+                    bag_message, radar2sentry_publisher_);
+            }
             else if (bag_message->topic_name == "/gimbalUsartData") {
                 publish_gimbal_message(bag_message, gimbal_usart_data_publisher_, ros_time);
             }

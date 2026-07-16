@@ -1,5 +1,5 @@
-#ifndef __RADIO_BUFF_SENDER_H
-#define __RADIO_BUFF_SENDER_H
+#ifndef __DECISION_USART_SENDER_H
+#define __DECISION_USART_SENDER_H
 
 #include <roborts_utils/base_msg.h>
 #include <boost/asio.hpp>
@@ -14,7 +14,7 @@
 
 namespace tdtusart {
 
-class RadioBuffSender : public BaseUsartSender {
+class DecisionUsartSender : public BaseUsartSender {
  public:
   void init_communicator(
       std::shared_ptr<rclcpp::Node> &node,
@@ -24,11 +24,11 @@ class RadioBuffSender : public BaseUsartSender {
     subscriber_ = node->create_subscription<radio_interface::msg::Buff>(
         "radio_buff",
         rclcpp::SensorDataQoS(),
-        std::bind(&RadioBuffSender::Callback, this, std::placeholders::_1));
+          std::bind(&DecisionUsartSender::Callback, this, std::placeholders::_1));
 
     timer_ = node->create_wall_timer(
         std::chrono::milliseconds(100),
-        std::bind(&RadioBuffSender::TimerCallback, this));
+        std::bind(&DecisionUsartSender::TimerCallback, this));
 
     usartSend_ = usartSend;
     last_msg_time_ = node_->now();  // 新增

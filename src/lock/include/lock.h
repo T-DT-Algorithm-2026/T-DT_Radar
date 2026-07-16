@@ -59,8 +59,8 @@ private:
     bool is_first = false;
     std::shared_ptr<Kalman_filter_plus> kf_ptr = nullptr;
 
-    float kp_x = 1.1;
-    float kp_y = 1.1;
+    float kp_x = 1.6;
+    float kp_y = 1.6;
     float kd = 0.03;
     float fx;
     float fy;
@@ -80,14 +80,14 @@ private:
     float pitch_cmd_first = 0;
     int patrol_state_ = 0;
 
-    // cv::Point3f fly_pos = cv::Point3f(4.0f, 15.0f, -1.0f);
+    // cv::Point3f fly_pos = cv::Point3f(15.0f, -4.0f, -1.0f);
     cv::Point3f fly_pos = cv::Point3f(0.0f, 0.0f, 0.0f);
     bool lidar_valid = false;
     bool radar_angle_valid = false;
     float radar_yaw = 0.0f;
     float radar_pitch = 0.0f;
-    float radar_yaw_limit = 2.0f;
-    float radar_pitch_limit = 2.0f;
+    // float radar_yaw_limit = 4.0f;
+    // float radar_pitch_limit = 4.0f;
 
     // TF related
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
