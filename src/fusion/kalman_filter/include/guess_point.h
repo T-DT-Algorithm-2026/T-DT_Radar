@@ -7,9 +7,9 @@ float dist(const pcl::PointXY &a, const pcl::PointXY &b)
 
 
 
-class car {
+class cars {
 public:
-    car() 
+    cars()
         : currentkf(nullptr), point{0,0},send_point{0,0}, color(-1), number(-1) {}
 
     // 修改 getcar 函数：裸指针转智能指针
@@ -21,11 +21,7 @@ public:
         }
     }
 
-    void set_radio_point(
-        const pcl::PointXY &input,
-        int input_color,
-        int input_number,
-        std::chrono::steady_clock::time_point input_time)
+    void set_radio_point(const pcl::PointXY &input, int input_color, int input_number, std::chrono::steady_clock::time_point input_time)
     {
         if(input.x == 0 && input.y == 0)
         {

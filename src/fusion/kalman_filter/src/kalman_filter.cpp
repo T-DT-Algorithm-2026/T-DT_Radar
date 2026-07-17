@@ -53,7 +53,7 @@ void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPt
             radio_point.y = 15.0f - radio_point.y;
         }
         int radio_color = target_start == 0 ? 0 : 2;
-        arr[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
+        car[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
     }
     publish_car_results(this->now());
     std::cout << "Radio_callback: Received radio position data." << std::endl;
@@ -300,34 +300,34 @@ void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
     {
         if(kf.new_id>=0&&kf.new_id<12)
         {
-            arr[kf.new_id].getcar(&kf);
+            car[kf.new_id].getcar(&kf);
         }
     }
 
-    for(auto &car: arr)
+    for(auto &tracked_car: car)
     {
-        car.deal_car();
-        // car.test();
+        tracked_car.deal_car();
+        // tracked_car.test();
     }
 
     vision_interface::msg::DetectResult detect_msg;
     detect_msg.header.stamp = stamp;
     detect_msg.header.frame_id = "rm_frame";
-    for(const auto &car: arr)//从前到后
+    for(const auto &tracked_car: car)//从前到后
     {
-        if(car.send_point.x==0&&car.send_point.y==0)continue;
-        if(car.number < 0 || car.number >= 6)continue;
-        if(car.color == 0)//蓝色
+        if(tracked_car.send_point.x==0&&tracked_car.send_point.y==0)continue;
+        if(tracked_car.number < 0 || tracked_car.number >= 6)continue;
+        if(tracked_car.color == 0)//蓝色
         {
-            int number= car.number;
-            detect_msg.blue_x[number] = car.send_point.x;
-            detect_msg.blue_y[number] = car.send_point.y;
+            int number= tracked_car.number;
+            detect_msg.blue_x[number] = tracked_car.send_point.x;
+            detect_msg.blue_y[number] = tracked_car.send_point.y;
         }
-        if(car.color == 2)//红色
+        if(tracked_car.color == 2)//红色
         {
-            int number= car.number;
-            detect_msg.red_x[number] = car.send_point.x;
-            detect_msg.red_y[number] = car.send_point.y;
+            int number= tracked_car.number;
+            detect_msg.red_x[number] = tracked_car.send_point.x;
+            detect_msg.red_y[number] = tracked_car.send_point.y;
         }
     }
     // if(match_info.self_color==0)

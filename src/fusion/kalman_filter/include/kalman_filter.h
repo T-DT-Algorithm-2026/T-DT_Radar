@@ -42,7 +42,7 @@ class KalmanFilter :public rclcpp::Node
     void radio_callback(const radio_interface::msg::Position::SharedPtr msg);
     void publish_car_results(const rclcpp::Time &stamp);
     std::vector<Kalman_filter_plus> KFs;
-    car arr[12];
+    cars car[12];
     vision_interface::msg::MatchInfo match_info;
 };
 
