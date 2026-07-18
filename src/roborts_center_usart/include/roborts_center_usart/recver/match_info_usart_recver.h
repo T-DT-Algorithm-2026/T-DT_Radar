@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <deque>
+#include <iostream>
 #include <mutex>
 #include <rclcpp/client.hpp>
 #include <std_srvs/srv/set_bool.hpp>
@@ -37,6 +38,7 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     uint8_t marks[6];
     uint8_t ultimate;
     uint32_t eventType;
+    uint16_t mark_progress;
 
     float time_stamp;
     uint16_t frame_id;
@@ -60,7 +62,7 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     match_info->ultimate = ((MatchInfo *)message)->ultimate;
     match_info->eventtype=((MatchInfo *)message)->eventType;
     matchInfoPub->publish(*match_info);
-      TDT_INFO("matchInfoPub Received&&Pub!");
+      // TDT_INFO("matchInfoPub Received&&Pub!");
 
   }
 

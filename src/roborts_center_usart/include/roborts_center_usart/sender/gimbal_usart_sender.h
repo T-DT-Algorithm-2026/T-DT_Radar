@@ -70,6 +70,7 @@ class GimbalUsartSender : public BaseUsartSender {
     send_data.pitch = -msg->pitch;
     send_data.is_fire = msg->is_fire;
     send_data.force_flag = msg->force_flag;
+    // std::cout<<static_cast<int>(send_data.force_flag)<<std::endl;
     // std::cout<<"Send Gimbal Data: yaw="<<send_data.yaw<<" pitch="<<send_data.pitch<<std::endl;
     // send_data.yaw = 0;
     // send_data.pitch = 0;
@@ -79,7 +80,7 @@ class GimbalUsartSender : public BaseUsartSender {
 
 
     usartSend_(&send_data, sizeof(send_data));
-    TDT_INFO("Send Gimbal Data");
+    // TDT_INFO("Send Gimbal Data");
   }
 };
 

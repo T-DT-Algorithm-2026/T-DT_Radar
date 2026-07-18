@@ -65,7 +65,7 @@ class GimbalUsartRecver : public BaseUsartRecver {
     // std::cout << "Seconds: " << (uint32_t)now.seconds() << "." << (now.nanoseconds() % 1000000000) << std::endl;
 
     gimbalUsartData->publish(usrtPub);
-    TDT_INFO("Gimbal Received&&Pub!");
+    // TDT_INFO("Gimbal Received&&Pub!");
   }
   
   rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbalUsartData;

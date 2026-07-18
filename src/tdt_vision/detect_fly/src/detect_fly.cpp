@@ -26,8 +26,8 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     if (!file1.good()) 
     {
         system("python3 src/utils/onnx2trt.py "
-               "--onnx=model/ONNX/fly_north.onnx "
-               "--saveEngine=model/TensorRT/fly_north.engine "
+               "--onnx=model/ONNX/fly_test.onnx "
+               "--saveEngine=model/TensorRT/fly_test.engine "
                "--minBatch 1 "
                "--optBatch 1 "
                "--maxBatch 2 "
@@ -94,6 +94,9 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     auto img = cv_bridge::toCvShare(msg, "bgr8")->image;
     rclcpp::Time time_stamp = msg->header.stamp;
     std::chrono::steady_clock::time_point begin =std::chrono::steady_clock::now();
+    const rclcpp::Time begin_ros = this->now();
+    const double timestamp_to_begin_ms = static_cast<double>((begin_ros - time_stamp).nanoseconds()) / 1.0e6;
+    std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
     if (img.empty()) return;
     cv::Mat roi;
     bool save_images_ = false;
@@ -132,7 +135,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         // cv::imencode(".jpg", img, compressed_msg.data, compression_params);
 
         // // 发布出去
-        // debug_img_pub_->publish(compressed_msg);
+        // // debug_img_pub_->publish(compressed_msg);
 
         // if((this->now().seconds() - lidar_time.seconds()) < 1)
         // {
@@ -246,7 +249,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     fly_pub_->publish(test_msg);
     std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
-    // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
+    std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
     cv::circle(img, cv::Point2f(test_msg.x, test_msg.y), 1, cv::Scalar(255, 255, 0), -1);
 
     if((this->now().seconds() - lidar_time.seconds()) < 1)
@@ -259,8 +262,8 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     } //准心
     // std::cout<<"target_point:"<<target_point.x<<","<<target_point.y<<std::endl;
 
-    cv::imshow("detect_fly", img);
-    int key = cv::waitKey(1) & 0xFF; 
+    // cv::imshow("detect_fly", img);
+    // int key = cv::waitKey(1) & 0xFF; 
 
     //     // 创建压缩图像消息
     // sensor_msgs::msg::CompressedImage compressed_msg;

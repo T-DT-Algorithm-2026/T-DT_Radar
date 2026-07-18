@@ -146,12 +146,24 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 
     float yaw1 = atan2(target_x - cx, fx);
     float pitch1 = atan2(target_y - cy, fy);
+    std::cout<<target_x<<","<<target_y<<std::endl;
 
     float yaw2 = atan2(x - cx, fx);
     float pitch2 = atan2(y - cy, fy);
 
     float current_yaw = -(yaw2 - yaw1);
     float current_pitch = -(pitch2 - pitch1);//计算旋转角度
+
+    // 0.1 度角度死区：目标接近锁定点时不再追逐微小的检测抖动。
+    constexpr float angle_deadband = 0.07f * static_cast<float>(CV_PI) / 180.0f;
+    if(std::abs(current_yaw) < angle_deadband)
+    {
+        current_yaw = 0.0f;
+    }
+    if(std::abs(current_pitch) < angle_deadband)
+    {
+        current_pitch = 0.0f;
+    }
 
     float current_dyaw = current_yaw - last_dyaw;
     float current_dpitch = current_pitch - last_dpitch;
@@ -184,9 +196,11 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     gimbal_pub->publish(gimbal_msg);//发布数据（yaw为增量，pitch为绝对角度，相对于重力)
-    std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
-    // std::cout << "Lock Time: " << time_used.count() * 1000 << "ms" << std::endl;
+
+    // end 和检测消息时间戳都使用 ROS 时钟，计算从图像时间戳到锁定回调结束的总延迟。
+    const rclcpp::Time end = this->now();
+    const double end_to_timestamp_ms = static_cast<double>((end - time_stamp).nanoseconds()) / 1.0e6;
+    std::cout << "End - time_stamp: " << end_to_timestamp_ms << " ms\n";
     
     // // cv::imshow("lock_test", img);
     // cv::waitKey(1);
