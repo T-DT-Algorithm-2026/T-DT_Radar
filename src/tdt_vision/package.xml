@@ -38,6 +38,12 @@
   <depend>gimbal_interface</depend>
   <depend>ceres-solver</depend>
 
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>foxglove_bridge</exec_depend>
+  <exec_depend>tdt_lock</exec_depend>
+
 
   <!-- <depend>builtin_interfaces</depend> -->
   <export>
