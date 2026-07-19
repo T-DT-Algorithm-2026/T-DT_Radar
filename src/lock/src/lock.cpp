@@ -13,6 +13,13 @@ Lock::Lock(const rclcpp::NodeOptions& options)
     fs1["f_y"] >> fy;
     fs1.release();
 
+    kf_config.measurement_std_yaw_rad = kf_measurement_noise_px / fx;
+    kf_config.measurement_std_pitch_rad = kf_measurement_noise_px / fy;
+    kf_config.angular_acceleration_noise = kf_angular_acceleration_noise;
+    kf_config.initial_velocity_std_rad_s = kf_initial_velocity_std_rad_s;
+    kf_config.innovation_gate_base_rad = kf_innovation_gate_base_rad;
+    kf_config.innovation_gate_rate_rad_s = kf_innovation_gate_rate_rad_s;
+
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
 
@@ -66,7 +73,6 @@ Lock::Lock(const rclcpp::NodeOptions& options)
 void Lock::gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr msg)
 {
     // std::cout<<"Gimbal Callback!"<<std::endl;
-    rclcpp::Time time_stamp = msg->header.stamp;
     double t = rclcpp::Time(msg->header.stamp).seconds();
     Gimbal gimbal;
     gimbal.yaw = msg->yaw*CV_PI/180.0;
@@ -83,67 +89,16 @@ void Lock::gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr m
 void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 {
     last_msg_time_ = this->now();
-    std::chrono::steady_clock::time_point begin =std::chrono::steady_clock::now();
     rclcpp::Time time_stamp = msg->header.stamp;
-    double t = rclcpp::Time(msg->header.stamp).seconds();
+    double t = time_stamp.seconds();
     Gimbal gimbal = find_closest_time(t);
     float yaw = gimbal.yaw;
     float pitch = gimbal.pitch;
-    // std::cout<<"dt"<<(t-gimbal.time)<<std::endl;
     float x = msg->x;
     float y = msg->y;
-    // std::cout<<"x:"<<x<<"y:"<<y<<std::endl;
-    if(x>=380&&x<=1060&&y>=270&&y<=790)
-    {
-        is_find ++;
-        if(is_first)
-        {
-            base_yaw = yaw;
-            base_pitch = pitch;
-            is_first = false;
-        }
-    }
-    else
-    {
-        is_find = 0;
-        is_first = true;
-    }//判断是否开启kf
+    bool measurement_valid = (x >= 380.0f && x <= 1060.0f && y >= 270.0f && y <= 790.0f);
 
-    // cv::Mat img = cv::Mat::zeros(cv::Size(1440, 1080), CV_8UC3);
-    // cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 255), -1);
-    // cv::rectangle(img, cv::Point(380, 270), cv::Point(1060, 790), cv::Scalar(0, 255, 0), 3);
-
-    if(is_find >= 20)
-    {
-        
-        float dx = tan(yaw - base_yaw) * fx;
-        float dy = tan(pitch - base_pitch) * fy;
-        // cv::circle(img, cv::Point2f(x-dx, y-dy), 4, cv::Scalar(0, 255, 255), -1);
-        pcl::PointXY abject_point(x-dx, y-dy);
-        // rclcpp::Time now_time = this->now();
-        cv::Point2f predict_point;//卡尔曼准备 
-
-        if(kf_ptr == nullptr)
-        {
-            kf_ptr = std::make_shared<Kalman_filter_plus>(abject_point, time_stamp);
-        }
-        else if(kf_ptr != nullptr)
-        {
-            kf_ptr->update_predict_point();
-            kf_ptr->update(abject_point, time_stamp);
-            predict_point = kf_ptr->get_predict_point();
-        }
-        // x = predict_point.x + dx;
-        // y = predict_point.y + dy;
-        // x = std::clamp(x, 380.0f, 1060.0f);
-        // y = std::clamp(y, 270.0f, 790.0f);
-    }
-    else
-    {
-        kf_ptr.reset();
-    }
-    // cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 0), -1);
-
+    // 将准心像素和目标像素分别转换为相机视线角，两者之差就是本帧角度误差。
     float yaw1 = atan2(target_x - cx, fx);
     float pitch1 = atan2(target_y - cy, fy);
     std::cout<<target_x<<","<<target_y<<std::endl;
@@ -151,31 +106,54 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     float yaw2 = atan2(x - cx, fx);
     float pitch2 = atan2(y - cy, fy);
 
-    float current_yaw = -(yaw2 - yaw1);
-    float current_pitch = -(pitch2 - pitch1);//计算旋转角度
+    double current_yaw = -(yaw2 - yaw1);
+    double current_pitch = -(pitch2 - pitch1);
+    // 图像时间戳处的云台反馈 + 相机角度误差 = 世界中的绝对目标角度测量。
+    cv::Point2d measured_angle(yaw + current_yaw, pitch + current_pitch);
 
-    // 0.1 度角度死区：目标接近锁定点时不再追逐微小的检测抖动。
-    constexpr float angle_deadband = 0.07f * static_cast<float>(CV_PI) / 180.0f;
-    if(std::abs(current_yaw) < angle_deadband)
+    rclcpp::Time now = this->now();
+    double measurement_age_s = std::max(0.0, (now - time_stamp).seconds());
+    // 从图像采集时刻预测到未来控制真正生效的时刻。
+    double predict_time = std::clamp( measurement_age_s + control_delay_s, 0.0, max_prediction_horizon_s);
+
+    cv::Point2d predicted_angle = measured_angle;
+    cv::Point2d angle_speed(0.0, 0.0);
+    if (measurement_valid)
     {
-        current_yaw = 0.0f;
+        if (kf_ptr == nullptr)
+        {
+            kf_ptr = std::make_shared<Kalman_filter_plus>(
+                measured_angle, time_stamp, kf_config);
+        }
+        else
+        {
+            kf_ptr->update(measured_angle, time_stamp);
+        }
+        predicted_angle = kf_ptr->predict(predict_time);
+        angle_speed = kf_ptr->angular_velocity();
     }
-    if(std::abs(current_pitch) < angle_deadband)
+    else
     {
-        current_pitch = 0.0f;
+        kf_ptr.reset();
     }
 
-    float current_dyaw = current_yaw - last_dyaw;
-    float current_dpitch = current_pitch - last_dpitch;
+    // 使用最新云台反馈计算控制误差；不能再用图像时刻的旧反馈，否则会重复补偿视觉延迟。
+    Gimbal latest_gimbal = find_closest_time(now.seconds());
+    double yaw_error = predicted_angle.x - latest_gimbal.yaw;
+    double pitch_error = predicted_angle.y - latest_gimbal.pitch;
+    if (std::abs(yaw_error) < angle_deadband_rad)
+    {
+        yaw_error = 0.0;
+    }
+    if (std::abs(pitch_error) < angle_deadband_rad)
+    {
+        pitch_error = 0.0;
+    }
 
-    float final_yaw = current_yaw * kp_x + kd * current_dyaw;
-    float final_pitch = current_pitch * kp_y + kd * current_dpitch;
-
-    last_dyaw = current_yaw;
-    last_dpitch = current_pitch;
-
-    yaw = (yaw + final_yaw)*180.0/CV_PI;
-    pitch = (pitch + final_pitch)*180.0/CV_PI;
+    double final_yaw = yaw_error * kp_x;
+    double final_pitch = pitch_error * kp_y;
+    yaw = (latest_gimbal.yaw + final_yaw) * 180.0 / CV_PI;
+    pitch = (latest_gimbal.pitch + final_pitch) * 180.0 / CV_PI;
 
     // if(radar_angle_valid)
     // {
@@ -184,22 +162,25 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     // }
 
     std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
-    std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI<<std::endl;
+    std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI
+             <<", predict_ms:"<<predict_time*1000.0
+             <<", yaw_rate:"<<angle_speed.x*180.0/CV_PI
+             <<", pitch_rate:"<<angle_speed.y*180.0/CV_PI<<std::endl;
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
     gimbal_msg.header.frame_id = "yaw_link"; 
-    gimbal_msg.yaw = yaw;   
+    gimbal_msg.yaw = yaw;
     gimbal_msg.pitch = pitch;
     gimbal_msg.is_fire = 1;
     gimbal_msg.force_flag = 1;
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
-    gimbal_pub->publish(gimbal_msg);//发布数据（yaw为增量，pitch为绝对角度，相对于重力)
+    gimbal_pub->publish(gimbal_msg);// 发布预测后的绝对云台角度指令
 
     // end 和检测消息时间戳都使用 ROS 时钟，计算从图像时间戳到锁定回调结束的总延迟。
-    const rclcpp::Time end = this->now();
-    const double end_to_timestamp_ms = static_cast<double>((end - time_stamp).nanoseconds()) / 1.0e6;
+    rclcpp::Time end = this->now();
+    double end_to_timestamp_ms = static_cast<double>((end - time_stamp).nanoseconds()) / 1.0e6;
     std::cout << "End - time_stamp: " << end_to_timestamp_ms << " ms\n";
     
     // // cv::imshow("lock_test", img);
