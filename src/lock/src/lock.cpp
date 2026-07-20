@@ -13,12 +13,7 @@ Lock::Lock(const rclcpp::NodeOptions& options)
     fs1["f_y"] >> fy;
     fs1.release();
 
-    kf_config.measurement_std_yaw_rad = kf_measurement_noise_px / fx;
-    kf_config.measurement_std_pitch_rad = kf_measurement_noise_px / fy;
-    kf_config.angular_acceleration_noise = kf_angular_acceleration_noise;
-    kf_config.initial_velocity_std_rad_s = kf_initial_velocity_std_rad_s;
-    kf_config.innovation_gate_base_rad = kf_innovation_gate_base_rad;
-    kf_config.innovation_gate_rate_rad_s = kf_innovation_gate_rate_rad_s;
+    read_config();
 
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
@@ -96,12 +91,12 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     float pitch = gimbal.pitch;
     float x = msg->x;
     float y = msg->y;
+    // std::cout<<msg->x<<","<<msg->y<<std::endl;
     bool measurement_valid = (x >= 380.0f && x <= 1060.0f && y >= 270.0f && y <= 790.0f);
 
     // 将准心像素和目标像素分别转换为相机视线角，两者之差就是本帧角度误差。
     float yaw1 = atan2(target_x - cx, fx);
     float pitch1 = atan2(target_y - cy, fy);
-    std::cout<<target_x<<","<<target_y<<std::endl;
 
     float yaw2 = atan2(x - cx, fx);
     float pitch2 = atan2(y - cy, fy);
@@ -161,11 +156,11 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     //     pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
     // }
 
-    std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
-    std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI
-             <<", predict_ms:"<<predict_time*1000.0
-             <<", yaw_rate:"<<angle_speed.x*180.0/CV_PI
-             <<", pitch_rate:"<<angle_speed.y*180.0/CV_PI<<std::endl;
+    // std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
+    // std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI
+    //          <<", predict_ms:"<<predict_time*1000.0
+    //          <<", yaw_rate:"<<angle_speed.x*180.0/CV_PI
+    //          <<", pitch_rate:"<<angle_speed.y*180.0/CV_PI<<std::endl;
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();

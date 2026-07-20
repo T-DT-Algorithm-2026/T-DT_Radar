@@ -64,7 +64,7 @@ public:
         // 协方差预测：P(k|k-1) = F*P*F^T + Q
         state_ = transition * state_;
         state_cov_ = transition * state_cov_ * transition.transpose() + process_noise;
-    }
+    }//先验
 
     void update(const Measurement& measurement, const MeasurementMatrix& observation,
                 const MeasurementCov& measurement_noise)
