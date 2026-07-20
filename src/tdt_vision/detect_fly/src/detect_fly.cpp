@@ -8,7 +8,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
 {
     // cv::namedWindow("roi", cv::WINDOW_NORMAL);
     // cv::namedWindow("bin_img", cv::WINDOW_NORMAL);
-    cv::namedWindow("detect_fly", cv::WINDOW_OPENGL);
+    // cv::namedWindow("detect_fly", cv::WINDOW_OPENGL);
 
     // 使用system函数调用nvidia-smi命令
     std::cout << "Checking CUDA with nvidia-smi...\n";
@@ -26,8 +26,8 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     if (!file1.good()) 
     {
         system("python3 src/utils/onnx2trt.py "
-               "--onnx=model/ONNX/fly_test.onnx "
-               "--saveEngine=model/TensorRT/fly_test.engine "
+               "--onnx=model/ONNX/fly_all.onnx "
+               "--saveEngine=model/TensorRT/fly_all.engine "
                "--minBatch 1 "
                "--optBatch 1 "
                "--maxBatch 2 "
@@ -39,7 +39,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
         std::cout<<"Load yolo engine!"<<std::endl;
     }
     std::cout << "fly_path:" << fly_path << "\n";
-    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.7f, 0.45f);
+    this->fly = yolo::load(fly_path, yolo::Type::V8, 0.6f, 0.45f);
     std::cout << "Load fly_yolo engine success!" << std::endl;
 
     cv::FileStorage fs2;
@@ -73,7 +73,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS().keep_last(1),std::bind(&DetectFly::callback, this, std::placeholders::_1));
     player_control_pub_ = this->create_publisher<std_msgs::msg::String>("/rosbag_player/control", 10);
     fly_pub_ = this->create_publisher<vision_interface::msg::DetectFly>("detect_fly", rclcpp::SensorDataQoS().keep_last(1));
-    debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_image/compressed", rclcpp::SensorDataQoS());
+    debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_image/compressed", rclcpp::SensorDataQoS().keep_last(1));
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>("/livox/lidar_fly_point", 10, std::bind(&DetectFly::lidar_callback, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "Detect_fly node has been started.");
 
@@ -98,6 +98,8 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     const double timestamp_to_begin_ms = static_cast<double>((begin_ros - time_stamp).nanoseconds()) / 1.0e6;
     std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
     if (img.empty()) return;
+    const auto debug_now = std::chrono::steady_clock::now();
+    const bool publish_debug_frame = (debug_img_pub_->get_subscription_count() > 0 || debug_img_pub_->get_intra_process_subscription_count() > 0) && (debug_now - last_debug_pub_time_ >= std::chrono::milliseconds(50));
     cv::Mat roi;
     bool save_images_ = false;
 
@@ -121,21 +123,17 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (result.size() == 0) 
     {
         // RCLCPP_INFO(this->get_logger(), "No Fly!");
-        // sensor_msgs::msg::CompressedImage compressed_msg;
-        // compressed_msg.header.stamp = this->now();
-        // compressed_msg.header.frame_id = "camera_frame"; // 随便起个名字
-        // compressed_msg.format = "jpeg";
-
-        // // 设置 JPEG 压缩质量（0-100，50已经足够人眼调试了，且极小）
-        // std::vector<int> compression_params;
-        // compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
-        // compression_params.push_back(2); // 质量设为 50
-
-        // // 直接用 OpenCV 压缩到消息的 data 数组里
-        // cv::imencode(".jpg", img, compressed_msg.data, compression_params);
-
-        // // 发布出去
-        // // debug_img_pub_->publish(compressed_msg);
+        if (publish_debug_frame) {
+            sensor_msgs::msg::CompressedImage compressed_msg;
+            compressed_msg.header = msg->header;
+            compressed_msg.format = "jpeg";
+            const std::vector<int> compression_params = { cv::IMWRITE_JPEG_QUALITY, 50 };
+            if (cv::imencode(".jpg", img, compressed_msg.data, compression_params)) 
+            {
+                last_debug_pub_time_ = debug_now;
+                debug_img_pub_->publish(std::move(compressed_msg));
+            }
+        }
 
         // if((this->now().seconds() - lidar_time.seconds()) < 1)
         // {
@@ -181,66 +179,67 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     float refined_y = fly_rect.y + fly_rect.height / 2.0f;
 
     //找质心
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(bin_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);       
-    std::vector<cv::Point2f> centroids;
-    for (const auto& contour : contours) 
-    {
-        if (cv::contourArea(contour) > 5.0) 
-        { 
-            cv::Moments M = cv::moments(contour);
-            if (M.m00 > 0) 
-            {
-                centroids.push_back(cv::Point2f(M.m10 / M.m00, M.m01 / M.m00));
-            }
-        }
-    }
+    // std::vector<std::vector<cv::Point>> contours;
+    // cv::findContours(bin_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);       
+    // std::vector<cv::Point2f> centroids;
+    // for (const auto& contour : contours) 
+    // {
+    //     if (cv::contourArea(contour) > 5.0) 
+    //     { 
+    //         cv::Moments M = cv::moments(contour);
+    //         if (M.m00 > 0) 
+    //         {
+    //             centroids.push_back(cv::Point2f(M.m10 / M.m00, M.m01 / M.m00));
+    //         }
+    //     }
+    // }
 
-    if (centroids.size() >= 2) 
-    {
-        // Step 3: 动态上下半区分组
-        float mean_y = 0.0f;
-        for (const  auto& pt : centroids) 
-        {
-            mean_y += pt.y;
-        }
-        mean_y /= centroids.size();
-        std::vector<cv::Point2f> upper_pts;
-        std::vector<cv::Point2f> lower_pts;
-        for (const auto& pt : centroids) 
-        {
-            if (pt.y < mean_y) 
-            {
-                upper_pts.push_back(pt);
-            }
-            else 
-            {
-                lower_pts.push_back(pt);
-            }
-        }
+    // if (centroids.size() >= 2) 
+    // {
+    //     // Step 3: 动态上下半区分组
+    //     float mean_y = 0.0f;
+    //     for (const  auto& pt : centroids) 
+    //     {
+    //         mean_y += pt.y;
+    //     }
+    //     mean_y /= centroids.size();
+    //     std::vector<cv::Point2f> upper_pts;
+    //     std::vector<cv::Point2f> lower_pts;
+    //     for (const auto& pt : centroids) 
+    //     {
+    //         if (pt.y < mean_y) 
+    //         {
+    //             upper_pts.push_back(pt);
+    //         }
+    //         else 
+    //         {
+    //             lower_pts.push_back(pt);
+    //         }
+    //     }
 
-        //拟合直线中心
-        cv::Point2f upper_center, lower_center;
-        bool has_upper = getLineCenter(upper_pts, upper_center);
-        bool has_lower = getLineCenter(lower_pts, lower_center);
+    //     //拟合直线中心
+    //     cv::Point2f upper_center, lower_center;
+    //     bool has_upper = getLineCenter(upper_pts, upper_center);
+    //     bool has_lower = getLineCenter(lower_pts, lower_center);
 
-        //得到中心
-        if (has_upper && has_lower) 
-        {
-            refined_x = safe_rect.x + (upper_center.x + lower_center.x) / 2.0f;
-            refined_y = safe_rect.y + (upper_center.y + lower_center.y) / 2.0f;
-        } 
-        else if (has_upper) 
-        { 
-            refined_x = safe_rect.x + upper_center.x;
-            refined_y = safe_rect.y + upper_center.y;
-        } 
-        else if (has_lower) 
-        {
-            refined_x = safe_rect.x + lower_center.x;
-            refined_y = safe_rect.y + lower_center.y;
-        }// 极限情况：一面被全遮挡
-    }
+    //     //得到中心
+    //     if (has_upper && has_lower) 
+    //     {
+    //         refined_x = safe_rect.x + (upper_center.x + lower_center.x) / 2.0f;
+    //         refined_y = safe_rect.y + (upper_center.y + lower_center.y) / 2.0f;
+    //     } 
+    //     else if (has_upper) 
+    //     { 
+    //         refined_x = safe_rect.x + upper_center.x;
+    //         refined_y = safe_rect.y + upper_center.y;
+    //     } 
+    //     else if (has_lower) 
+    //     {
+    //         refined_x = safe_rect.x + lower_center.x;
+    //         refined_y = safe_rect.y + lower_center.y;
+    //     }// 极限情况：一面被全遮挡
+    // }
+
 
     vision_interface::msg::DetectFly test_msg;
     test_msg.x = refined_x;
@@ -266,21 +265,17 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // int key = cv::waitKey(1) & 0xFF; 
 
     //     // 创建压缩图像消息
-    // sensor_msgs::msg::CompressedImage compressed_msg;
-    // compressed_msg.header.stamp = this->now();
-    // compressed_msg.header.frame_id = "camera_frame"; // 随便起个名字
-    // compressed_msg.format = "jpeg";
-
-    // // 设置 JPEG 压缩质量（0-100，50已经足够人眼调试了，且极小）
-    // std::vector<int> compression_params;
-    // compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
-    // compression_params.push_back(50); // 质量设为 50
-
-    // // 直接用 OpenCV 压缩到消息的 data 数组里
-    // cv::imencode(".jpg", img, compressed_msg.data, compression_params);
-
-    // // 发布出去
-    // debug_img_pub_->publish(compress的ed_msg);
+    if (publish_debug_frame) {
+        sensor_msgs::msg::CompressedImage compressed_msg;
+        compressed_msg.header = msg->header;
+        compressed_msg.format = "jpeg";
+        const std::vector<int> compression_params = { cv::IMWRITE_JPEG_QUALITY, 50 };
+        if (cv::imencode(".jpg", img, compressed_msg.data, compression_params)) 
+        {
+            last_debug_pub_time_ = debug_now;
+            debug_img_pub_->publish(std::move(compressed_msg));
+        }
+    }
 
 
     // 如果按下了空格 (32) 或 'p'jiuzant

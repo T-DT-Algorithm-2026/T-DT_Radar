@@ -2,6 +2,8 @@
 #define RADAR_DETECT_FLY_H
 
 #include <iostream>
+#include <array>
+#include <deque>
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -77,6 +79,7 @@ private:
     int image_save_counter_{0};
     bool save_images_ = false;
     std::chrono::steady_clock::time_point last_save_time_;
+    std::chrono::steady_clock::time_point last_debug_pub_time_{};
 };
 }  // namespace tdt_radar
 
