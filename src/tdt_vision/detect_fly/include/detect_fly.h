@@ -78,6 +78,7 @@ private:
     std::string save_dir_ = "./saved_images";
     int image_save_counter_{0};
     bool save_images_ = false;
+    int if_foxglove = 0;
     std::chrono::steady_clock::time_point last_save_time_;
     std::chrono::steady_clock::time_point last_debug_pub_time_{};
 };

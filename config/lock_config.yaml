@@ -14,17 +14,14 @@ kf_measurement_noise_y_px: 16.0
 # 它不是普通角加速度。程序按照
 # Q = q * [dt^3/3, dt^2/2; dt^2/2, dt]
 # 分别构造 yaw 和 pitch 的过程噪声矩阵。
-kf_q_rad2_s3: 0.05
+kf_q_rad2_s3: 0.01
 
-# ==================== 卡尔曼初始化与门限 ====================
+# ==================== 卡尔曼初始化 ====================
 # 第一次建立或重置卡尔曼时的角速度标准差，单位 deg/s。
 kf_initial_velocity_std_deg_s: 10.0
 
-# 测量创新的基础门限，单位 deg。
-kf_innovation_gate_base_deg: 0.15
-
-# 测量创新门限随帧间隔增长的速率，单位 deg/s。
-kf_innovation_gate_rate_deg_s: 10.0
-
 #延迟补偿 s
-control_delay_s: 0.020
+control_delay_s: 0.050
+
+# Foxglove 调试画面开关：0=不发布，1=发布
+if_foxglove: 1

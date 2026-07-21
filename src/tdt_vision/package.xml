@@ -43,6 +43,7 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>foxglove_bridge</exec_depend>
   <exec_depend>tdt_lock</exec_depend>
+  <exec_depend>databag_tool</exec_depend>
 
 
   <!-- <depend>builtin_interfaces</depend> -->

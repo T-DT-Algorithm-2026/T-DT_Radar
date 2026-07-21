@@ -117,8 +117,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     {
         if (kf_ptr == nullptr)
         {
-            kf_ptr = std::make_shared<Kalman_filter_plus>(
-                measured_angle, time_stamp, kf_config);
+            kf_ptr = std::make_shared<Kalman_filter_plus>(measured_angle, time_stamp, kf_config);
         }
         else
         {

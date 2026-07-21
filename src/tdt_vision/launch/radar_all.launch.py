@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import Shutdown
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 
@@ -20,6 +20,13 @@ def generate_launch_description():
         plugin="foxglove_bridge::FoxgloveBridge",
         name="foxglove_bridge_node",
         parameters=[{"send_buffer_limit": 1000000000}],
+        extra_arguments=common_extra_arguments,
+    )
+
+    debug_node = ComposableNode(
+        package="tdt_vision",
+        plugin="tdt_vision::NodeDebug",
+        name="debug_node",
         extra_arguments=common_extra_arguments,
     )
 
@@ -51,6 +58,13 @@ def generate_launch_description():
         extra_arguments=common_extra_arguments,
     )
 
+    record_node = Node(
+        package="databag_tool",
+        executable="BagRecorderNode",
+        name="record_node",
+        output="both",
+    )
+
     radar_container = ComposableNodeContainer(
         name="camera_detector_container",
         namespace="",
@@ -60,6 +74,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             camera_node,
             foxglove_node,
+            # debug_node,
             radar_detect_node,
             radar_resolve_node,
             radar_detect_fly_node,

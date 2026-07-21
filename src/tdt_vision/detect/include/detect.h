@@ -1,11 +1,13 @@
 #ifndef RADAR_DETECT_H
 #define RADAR_DETECT_H
 
+#include <chrono>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/header.hpp>
 #include "classify.hpp"
 #include "cv_bridge/cv_bridge.hpp"
 #include "geometry_msgs/msg/point.hpp"
@@ -38,14 +40,19 @@ public:
 
 
 private:
+    void publishDebugImage(const cv::Mat& image, const std_msgs::msg::Header& header);
+
     std::shared_ptr<Infer<yolo::BoxArray>>     yolo;
     std::shared_ptr<Infer<yolo::BoxArray>>     armor_yolo;
     std::shared_ptr<Infer<int>> classifier;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr pub;
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr debug_img_pub_;
 
     bool        if_rosbag = false;
+    int         if_foxglove = 0;
     int         EnemyColor;  // 0为蓝色 2为红色
-    int         debug;
+    int         debug = 1;
+    std::chrono::steady_clock::time_point last_debug_pub_time_{};
     std::string yolo_path;
     std::string armor_path;
     std::string classify_path;

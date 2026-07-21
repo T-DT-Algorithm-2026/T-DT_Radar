@@ -14,8 +14,6 @@ void Lock::read_config()
         kf_measurement_noise_y_px = 16.0;
         kf_q_rad2_s3 = 0.03;
         kf_initial_velocity_std_deg_s = 10.0;
-        kf_innovation_gate_base_deg = 0.15;
-        kf_innovation_gate_rate_deg_s = 10.0;
         control_delay_s = 0.015;
         RCLCPP_WARN(this->get_logger(), "无法打开 ./config/lock_config.yaml，卡尔曼使用全部默认值");
     }
@@ -65,28 +63,6 @@ void Lock::read_config()
             RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_initial_velocity_std_deg_s，" "使用默认值 10.0 deg/s");
         }
 
-        // 正常测量允许偏离预测值的基础角度，配置单位为 deg。
-        if (!fs["kf_innovation_gate_base_deg"].empty())
-        {
-            fs["kf_innovation_gate_base_deg"] >> kf_innovation_gate_base_deg;
-        }
-        else
-        {
-            kf_innovation_gate_base_deg = 0.15;
-            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_innovation_gate_base_deg，使用默认值 0.15 deg");
-        }
-
-        // 帧间隔变大时，创新门限按该速率增大，配置单位为 deg/s。
-        if (!fs["kf_innovation_gate_rate_deg_s"].empty())
-        {
-            fs["kf_innovation_gate_rate_deg_s"] >> kf_innovation_gate_rate_deg_s;
-        }
-        else
-        {
-            kf_innovation_gate_rate_deg_s = 10.0;
-            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_innovation_gate_rate_deg_s，" "使用默认值 10.0 deg/s");
-        }
-
         //延迟补偿s
         if (!fs["control_delay_s"].empty())
         {
@@ -109,11 +85,9 @@ void Lock::read_config()
     // Q：q 已使用卡尔曼内部需要的 rad^2/s^3，直接写入配置。
     kf_config.angular_acceleration_noise = kf_q_rad2_s3;
 
-    // 角度和角速度参数从 deg、deg/s 转换为 rad、rad/s。
+    // 角速度参数从 deg/s 转换为 rad/s。
     double deg_to_rad = CV_PI / 180.0;
     kf_config.initial_velocity_std_rad_s = kf_initial_velocity_std_deg_s * deg_to_rad;
-    kf_config.innovation_gate_base_rad = kf_innovation_gate_base_deg * deg_to_rad;
-    kf_config.innovation_gate_rate_rad_s = kf_innovation_gate_rate_deg_s * deg_to_rad;
 }
 
 }  // namespace tdt_lock

@@ -89,8 +89,6 @@ cv::Rect getSafeRect(cv::Mat& image, cv::Rect& rect)
 Detect::Detect(const rclcpp::NodeOptions& node_options)
     : Node("radar_detect_node", node_options)
 {
-    cv::namedWindow("detect", cv::WINDOW_NORMAL);
-
     // 使用system函数调用nvidia-smi命令
     std::cout << "Checking CUDA with nvidia-smi...\n";
     if (system("nvidia-smi") == 0) {
@@ -105,6 +103,31 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     fs["armor_path"] >> armor_path;
     fs["classify_path"] >> classify_path;
     fs.release();
+
+    cv::FileStorage lock_fs("./config/lock_config.yaml", cv::FileStorage::READ);
+    if (!lock_fs.isOpened()) 
+    {
+        RCLCPP_WARN(this->get_logger(), "Cannot open lock_config.yaml, Foxglove disabled.");
+    } 
+    else 
+    {
+        const cv::FileNode foxglove_node = lock_fs["if_foxglove"];
+        if (foxglove_node.empty()) 
+        {
+            RCLCPP_WARN(this->get_logger(), "lock_config.yaml has no if_foxglove, Foxglove disabled.");
+        } 
+        else 
+        {
+            foxglove_node >> if_foxglove;
+            if (if_foxglove != 0 && if_foxglove != 1) 
+            {
+                RCLCPP_WARN(this->get_logger(), "if_foxglove must be 0 or 1, Foxglove disabled.");
+                if_foxglove = 0;
+            }
+        }
+        lock_fs.release();
+    }
+    RCLCPP_INFO(this->get_logger(), "Detect if_foxglove: %d", if_foxglove);
 
     std::ifstream file1(yolo_path.c_str());
     if (!file1.good()) {
@@ -167,7 +190,34 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
         std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
+    debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_detect/compressed", rclcpp::SensorDataQoS().keep_last(1));
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
+}
+
+void Detect::publishDebugImage(const cv::Mat& image, const std_msgs::msg::Header& header)
+{
+    if (if_foxglove == 1) 
+    {
+        if (image.empty()) return;
+        if (debug_img_pub_->get_subscription_count() == 0 && debug_img_pub_->get_intra_process_subscription_count() == 0) return;
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last_debug_pub_time_ < std::chrono::milliseconds(50)) return;
+        cv::Mat debug_image;
+        cv::resize(image, debug_image, cv::Size(1536, 1125));
+        sensor_msgs::msg::CompressedImage compressed_msg;
+        compressed_msg.header = header;
+        compressed_msg.format = "jpeg";
+        const std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 50};
+        if (cv::imencode(".jpg", debug_image, compressed_msg.data, compression_params)) 
+        {
+            last_debug_pub_time_ = now;
+            debug_img_pub_->publish(std::move(compressed_msg));
+        }
+    } 
+    else 
+    {
+        return;
+    }
 }
 
 void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
@@ -185,17 +235,11 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     auto result = yolo->forward(image);
     if (result.size() == 0) {
         RCLCPP_INFO(this->get_logger(), "No Car!");
-        cv::Mat final_img;
-        cv::resize(img, final_img, cv::Size(1536, 1125));
-        cv::imshow("detect", final_img);
-        cv::waitKey(1);
+        publishDebugImage(img, msg->header);
         return;
     } else if (result.size() > MAX_CARS) {
         RCLCPP_INFO(this->get_logger(), "Too Many Car!");
-        cv::Mat final_img;
-        cv::resize(img, final_img, cv::Size(1536, 1125));
-        cv::imshow("detect", final_img);
-        cv::waitKey(1);
+        publishDebugImage(img, msg->header);
         return;
     }
 
@@ -245,6 +289,7 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     }  // 将armor_boxes存储到cars中
     if (!has_armor) {
         RCLCPP_INFO(this->get_logger(), "No Armor!");
+        publishDebugImage(img, msg->header);
         return;
     }
     // for(int i=0;i<cars.size();i++){
@@ -415,13 +460,7 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
 //                   cv::Point(fly_2d.x + 200, fly_2d.y + 150), cv::Scalar(0, 0, 255), 2);
 // }
 
-    cv::Mat final_img;
-    cv::resize(img, final_img, cv::Size(1536, 1125));
-    cv::imshow("detect", final_img);
-    auto key = cv::waitKey(1);
-    if (key == 'r') {
-        debug = !debug;
-    }
+    publishDebugImage(img, msg->header);
 }
 
 

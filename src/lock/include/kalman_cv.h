@@ -23,9 +23,6 @@ struct AngleKalmanConfig
     // 第一次建立滤波器时角速度的不确定度。值大一些能更快建立目标速度。
     double initial_velocity_std_rad_s = 10.0 * 3.14159265358979323846 / 180.0;
 
-    // 创新门限由基础角度和随帧间隔增长的角度两部分组成。
-    double innovation_gate_base_rad = 0.15 * 3.14159265358979323846 / 180.0;
-    double innovation_gate_rate_rad_s = 10.0 * 3.14159265358979323846 / 180.0;
 };
 
 // 标准线性卡尔曼的最小实现。
@@ -97,9 +94,8 @@ private:
 // 每收到一帧视觉测量，update() 内依次执行：
 //   1. 根据相邻图像时间戳计算 dt；
 //   2. 用匀角速度模型预测本帧时刻的角度和角速度；
-//   3. 对视觉测量做异常门控；
-//   4. 正常测量进入卡尔曼校正，连续三帧异常则重置；
-//   5. 控制层调用 predict()，再从图像时刻外推到实际控制时刻。
+//   3. 将本帧视觉测量用于卡尔曼校正；
+//   4. 控制层调用 predict()，再从图像时刻外推到实际控制时刻。
 class Kalman_filter_plus
 {
 public:
@@ -156,30 +152,9 @@ public:
         // 此时状态从上一帧后验值推进到当前图像时刻的先验值。
         filter_.predict(transition, process_noise);
 
-        // 第 3 步：使用当前绝对角度测量进行异常门控。
-        auto predicted = filter_.state();
-        cv::Point2d measurement = input;
-
-        // 门限随 dt 增大，允许目标在低帧率或偶发丢帧时产生更大的正常位移。
-        double gate = config_.innovation_gate_base_rad
-                    + config_.innovation_gate_rate_rad_s * dt;
-        if (std::abs(measurement.x - predicted(0)) > gate
-            || std::abs(measurement.y - predicted(2)) > gate)
-        {
-            ++consecutive_outliers_;
-            if (consecutive_outliers_ >= 3)
-            {
-                // 连续三帧都偏离旧轨迹，认为目标确实跳到了新位置，重新建滤波器。
-                reset(measurement);
-            }
-            // 单帧或双帧异常只使用运动模型预测，不让误检直接拉走状态。
-            return;
-        }
-        consecutive_outliers_ = 0;
-
-        // 第 4 步：z 是视觉测得的绝对目标角度。
+        // 第 3 步：z 是视觉测得的绝对目标角度。
         StandardKF<4, 2>::Measurement z;
-        z << measurement.x, measurement.y;
+        z << input.x, input.y;
 
         // H 从状态 [yaw, yaw_rate, pitch, pitch_rate] 中只取 yaw 和 pitch。
         StandardKF<4, 2>::MeasurementMatrix observation =
@@ -197,7 +172,7 @@ public:
 
     cv::Point2d predict(double horizon_seconds) const
     {
-        // 第 5 步：当前滤波状态位于图像时间戳，继续按估计角速度向未来外推。
+        // 第 4 步：当前滤波状态位于图像时间戳，继续按估计角速度向未来外推。
         // horizon = 图像处理延迟 + 串口/云台附加响应延迟。
         // 这里只计算输出，不改变滤波器内部状态，避免影响下一帧测量更新。
         auto state = filter_.state();
@@ -222,13 +197,11 @@ private:
         double pitch_variance = std::pow(config_.measurement_std_pitch_rad, 2);
         double velocity_variance = std::pow(config_.initial_velocity_std_rad_s, 2);
         filter_.init(angles, yaw_variance, pitch_variance, velocity_variance);
-        consecutive_outliers_ = 0;
     }
 
     StandardKF<4, 2> filter_;       // 四状态、两测量的线性卡尔曼
     rclcpp::Time last_time_;        // 上一帧图像时间戳，用于计算 dt
     AngleKalmanConfig config_;      // 当前滤波器使用的固定参数
-    int consecutive_outliers_ = 0; // 连续异常测量计数
 };
 
 }  // namespace tdt_lock

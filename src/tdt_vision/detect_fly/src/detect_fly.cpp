@@ -64,6 +64,30 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     }
     fs2.release();
 
+    cv::FileStorage lock_fs("./config/lock_config.yaml", cv::FileStorage::READ);
+    if (!lock_fs.isOpened()) 
+    {
+        RCLCPP_WARN(this->get_logger(), "Cannot open lock_config.yaml, Foxglove disabled.");
+    } 
+    else 
+    {
+        const cv::FileNode foxglove_node = lock_fs["if_foxglove"];
+        if (foxglove_node.empty()) 
+        {
+            RCLCPP_WARN(this->get_logger(), "lock_config.yaml has no if_foxglove, Foxglove disabled.");
+        } else 
+        {
+            foxglove_node >> if_foxglove;
+            if (if_foxglove != 0 && if_foxglove != 1) 
+            {
+                RCLCPP_WARN(this->get_logger(), "if_foxglove must be 0 or 1, Foxglove disabled.");
+                if_foxglove = 0;
+            }
+        }
+        lock_fs.release();
+    }
+    RCLCPP_INFO(this->get_logger(), "if_foxglove: %d", if_foxglove);
+
     if (save_images_) 
     {
         std::filesystem::create_directories(save_dir_);
@@ -99,7 +123,15 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
     if (img.empty()) return;
     const auto debug_now = std::chrono::steady_clock::now();
-    const bool publish_debug_frame = (debug_img_pub_->get_subscription_count() > 0 || debug_img_pub_->get_intra_process_subscription_count() > 0) && (debug_now - last_debug_pub_time_ >= std::chrono::milliseconds(50));
+    bool publish_debug_frame = false;
+    if (if_foxglove == 1) 
+    {
+        publish_debug_frame = (debug_img_pub_->get_subscription_count() > 0 || debug_img_pub_->get_intra_process_subscription_count() > 0) && (debug_now - last_debug_pub_time_ >= std::chrono::milliseconds(50));
+    } 
+    else 
+    {
+        publish_debug_frame = false;
+    }
     cv::Mat roi;
     bool save_images_ = false;
 
@@ -265,7 +297,8 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     // int key = cv::waitKey(1) & 0xFF; 
 
     //     // 创建压缩图像消息
-    if (publish_debug_frame) {
+    if (publish_debug_frame) 
+    {
         sensor_msgs::msg::CompressedImage compressed_msg;
         compressed_msg.header = msg->header;
         compressed_msg.format = "jpeg";

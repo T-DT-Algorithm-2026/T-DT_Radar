@@ -73,8 +73,6 @@ private:
     double kf_measurement_noise_y_px;
     double kf_q_rad2_s3;
     double kf_initial_velocity_std_deg_s;
-    double kf_innovation_gate_base_deg;
-    double kf_innovation_gate_rate_deg_s;
     double control_delay_s = 0.015;
 
     // read_config() 完成单位转换后，将上述参数汇总到卡尔曼实际使用的配置中。
