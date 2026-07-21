@@ -15,7 +15,9 @@ void Lock::read_config()
         kf_q_rad2_s3 = 0.03;
         kf_initial_velocity_std_deg_s = 10.0;
         control_delay_s = 0.015;
-        RCLCPP_WARN(this->get_logger(), "无法打开 ./config/lock_config.yaml，卡尔曼使用全部默认值");
+        kp_x = 1.0;
+        kp_y = 1.0;
+        RCLCPP_WARN(this->get_logger(), "无法打开 ./config/lock_config.yaml，lock 使用全部默认值");
     }
     else
     {
@@ -72,6 +74,28 @@ void Lock::read_config()
         {
             control_delay_s = 0.015;
             RCLCPP_WARN(this->get_logger(), "lock_config 缺少 control_delay_s，" "使用默认值 0.015 s");
+        }
+
+        // yaw 角度误差的比例增益。
+        if (!fs["kp_x"].empty())
+        {
+            fs["kp_x"] >> kp_x;
+        }
+        else
+        {
+            kp_x = 1.0;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kp_x，使用默认值 1.0");
+        }
+
+        // pitch 角度误差的比例增益。
+        if (!fs["kp_y"].empty())
+        {
+            fs["kp_y"] >> kp_y;
+        }
+        else
+        {
+            kp_y = 1.0;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kp_y，使用默认值 1.0");
         }
     }
 

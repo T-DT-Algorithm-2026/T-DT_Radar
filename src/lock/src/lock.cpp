@@ -125,6 +125,8 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
         }
         predicted_angle = kf_ptr->predict(predict_time);
         angle_speed = kf_ptr->angular_velocity();
+        // std::cout<<"预测角度"<<predicted_angle.x<<","<<predicted_angle.y<<std::endl;
+        // std::cout<<"速度"<<angle_speed.x<<","<<angle_speed.y<<std::endl;
     }
     else
     {
