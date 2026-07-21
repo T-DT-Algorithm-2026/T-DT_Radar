@@ -38,6 +38,7 @@ class RadioBuffSender : public BaseUsartSender {
     uint8_t undefence[5];
     uint16_t attack[5];
     uint8_t sentry_posture;
+    uint8_t main_posture[5];
 
     int16_t frame_id;
     uint16_t CRC16CheckSum;
@@ -57,6 +58,7 @@ class RadioBuffSender : public BaseUsartSender {
       send_data.defence[i] = msg->defence[i];
       send_data.undefence[i] = msg->undefence[i];
       send_data.attack[i] = msg->attack[i];
+      send_data.main_posture[i] = msg->main_posture[i];
     }
     send_data.sentry_posture = msg->sentry_posture;
     send_data.frame_id = frame_id_++;
