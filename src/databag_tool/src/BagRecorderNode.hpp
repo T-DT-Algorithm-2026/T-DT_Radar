@@ -132,66 +132,70 @@ void BagRecorderNode::search_topic(const std::string topic_name, std::unique_ptr
 
 void BagRecorderNode::search_topic(RecordSection &section)
 {   
-    std::string topic_name = section.unfind_topics.front();
-    // 获取 ROS 图中的话题信息
+    // Take one graph snapshot, then check every unresolved topic.  Checking only
+    // unfind_topics.front() causes all later topics to be blocked forever when
+    // one configured publisher (for example /livox/lidar) is not running.
     auto topic_info_map = this->get_topic_names_and_types();
 
-    // 查找指定话题的类型
-    std::string topic_type;
-    for (const auto &topic_info : topic_info_map) 
+    for (auto it = section.unfind_topics.begin();
+         it != section.unfind_topics.end();)
     {
-      if (topic_info.first == topic_name) 
+      const std::string topic_name = *it;
+      std::string topic_type;
+      for (const auto &topic_info : topic_info_map)
       {
-        topic_type = topic_info.second.front();
-        break;
+        if (topic_info.first == topic_name && !topic_info.second.empty())
+        {
+          topic_type = topic_info.second.front();
+          break;
+        }
       }
-    }
-    // 如果找到了类型，则动态创建订阅 (创建一个泛型订阅器来订阅这个主题并处理接收到的消息)
-    if (!topic_type.empty()) 
-    {
-      writer_create_topics(section.writer, topic_name, topic_type);
+
+      if (topic_type.empty())
+      {
+        ++it;
+        continue;
+      }
+
+      {
+        std::lock_guard<std::mutex> lock(writer_mutex_);
+        writer_create_topics(section.writer, topic_name, topic_type);
+        for (auto &topic_info : section.topic_info_of_this_section)
+        {
+          if (topic_info.topic_name == topic_name)
+          {
+            topic_info.topic_type = topic_type;
+            break;
+          }
+        }
+      }
 
       auto topics_interface = this->get_node_topics_interface();
       rcutils_allocator_t allocator = rcutils_get_default_allocator();
 
       auto subscription = rclcpp::create_generic_subscription(
-        topics_interface,
-        topic_name,
-        topic_type,
-        // 12000,
-        rclcpp::SensorDataQoS(),
-        [this, topic_name, topic_type, allocator, &section](std::shared_ptr<rclcpp::SerializedMessage> msg) {
-          // 在这里处理消息,将消息写入 rosbag
-          auto bag_msg = std::make_shared<rosbag2_storage::SerializedBagMessage>();
-          bag_msg->serialized_data = std::make_shared<rcutils_uint8_array_t>();
-          bag_msg->topic_name = topic_name;
-          bag_msg->recv_timestamp= this->now().nanoseconds();
-          bag_msg->serialized_data->buffer = msg->get_rcl_serialized_message().buffer;
-          bag_msg->serialized_data->buffer_length = msg->get_rcl_serialized_message().buffer_length;
-          bag_msg->serialized_data->buffer_capacity = msg->get_rcl_serialized_message().buffer_capacity;
-          // bag_msg->serialized_data->allocator = msg->get_rcl_serialized_message().allocator;
-          bag_msg->serialized_data->allocator = allocator;
+          topics_interface,
+          topic_name,
+          topic_type,
+          rclcpp::SensorDataQoS(),
+          [this, topic_name, allocator, &section](std::shared_ptr<rclcpp::SerializedMessage> msg) {
+            auto bag_msg = std::make_shared<rosbag2_storage::SerializedBagMessage>();
+            bag_msg->serialized_data = std::make_shared<rcutils_uint8_array_t>();
+            bag_msg->topic_name = topic_name;
+            bag_msg->recv_timestamp = this->now().nanoseconds();
+            bag_msg->serialized_data->buffer = msg->get_rcl_serialized_message().buffer;
+            bag_msg->serialized_data->buffer_length = msg->get_rcl_serialized_message().buffer_length;
+            bag_msg->serialized_data->buffer_capacity = msg->get_rcl_serialized_message().buffer_capacity;
+            bag_msg->serialized_data->allocator = allocator;
 
-          std::lock_guard<std::mutex> lock(writer_mutex_);
+            std::lock_guard<std::mutex> lock(writer_mutex_);
+            section.writer->write(bag_msg);
+          });
 
-          section.writer->write(bag_msg);
-          
-        });
-
-        subscriptions.push_back(subscription);
-        unfind_topic_num --;
-        for(auto& topic_info :section.topic_info_of_this_section)
-        {
-            if(topic_info.topic_name ==  topic_name)
-                topic_info.topic_type = topic_type;
-        }
-        section.unfind_topics.erase(section.unfind_topics.begin());
-        RCLCPP_INFO(this->get_logger(), "录制端捕获 topic %s of type %s", topic_name.c_str(), topic_type.c_str());
-        // RCLCPP_INFO(this->get_logger(), "unfind_topic_num %d", unfind_topic_num);
-
-    } else {
-      ;
-      // RCLCPP_ERROR(this->get_logger(), "Topic %s not found or has no type,注意是不是缺少/", topic_name.c_str());
+      subscriptions.push_back(subscription);
+      --unfind_topic_num;
+      it = section.unfind_topics.erase(it);
+      RCLCPP_INFO(this->get_logger(), "录制端捕获 topic %s of type %s", topic_name.c_str(), topic_type.c_str());
     }
 }
 
@@ -307,8 +311,13 @@ void BagRecorderNode::work()
                   std::lock_guard<std::mutex> lock(writer_mutex_);
                   open_new_bag(section.writer, section.folder_path+"/bag_" + generate_str_of_timestamp() );
                   for(auto &topic_info : section.topic_info_of_this_section)
-                  {   
-                      writer_create_topics(section.writer, topic_info.topic_name, topic_info.topic_type);
+                  {
+                      // Topics that have not appeared in the ROS graph do not
+                      // have a type yet and cannot be valid rosbag topics.
+                      if (!topic_info.topic_type.empty())
+                      {
+                          writer_create_topics(section.writer, topic_info.topic_name, topic_info.topic_type);
+                      }
                   }
               }
               // Reset the timer

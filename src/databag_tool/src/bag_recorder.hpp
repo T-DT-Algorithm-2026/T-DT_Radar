@@ -244,7 +244,7 @@ void BagRecoder::search_topic(RecordSection &section)
         std::string topic_type;
         for (const auto &topic_info : topic_info_map) 
         {
-          if (topic_info.first == topic_name) 
+          if (topic_info.first == topic_name && !topic_info.second.empty())
           {
             topic_type = topic_info.second.front();
             break;
@@ -254,7 +254,18 @@ void BagRecoder::search_topic(RecordSection &section)
         // 如果找到了类型，则动态创建订阅 (创建一个泛型订阅器来订阅这个主题并处理接收到的消息)
         if (!topic_type.empty()) 
         {
-          writer_create_topics(section.writer, topic_name, topic_type);
+          {
+            std::lock_guard<std::mutex> lock(writer_mutex_);
+            writer_create_topics(section.writer, topic_name, topic_type);
+            for(auto& topic_info :section.topic_info_of_this_section)
+            {
+                if(topic_info.topic_name == topic_name)
+                {
+                    topic_info.topic_type = topic_type;
+                    break;
+                }
+            }
+          }
 
           auto topics_interface = ros2_node_->get_node_topics_interface();
           rcutils_allocator_t allocator = rcutils_get_default_allocator();
@@ -284,12 +295,6 @@ void BagRecoder::search_topic(RecordSection &section)
 
             subscriptions.push_back(subscription);
             unfind_topic_num --;
-            for(auto& topic_info :section.topic_info_of_this_section)
-            {
-                if(topic_info.topic_name ==  topic_name)
-                    topic_info.topic_type = topic_type;
-            }
-            
             // 【改动3】：使用迭代器删除找到的元素，并将迭代器自动指向下一个位置
             it = section.unfind_topics.erase(it);
             
@@ -413,8 +418,11 @@ void BagRecoder::work()
                   std::lock_guard<std::mutex> lock(writer_mutex_);
                   open_new_bag(section.writer, section.folder_path+"/bag_" + generate_str_of_timestamp() );
                   for(auto &topic_info : section.topic_info_of_this_section)
-                  {   
-                      writer_create_topics(section.writer, topic_info.topic_name, topic_info.topic_type);
+                  {
+                      if (!topic_info.topic_type.empty())
+                      {
+                          writer_create_topics(section.writer, topic_info.topic_name, topic_info.topic_type);
+                      }
                   }
               }
               // Reset the timer
