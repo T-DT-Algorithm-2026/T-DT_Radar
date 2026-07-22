@@ -110,9 +110,21 @@ BagRecorderNode::BagRecorderNode(const rclcpp::NodeOptions & node_options)
         }
     }
 
-    main_work_thread_ = std::make_shared<std::thread>(&BagRecorderNode::work, this);
+    main_work_thread_ = std::thread(&BagRecorderNode::work, this);
 
 
+}
+
+BagRecorderNode::~BagRecorderNode()
+{
+    stop_requested_ = true;
+
+    if (main_work_thread_.joinable()) {
+        main_work_thread_.join();
+    }
+    if (topic_search_thread_.joinable()) {
+        topic_search_thread_.join();
+    }
 }
 
 #include <rclcpp_components/register_node_macro.hpp>

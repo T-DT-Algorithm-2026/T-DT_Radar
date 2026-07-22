@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <chrono>
+#include <atomic>
+#include <thread>
 #include <sys/statfs.h>
 #include "rosbag2_cpp/writer.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -21,6 +23,7 @@ class BagRecorderNode final :public rclcpp::Node
 {
 public:
     BagRecorderNode(const rclcpp::NodeOptions & node_options);
+    ~BagRecorderNode() override;
 
     void work();
 
@@ -61,7 +64,9 @@ private:
     int unfind_topic_num;
     std::mutex writer_mutex_; // 互斥锁，用于保护对rosbag2_cpp::Writer实例的访问
     YAML::Node config_record;
-    std::shared_ptr<std::thread> main_work_thread_;
+    std::thread main_work_thread_;
+    std::thread topic_search_thread_;
+    std::atomic_bool stop_requested_{false};
 
 };
 
@@ -241,9 +246,9 @@ void BagRecorderNode::work()
         open_new_bag(section.writer, section.folder_path+"/bag_"+generate_str_of_timestamp() );
     }
 
-    std::thread([this]() {
+    topic_search_thread_ = std::thread([this]() {
         rclcpp::Rate rate10(10);
-        while (unfind_topic_num) 
+        while (!stop_requested_ && rclcpp::ok() && unfind_topic_num)
         { 
 
             // for(int i=0; i< record_section_num; i++)
@@ -269,14 +274,7 @@ void BagRecorderNode::work()
         {
           std::cout<<"捕获所有目标 topic \n";
         }
-        rclcpp::Rate rate0_1(0.1);
-        while(rclcpp::ok()) //  !!!!!!!!
-        {
-          rate0_1.sleep();
-        }
-        rclcpp::shutdown();
-
-    }).detach();
+    });
 
     // std::thread([this]() {
     //   rclcpp::spin(ros2_node_);
@@ -287,7 +285,7 @@ void BagRecorderNode::work()
     auto start_record_time = std::chrono::system_clock::now();
     auto start_bag_time = std::chrono::system_clock::now();
     rclcpp::Rate rate(20);
-    while(rclcpp::ok())
+    while(!stop_requested_ && rclcpp::ok())
     {
       if((std::chrono::system_clock::now() - start_record_time) > std::chrono::seconds(forced_stop_time))
         rclcpp::shutdown();
