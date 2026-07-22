@@ -30,5 +30,14 @@ kp_x: 1
 # pitch 角度误差的比例增益。
 kp_y: 1
 
-# Foxglove 调试画面开关：0=不发布，1=发布
-if_foxglove: 1
+# 相机1压缩开关：0=不压缩，1=异步压缩并发布 /compressed_image
+compress_detect_image: 1
+
+# 相机1压缩画面绘制开关：调试时设为1，比赛录制时设为0
+draw_detect_image: 1
+
+# 相机2压缩开关：0=不压缩，1=异步压缩并发布 /compressed_image2
+compress_image: 1
+
+# 压缩画面绘制开关：调试时设为1，比赛录制时设为0
+draw_compressed_image: 1

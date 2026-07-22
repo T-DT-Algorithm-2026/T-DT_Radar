@@ -12,9 +12,12 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
 
     // 使用system函数调用nvidia-smi命令
     std::cout << "Checking CUDA with nvidia-smi...\n";
-    if (system("nvidia-smi") == 0) {
+    if (system("nvidia-smi") == 0)
+    {
         RCLCPP_INFO(this->get_logger(), "CUDA is available.");
-    } else {
+    }
+    else
+    {
         RCLCPP_ERROR(this->get_logger(), "CUDA is not available. Exiting.");
         rclcpp::shutdown();
     }
@@ -23,7 +26,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     fs["fly_path"] >> fly_path;
     fs.release();
     std::ifstream file1(fly_path.c_str());
-    if (!file1.good()) 
+    if (!file1.good())
     {
         system("python3 src/utils/onnx2trt.py "
                "--onnx=model/ONNX/fly_all.onnx "
@@ -33,8 +36,8 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
                "--maxBatch 2 "
                "--Shape=960x1280 "
                "--input_name=images");
-    } 
-    else 
+    }
+    else
     {
         std::cout<<"Load yolo engine!"<<std::endl;
     }
@@ -54,7 +57,7 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     // 使用反比例函数模型：u = A/D + B
     float inv_d1 = 1.0f / dist1;
     float inv_d2 = 1.0f / dist2;
-    if (std::abs(inv_d1 - inv_d2) > 1e-5) 
+    if (std::abs(inv_d1 - inv_d2) > 1e-5)
     {
         A_x = (target_x1 - target_x2) / (inv_d1 - inv_d2);
         B_x = target_x1 - A_x * inv_d1;
@@ -65,30 +68,19 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     fs2.release();
 
     cv::FileStorage lock_fs("./config/lock_config.yaml", cv::FileStorage::READ);
-    if (!lock_fs.isOpened()) 
+    if (!lock_fs.isOpened())
     {
-        RCLCPP_WARN(this->get_logger(), "Cannot open lock_config.yaml, Foxglove disabled.");
-    } 
-    else 
+        RCLCPP_WARN(this->get_logger(), "Cannot open lock_config.yaml, image compression disabled.");
+    }
+    else
     {
-        const cv::FileNode foxglove_node = lock_fs["if_foxglove"];
-        if (foxglove_node.empty()) 
-        {
-            RCLCPP_WARN(this->get_logger(), "lock_config.yaml has no if_foxglove, Foxglove disabled.");
-        } else 
-        {
-            foxglove_node >> if_foxglove;
-            if (if_foxglove != 0 && if_foxglove != 1) 
-            {
-                RCLCPP_WARN(this->get_logger(), "if_foxglove must be 0 or 1, Foxglove disabled.");
-                if_foxglove = 0;
-            }
-        }
+        lock_fs["compress_image"] >> compress_image_;
+        lock_fs["draw_compressed_image"] >> draw_compressed_image_;
         lock_fs.release();
     }
-    RCLCPP_INFO(this->get_logger(), "if_foxglove: %d", if_foxglove);
+    RCLCPP_INFO(this->get_logger(), "compress_image: %d, draw_compressed_image: %d", compress_image_, draw_compressed_image_);
 
-    if (save_images_) 
+    if (save_images_)
     {
         std::filesystem::create_directories(save_dir_);
     }
@@ -97,7 +89,12 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     image_sub = this->create_subscription<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS().keep_last(1),std::bind(&DetectFly::callback, this, std::placeholders::_1));
     player_control_pub_ = this->create_publisher<std_msgs::msg::String>("/rosbag_player/control", 10);
     fly_pub_ = this->create_publisher<vision_interface::msg::DetectFly>("detect_fly", rclcpp::SensorDataQoS().keep_last(1));
-    debug_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("debug_image/compressed", rclcpp::SensorDataQoS().keep_last(1));
+    if (compress_image_)
+    {
+        compressed_img_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("compressed_image2", rclcpp::SensorDataQoS().keep_last(1));
+        compress_running_.store(true, std::memory_order_release);
+        compress_thread_ = std::thread(&DetectFly::compressLoop, this);
+    }
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>("/livox/lidar_fly_point", 10, std::bind(&DetectFly::lidar_callback, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "Detect_fly node has been started.");
 
@@ -121,25 +118,18 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     const rclcpp::Time begin_ros = this->now();
     const double timestamp_to_begin_ms = static_cast<double>((begin_ros - time_stamp).nanoseconds()) / 1.0e6;
     std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
-    if (img.empty()) return;
-    const auto debug_now = std::chrono::steady_clock::now();
-    bool publish_debug_frame = false;
-    if (if_foxglove == 1) 
+    if (img.empty())
     {
-        publish_debug_frame = (debug_img_pub_->get_subscription_count() > 0 || debug_img_pub_->get_intra_process_subscription_count() > 0) && (debug_now - last_debug_pub_time_ >= std::chrono::milliseconds(50));
-    } 
-    else 
-    {
-        publish_debug_frame = false;
+        return;
     }
     cv::Mat roi;
     bool save_images_ = false;
 
     // 每 0.5 秒保存一张原始图片（受 save_images 参数控制）
-    if (save_images_) 
+    if (save_images_)
     {
         auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_save_time_).count() >= 200) 
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_save_time_).count() >= 200)
         {
             std::ostringstream oss;
             oss << save_dir_ << "/" << std::setw(4) << std::setfill('0') << image_save_counter_++ << ".png";
@@ -152,21 +142,9 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     tdt_radar::Image image(img.data, img.cols, img.rows);
 
     auto result = fly->forward(image);
-    if (result.size() == 0) 
+    if (result.size() == 0)
     {
         // RCLCPP_INFO(this->get_logger(), "No Fly!");
-        if (publish_debug_frame) {
-            sensor_msgs::msg::CompressedImage compressed_msg;
-            compressed_msg.header = msg->header;
-            compressed_msg.format = "jpeg";
-            const std::vector<int> compression_params = { cv::IMWRITE_JPEG_QUALITY, 50 };
-            if (cv::imencode(".jpg", img, compressed_msg.data, compression_params)) 
-            {
-                last_debug_pub_time_ = debug_now;
-                debug_img_pub_->publish(std::move(compressed_msg));
-            }
-        }
-
         // if((this->now().seconds() - lidar_time.seconds()) < 1)
         // {
         //     cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
@@ -181,6 +159,9 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         // std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
         // std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
         // std::cout << "Detect Fly Time: " << time_used.count() * 1000 << "ms" << std::endl;
+        CompressTask compress_task;
+        compress_task.image = msg;
+        scheduleCompress(std::move(compress_task));
         return;
     }
     auto best_result = std::max_element(
@@ -188,14 +169,13 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         [](const yolo::Box& a, const yolo::Box& b) {
             return a.confidence < b.confidence;
         });
-    if(result.size() > 1) 
+    if (result.size() > 1)
     {
         RCLCPP_INFO(this->get_logger(), "Too Many Fly! Select confidence: %.3f", best_result->confidence);
     }
     // std::cout<<"Detect Fly Num:"<<result.size()<<std::endl;
 
     auto fly_rect = cv::Rect(best_result->left, best_result->top,best_result->right - best_result->left, best_result->bottom - best_result->top);//1376
-    cv::rectangle(img, fly_rect, cv::Scalar(0, 255, 0), 1);
     cv::Rect safe_rect = getSafeRect(img, fly_rect);
     roi = img(safe_rect);
 
@@ -281,35 +261,19 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
     std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
-    cv::circle(img, cv::Point2f(test_msg.x, test_msg.y), 1, cv::Scalar(255, 255, 0), -1);
-
-    if((this->now().seconds() - lidar_time.seconds()) < 1)
+    cv::Point2f aim_point;
+    if ((this->now().seconds() - lidar_time.seconds()) < 1)
     {
-        cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
+        aim_point = target_point;
     }
     else
     {
-        cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
-    } //准心
+        aim_point = cv::Point2f(720, 540);
+    }
     // std::cout<<"target_point:"<<target_point.x<<","<<target_point.y<<std::endl;
 
     // cv::imshow("detect_fly", img);
     // int key = cv::waitKey(1) & 0xFF; 
-
-    //     // 创建压缩图像消息
-    if (publish_debug_frame) 
-    {
-        sensor_msgs::msg::CompressedImage compressed_msg;
-        compressed_msg.header = msg->header;
-        compressed_msg.format = "jpeg";
-        const std::vector<int> compression_params = { cv::IMWRITE_JPEG_QUALITY, 50 };
-        if (cv::imencode(".jpg", img, compressed_msg.data, compression_params)) 
-        {
-            last_debug_pub_time_ = debug_now;
-            debug_img_pub_->publish(std::move(compressed_msg));
-        }
-    }
-
 
     // 如果按下了空格 (32) 或 'p'jiuzant
     // if (key == 32 || key == 'p') 
@@ -334,6 +298,14 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
     // std::cout << "Detect Fly Time2: " << time_used.count() * 1000 << "ms" << std::endl;
+
+    CompressTask compress_task;
+    compress_task.image = msg;
+    compress_task.has_target = true;
+    compress_task.target_rect = fly_rect;
+    compress_task.detect_point = cv::Point2f(test_msg.x, test_msg.y);
+    compress_task.aim_point = aim_point;
+    scheduleCompress(std::move(compress_task));
 }
 
 cv::Rect DetectFly::getSafeRect(cv::Mat& image, cv::Rect& rect)

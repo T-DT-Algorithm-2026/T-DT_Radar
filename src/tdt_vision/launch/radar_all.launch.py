@@ -23,13 +23,6 @@ def generate_launch_description():
         extra_arguments=common_extra_arguments,
     )
 
-    debug_node = ComposableNode(
-        package="tdt_vision",
-        plugin="tdt_vision::NodeDebug",
-        name="debug_node",
-        extra_arguments=common_extra_arguments,
-    )
-
     radar_detect_node = ComposableNode(
         package="tdt_vision",
         plugin="tdt_radar::Detect",
@@ -74,7 +67,6 @@ def generate_launch_description():
         composable_node_descriptions=[
             camera_node,
             foxglove_node,
-            # debug_node,
             radar_detect_node,
             radar_resolve_node,
             radar_detect_fly_node,
@@ -85,4 +77,4 @@ def generate_launch_description():
         on_exit=Shutdown(),
     )
 
-    return LaunchDescription([radar_container])
+    return LaunchDescription([radar_container , record_node])

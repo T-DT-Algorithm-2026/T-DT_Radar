@@ -7,9 +7,15 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
+#include <thread>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/string.hpp>
 #include "cv_bridge/cv_bridge.hpp"
@@ -38,8 +44,6 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/utilities.hpp>
 
-#include <sensor_msgs/msg/compressed_image.hpp>
-
 namespace tdt_radar {
 
 struct KeyPoints 
@@ -52,12 +56,13 @@ struct KeyPoints
 class DetectFly final : public rclcpp::Node {
 public:
     explicit DetectFly(const rclcpp::NodeOptions& options);
+    ~DetectFly() override;
     void callback(const std::shared_ptr<sensor_msgs::msg::Image> msg);
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;//相机图片
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr player_control_pub_;//暂停
     rclcpp::Publisher<vision_interface::msg::DetectFly>::SharedPtr fly_pub_;//检测点
 
-    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr debug_img_pub_;//调试图片
+    rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_img_pub_;//压缩图片
 
     rclcpp::Subscription<geometry_msgs::msg::Point32>::SharedPtr lidar_sub;
     void lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg);
@@ -66,6 +71,19 @@ public:
     bool getLineCenter(const std::vector<cv::Point2f>& pts, cv::Point2f& center);
 
 private:
+    struct CompressTask
+    {
+        sensor_msgs::msg::Image::SharedPtr image;
+        bool has_target = false;
+        cv::Rect target_rect;
+        cv::Point2f detect_point;
+        cv::Point2f aim_point;
+    };
+
+    void scheduleCompress(CompressTask task);
+    void compressLoop();
+    void compressAndPublish(const CompressTask& task);
+
     std::shared_ptr<Infer<yolo::BoxArray>> fly;
     std::string fly_path;
 
@@ -78,9 +96,19 @@ private:
     std::string save_dir_ = "./saved_images";
     int image_save_counter_{0};
     bool save_images_ = false;
-    int if_foxglove = 0;
+
+    int compress_image_ = 0;
+    int draw_compressed_image_ = 0;
+    bool has_compressed_subscriber_ = false;
+    int compressed_image_quality_ = 50;
+    std::mutex compress_mutex_;
+    std::condition_variable compress_cv_;
+    std::optional<CompressTask> pending_compress_task_;
+    std::thread compress_thread_;
+    std::atomic<bool> compress_running_{false};
+    std::atomic<uint64_t> dropped_compress_frames_{0};
     std::chrono::steady_clock::time_point last_save_time_;
-    std::chrono::steady_clock::time_point last_debug_pub_time_{};
+    std::chrono::steady_clock::time_point last_subscriber_check_time_{};
 };
 }  // namespace tdt_radar
 

@@ -32,14 +32,6 @@ def generate_launch_description():
             extra_arguments=[{'use_intra_process_comms': True}]
         )
 
-    def get_debug_node(package, plugin):
-        return ComposableNode(
-            package=package,
-            plugin=plugin,
-            name='debug_node',
-            extra_arguments=[{'use_intra_process_comms': True}]
-        )
-
     def get_record_node(package, plugin):
         return ComposableNode(
             package=package,
@@ -49,7 +41,7 @@ def generate_launch_description():
             extra_arguments=[{'use_intra_process_comms': True}]
         )
 
-    def get_camera_detector_container(camera_node, foxglove_node, debug_node, record_node):
+    def get_camera_detector_container(camera_node, foxglove_node, record_node):
         return ComposableNodeContainer(
             name='camera_detector_container',
             namespace='',
@@ -59,7 +51,6 @@ def generate_launch_description():
                 #变向设置启动顺序
                 camera_node,
                 foxglove_node,
-                # debug_node
                 # record_node
             ],
             output='both',
@@ -71,12 +62,11 @@ def generate_launch_description():
     # 创建节点描述
     camera_node = get_camera_node('tdt_vision', 'tdt_vision::TDTCameraNode')
     foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
-    tdt_debug_node = get_debug_node('tdt_vision', 'tdt_vision::NodeDebug')
     record_node = get_record_node('databag_tool', 'BagRecorderNode')
 
 
     # 创建节点容器
-    cam_detector = get_camera_detector_container(camera_node, foxglove_node, tdt_debug_node, record_node)
+    cam_detector = get_camera_detector_container(camera_node, foxglove_node, record_node)
     return LaunchDescription([
             cam_detector,
         ])

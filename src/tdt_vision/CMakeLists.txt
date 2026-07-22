@@ -13,7 +13,6 @@ include_directories(
     "calibrate/include"
     "calibrate_fly/include"
     "camera/include"
-    "tdt_debug/include"
     "TDT_Camera/include"
     "record/include"
 )
@@ -129,17 +128,6 @@ rclcpp_components_register_node(${RADAR_CALIBRATE_FLY}
     PLUGIN "tdt_radar::CalibrateFly"
     EXECUTABLE ${RADAR_CALIBRATE_FLY}_node
 )
-
-set(TDT_DEBUG_NODE "tdt_debug") # tdt_debug节点名称
-file(GLOB_RECURSE TDT_DEBUG_SRCS "tdt_debug/src/*.cpp")
-ament_auto_add_library(${TDT_DEBUG_NODE} SHARED
-    ${TDT_DEBUG_SRCS}
-)
-rclcpp_components_register_node(${TDT_DEBUG_NODE}
-    PLUGIN "tdt_vision::NodeDebug"
-    EXECUTABLE ${TDT_DEBUG_NODE}_node
-)
-
 
 set(RADAR_RECORD_NODE "radar_record") # radar_record节点名称
 file(GLOB_RECURSE RADAR_RECORD_SRCS "record/src/*.cpp")
