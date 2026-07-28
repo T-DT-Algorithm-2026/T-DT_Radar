@@ -37,43 +37,53 @@ namespace tdt_radar {
             // std::cout<<"self_color:"<<(int *)match_info.self_color<<std::endl;
         }
 
-        void show_map(){
+        void show_map()
+        {
             auto now_time = std::chrono::system_clock::now();
             double time = std::chrono::duration_cast<std::chrono::milliseconds>(now_time.time_since_epoch()).count()/1000.0;
             auto clone_map = map.clone();
-            for(int i=0;i<6;i++){
+            for(int i=0;i<6;i++)
+            {
                 int number = i+1;
-                if(number==6)number++;
-                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5){
+                if(number==6)
+                {
+                    number++;
+                }
+                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5)
+                {
                     cv::Point2f point = cv::Point2f(clone_map.cols*blue_point[i].x/28,clone_map.rows*(15-blue_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(200,0,0),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
                 }
-                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5){
+                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5)
+                {
                     cv::Point2f point = cv::Point2f(clone_map.cols*red_point[i].x/28,clone_map.rows*(15-red_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(0,0,200),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
                 }
             }
-            if(fly_enemy_point.x*fly_enemy_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(fly_enemy_point.x)/28,clone_map.rows*(15 - fly_enemy_point.y)/15);
-                    cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
-                }
-                if(fly_ally_point.x*fly_ally_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(fly_ally_point.x)/28,clone_map.rows*(15 - fly_ally_point.y)/15);
-                    cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(200,0,0),2);
-                }
+            if(fly_enemy_point.x*fly_enemy_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_enemy_point.x)/28,clone_map.rows*(15 - fly_enemy_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
+            }
+            if(fly_ally_point.x*fly_ally_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_ally_point.x)/28,clone_map.rows*(15 - fly_ally_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(200,0,0),2);
+            }
             cv::imshow("map", clone_map);
             cv::waitKey(1);
         }
+
         void camera_callback(const std::shared_ptr<vision_interface::msg::DetectResult> msg){
             auto now = std::chrono::system_clock::now();
             double time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
@@ -277,7 +287,7 @@ namespace tdt_radar {
 
         cv::Point2f fly_enemy_point;
         cv::Point2f fly_ally_point;
-
+        
         vision_interface::msg::MatchInfo match_info;
         cv::Mat map;
         int count = 0;//20帧保存一次

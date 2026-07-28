@@ -12,9 +12,6 @@ KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node
     sub_match_ = this->create_subscription<vision_interface::msg::MatchInfo>("/match_info", 10, std::bind(&KalmanFilter::match_callback, this, std::placeholders::_1));
     sub_radio_ = this->create_subscription<radio_interface::msg::Position>("/robot_position", 10, std::bind(&KalmanFilter::radio_callback, this, std::placeholders::_1));
 
-    pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_kalman", 10);
-    measurement_pub_ = this->create_publisher<vision_interface::msg::DetectResult>("/kalman_measurement", 10);
-    radar_pub_ = this->create_publisher<vision_interface::msg::Radar2Sentry>("/radar2sentry", 10);
     radar_detect_pub_ = this->create_publisher<vision_interface::msg::DetectResult>("/kalman_detect", 10);
 
     publish_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&KalmanFilter::publish_timer_callback, this));
@@ -23,22 +20,22 @@ KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node
 
 void KalmanFilter::match_callback(const vision_interface::msg::MatchInfo::SharedPtr msg)
 {
-    std::lock_guard<std::mutex> lock(data_mutex_);
     match_info = *msg;
 }
 
 void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPtr msg)
 {
-    std::lock_guard<std::mutex> lock(data_mutex_);
     rclcpp::Time radio_time = this->now();
+    const double radio_seconds = radio_time.nanoseconds() / 1e9;
 
+    // Radio 数组只包含敌方目标，根据己方颜色映射到统一的 0~11 目标 ID。
     for(int i = 0; i < 6; i++)
     {
         const int target_id = match_info.self_color == 0 ? i + 6 : i;
-        if((msg->x[i] == 0 && msg->y[i] == 0) || (msg->x[i] == 28 && msg->y[i] == 15))
+        if((msg->x[i] == 0 && msg->y[i] == 0) || (msg->x[i] == 2800 && msg->y[i] == 1500))
         {
             radio_filters_[target_id].reset();
-            cars_[target_id].radio = SourceState{};
+            cars_[target_id].radio.valid = false;
             continue;
         }
 
@@ -52,6 +49,10 @@ void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPt
         }
 
         auto &filter = radio_filters_[target_id];
+        if(filter && radio_seconds - filter->last_measurement_time > RadioTimeout)
+        {
+            filter.reset();
+        }
         if(filter)
         {
             filter->update_radio(radio_time, radio_point);
@@ -68,10 +69,10 @@ void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPt
 
 void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg)
 {
-    std::lock_guard<std::mutex> lock(data_mutex_);
     std::array<pcl::PointXY, 12> camera_points{};
     std::array<rclcpp::Time, 12> camera_times{};
 
+    // 相机结果只用于给 Radar 轨迹匹配目标 ID，不参与位置滤波。
     for(int i = 0; i < 6; i++)
     {
         if(msg->blue_x[i] != 0 || msg->blue_y[i] != 0)
@@ -100,9 +101,15 @@ void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::Sh
 
 void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-    std::lock_guard<std::mutex> lock(data_mutex_);
     rclcpp::Time time = msg->header.stamp;//获取聚类的时间戳
-    auto now_time = std::chrono::steady_clock::now();//当前时间
+    for(int i = static_cast<int>(radar_filters.size()) - 1; i >= 0; i--)
+    {
+        if(radar_filters[i].should_delete(time))
+        {
+            radar_filters.erase(radar_filters.begin() + i);
+        }
+    }
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXY>::Ptr cloud_xy(new pcl::PointCloud<pcl::PointXY>);
     pcl::fromROSMsg(*msg, *cloud);//点云转换
@@ -115,17 +122,11 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }//三维传二维
     if(cloud_xy->points.size() == 0)
     {
-        for(int i = radar_filters.size() - 1; i >= 0; i--)
-        {
-            if(radar_filters[i].should_delete(time))
-            {
-                radar_filters.erase(radar_filters.begin() + i);
-            }
-        }
         return;//没有点的处理
     }
 
     bool has_radar_filter = false;
+    // 先将已有轨迹预测到当前雷达帧，用预测点进行后续关联。
     for(auto &kf : radar_filters)
     {
         kf.update_predict_point();//先验//提供预测点，无测量点//雷达点
@@ -143,7 +144,7 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     else
     {
         std::vector<pcl::PointXY> candidate_points;
-        std::vector<bool> point_is_candidate(cloud_xy->points.size(), false);
+        // 门控范围外的点直接建立新轨迹，范围内的点交给匈牙利算法分配。
         for(size_t j = 0; j < cloud_xy->points.size(); ++j)
         {
             bool has_at_least_one_match = false;
@@ -159,7 +160,6 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             if(has_at_least_one_match)
             {
                 candidate_points.push_back(cloud_xy->points[j]);
-                point_is_candidate[j] = true;
             }
             else
             {
@@ -169,6 +169,7 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
         if(!candidate_points.empty())
         {
+            // 无法匹配的组合使用极大代价，避免错误更新 Radar 轨迹。
             size_t num_kfs = radar_filters.size();
             size_t num_candidates = candidate_points.size();
             const double max_cost = 1e9;
@@ -200,143 +201,58 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 }
             }
 
-            for(auto &kf : radar_filters)
-            {
-                if(kf.has_updated == false)
-                {
-                    kf.deal_missing(time);
-                }
-            }
         }//卡尔曼匹配
-    }
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-    for(int i = radar_filters.size() - 1; i >= 0; i--)
-    {
-        if(radar_filters[i].should_delete(time))
+        for(auto &kf : radar_filters)
         {
-            radar_filters.erase(radar_filters.begin() + i);
-        }
-        else
-        {
-            pcl::PointXYZRGB point;
-            point.x = radar_filters[i].predict_point.x;
-            point.y = radar_filters[i].predict_point.y;
-            point.z = 1.5;
-            if(radar_filters[i].target_id >= 0 && radar_filters[i].target_id < 6)
+            if(kf.has_updated == false)
             {
-                point.b = 255;
+                // 本帧未匹配到测量时只接受先验状态，不进行虚假测量更新。
+                kf.deal_missing(time);
             }
-            else if(radar_filters[i].target_id >= 6 && radar_filters[i].target_id < 12)
-            {
-                point.r = 255;
-            }
-            else
-            {
-                point.r = radar_filters[i].display_color[0];
-                point.g = radar_filters[i].display_color[1];
-                point.b = radar_filters[i].display_color[2];
-            }
-            cloud_filtered->points.push_back(point);
         }
     }
 
-    cloud_filtered->header.frame_id = "rm_frame";
-    sensor_msgs::msg::PointCloud2 output;
-    pcl::toROSMsg(*cloud_filtered, output);
-    output.header.frame_id = "rm_frame";
-    output.header.stamp = msg->header.stamp;
-    pub_->publish(output);///livox/lidar_kalman//制作测试作用
-    auto end_time = std::chrono::steady_clock::now();
-    float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
-}
-
-void KalmanFilter::publish_timer_callback()
-{
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    const rclcpp::Time now = this->now();
-    cleanup_stale_tracks(now);
-    refresh_radar_states();
-    publish_car_results(now);
-}
-
-void KalmanFilter::cleanup_stale_tracks(const rclcpp::Time &now)
-{
-    const double now_seconds = now.nanoseconds() / 1e9;
-    for(int filter_index = static_cast<int>(radar_filters.size()) - 1; filter_index >= 0; filter_index--)
-    {
-        if(now_seconds - radar_filters[filter_index].last_measurement_time > RadarTimeout)
-        {
-            radar_filters.erase(radar_filters.begin() + filter_index);
-        }
-    }
-
-    for(int target_id = 0; target_id < 12; target_id++)
-    {
-        auto &filter = radio_filters_[target_id];
-        if(filter && now_seconds - filter->last_measurement_time > RadioTimeout)
-        {
-            filter.reset();
-            cars_[target_id].radio = SourceState{};
-        }
-    }
-}
-
-void KalmanFilter::refresh_radar_states()
-{
+    // Radar 卡尔曼更新完成后，将最新的位置、速度和时间同步到车辆状态。
     for(auto &car : cars_)
     {
-        car.radar = SourceState{};
+        car.radar.valid = false;
     }
-
     for(const auto &filter : radar_filters)
     {
         if(filter.target_id < 0 || filter.target_id >= 12 || !filter.has_measurement)
         {
             continue;
         }
-
         SourceState &radar = cars_[filter.target_id].radar;
-        if(radar.valid && radar.update_time >= filter.last_measurement_time)
+        if(!radar.valid || radar.measurement_time < filter.last_measurement_time)
         {
-            continue;
+            update_source_state(radar, filter);
         }
-        update_source_state(radar, filter);
     }
+
 }
 
-void KalmanFilter::update_source_state(SourceState &source, const Kalman_filter_plus &filter)
+void KalmanFilter::publish_timer_callback()
 {
-    source.raw_point = filter.last_measurement_point;
-    source.filtered_point = filter.predict_point;
-    source.update_time = filter.last_measurement_time;
-    source.valid = true;
-}
+    const rclcpp::Time now = this->now();
+    const double now_seconds = now.nanoseconds() / 1e9;
 
-void KalmanFilter::mirror_positions(vision_interface::msg::DetectResult &msg) const
-{
-    for(int i = 0; i < 6; i++)
+    // 定时器只处理车辆状态；传感器完全断流时也能根据时间将对应来源设为无效。
+    for(auto &car : cars_)
     {
-        if(msg.blue_x[i] != 0 || msg.blue_y[i] != 0)
+        if(car.radar.valid && now_seconds - car.radar.measurement_time > RadarTimeout)
         {
-            msg.blue_x[i] = 28 - msg.blue_x[i];
-            msg.blue_y[i] = 15 - msg.blue_y[i];
+            car.radar.valid = false;
         }
-        if(msg.red_x[i] != 0 || msg.red_y[i] != 0)
+        if(car.radio.valid && now_seconds - car.radio.measurement_time > RadioTimeout)
         {
-            msg.red_x[i] = 28 - msg.red_x[i];
-            msg.red_y[i] = 15 - msg.red_y[i];
+            car.radio.valid = false;
         }
     }
-}
 
-void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
-{
-    vision_interface::msg::DetectResult measurement_msg;
-    measurement_msg.header.stamp = stamp;
-    measurement_msg.header.frame_id = "rm_frame";
     vision_interface::msg::DetectResult detect_msg;
-    detect_msg.header.stamp = stamp;
+    detect_msg.header.stamp = now;
     detect_msg.header.frame_id = "rm_frame";
 
     for(int target_id = 0; target_id < 12; target_id++)
@@ -344,6 +260,7 @@ void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
         const CarState &car = cars_[target_id];
         const SourceState *source = nullptr;
         bool from_radio = false;
+        // Radio 有效时优先使用，超时清除后立即回退到 Radar。
         if(car.radio.valid)
         {
             source = &car.radio;
@@ -358,54 +275,51 @@ void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
             continue;
         }
 
+        const double prediction_time = std::max(0.0, now_seconds - source->state_time) + PredictionHorizon;
+        pcl::PointXY future_point;
+        future_point.x = source->position.x + source->velocity.x * prediction_time;
+        future_point.y = source->position.y + source->velocity.y * prediction_time;
+
         if(target_id < 6)
         {
-            measurement_msg.blue_x[target_id] = source->raw_point.x;
-            measurement_msg.blue_y[target_id] = source->raw_point.y;
-            measurement_msg.blue_from_radio[target_id] = from_radio;
-            detect_msg.blue_x[target_id] = source->filtered_point.x;
-            detect_msg.blue_y[target_id] = source->filtered_point.y;
+            detect_msg.blue_x[target_id] = future_point.x;
+            detect_msg.blue_y[target_id] = future_point.y;
             detect_msg.blue_from_radio[target_id] = from_radio;
         }
         else
         {
             const int red_id = target_id - 6;
-            measurement_msg.red_x[red_id] = source->raw_point.x;
-            measurement_msg.red_y[red_id] = source->raw_point.y;
-            measurement_msg.red_from_radio[red_id] = from_radio;
-            detect_msg.red_x[red_id] = source->filtered_point.x;
-            detect_msg.red_y[red_id] = source->filtered_point.y;
+            detect_msg.red_x[red_id] = future_point.x;
+            detect_msg.red_y[red_id] = future_point.y;
             detect_msg.red_from_radio[red_id] = from_radio;
         }
     }
 
     if(match_info.self_color == 0)
     {
-        mirror_positions(measurement_msg);
-        mirror_positions(detect_msg);
+        for(int i = 0; i < 6; i++)
+        {
+            if(detect_msg.blue_x[i] != 0 || detect_msg.blue_y[i] != 0)
+            {
+                detect_msg.blue_x[i] = 28 - detect_msg.blue_x[i];
+                detect_msg.blue_y[i] = 15 - detect_msg.blue_y[i];
+            }
+            if(detect_msg.red_x[i] != 0 || detect_msg.red_y[i] != 0)
+            {
+                detect_msg.red_x[i] = 28 - detect_msg.red_x[i];
+                detect_msg.red_y[i] = 15 - detect_msg.red_y[i];
+            }
+        }
     }
-    measurement_pub_->publish(measurement_msg);
     radar_detect_pub_->publish(detect_msg);
+}
 
-    vision_interface::msg::Radar2Sentry radar_msg;
-    for(int i = 0; i < 6; i++)
-    {
-        if(match_info.self_color == 0)
-        {
-            radar_msg.radar_enemy_x[i] = detect_msg.red_x[i];
-            radar_msg.radar_enemy_y[i] = detect_msg.red_y[i];
-            radar_msg.radar_ally_x[i] = detect_msg.blue_x[i];
-            radar_msg.radar_ally_y[i] = detect_msg.blue_y[i];
-        }
-        else if(match_info.self_color == 2)
-        {
-            radar_msg.radar_enemy_x[i] = detect_msg.blue_x[i];
-            radar_msg.radar_enemy_y[i] = detect_msg.blue_y[i];
-            radar_msg.radar_ally_x[i] = detect_msg.red_x[i];
-            radar_msg.radar_ally_y[i] = detect_msg.red_y[i];
-        }
-    }
-    radar_pub_->publish(radar_msg);
+void KalmanFilter::update_source_state(SourceState &source, const Kalman_filter_plus &filter)
+{
+    filter.get_motion_state(source.position, source.velocity);
+    source.state_time = filter.state_time;
+    source.measurement_time = filter.last_measurement_time;
+    source.valid = true;
 }
 
 }//namespace tdt_radar

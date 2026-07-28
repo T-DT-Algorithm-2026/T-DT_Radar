@@ -9,7 +9,6 @@
 #include <chrono>
 #include <array>
 #include <cmath>
-#include <cstdlib>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -135,9 +134,11 @@ public:
                  state_cov_;//更新Pk后验
   }
 
-  State getState() { return state_; }
+  State getState() const { return state_; }
 
-  State getPriorState() { return state_prior_; }
+  State getPriorState() const { return state_prior_; }
+
+  void commit_prediction() { state_ = state_prior_; }
 
   void set_process_noise_cov(const StateCov &Q) { process_noise_cov_ = Q; }
 
@@ -164,7 +165,7 @@ public:
         return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
     }
 
-    double get_time() 
+    double get_time() const
     { //两帧之间时间
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer);
         double t = duration.count() / 1000.0;
@@ -185,12 +186,11 @@ public:
     int max_history = 20;
 
     pcl::PointXY predict_point;
-    pcl::PointXY last_measurement_point{0, 0};
     double last_measurement_time = 0;
+    double state_time = 0;
     bool has_measurement = false;
     float detect_r = 0.9; //检测半径
     float car_max_speed = 3;
-    cv::Scalar display_color;
     bool has_updated = false;
     double dt_=0.1f;
 
@@ -207,15 +207,14 @@ public:
 
         cv::Point2f measurement(input.x, input.y); //获取测量值
         predict_point = input;
-        last_measurement_point = input;
         last_measurement_time = GetTimeByRosTime(time);
+        state_time = last_measurement_time;
         has_measurement = true;
 
 
         history.push_back(std::make_pair(last_measurement_time, input));
         timer = std::chrono::steady_clock::now();//记录当前时间
         last_radar_catch_time = last_measurement_time;
-        display_color = cv::Scalar(rand() % 255, rand() % 255, rand() % 255);//生成随机显示颜色
 
         KF.init(measurement);//传递坐标
         
@@ -393,6 +392,13 @@ public:
         deal_catch(input, time);
     }
 
+    void get_motion_state(pcl::PointXY &position, pcl::PointXY &velocity) const
+    {
+        const auto state = KF.getState();
+        position = pcl::PointXY{static_cast<float>(state(0)), static_cast<float>(state(2))};
+        velocity = pcl::PointXY{static_cast<float>(state(1)), static_cast<float>(state(3))};
+    }
+
     bool should_delete(rclcpp::Time &time) const
     {
         return GetTimeByRosTime(time) - last_radar_catch_time > 1.0;
@@ -401,17 +407,19 @@ public:
 
     void deal_missing(rclcpp::Time time)
     {
-        update(predict_point,time);
+        // 没有测量时直接采用先验状态，避免把预测点当作虚假测量。
+        KF.commit_prediction();
+        timer = std::chrono::steady_clock::now();
+        state_time = GetTimeByRosTime(time);
         miss_last_time+=dt_;
     }//对未识别到的点进行处理
 
     void deal_catch(pcl::PointXY &input, rclcpp::Time time)
     {
-        // 只在接收到真实测量时记录，丢失目标时的预测点不会覆盖它。
-        last_measurement_point = input;
         last_measurement_time = GetTimeByRosTime(time);
         has_measurement = true;
         update(input,time);
+        state_time = last_measurement_time;
         last_radar_catch_time = last_measurement_time;
         miss_last_time=0;//是直接归0还是减@
     }//识别到的点处理
