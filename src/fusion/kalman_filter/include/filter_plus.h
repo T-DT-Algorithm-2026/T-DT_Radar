@@ -1,19 +1,18 @@
-#include "opencv2/opencv.hpp"
-#include "pcl/point_types.h"
-#include "pcl/point_cloud.h"
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/types.hpp>
-#include <pcl/impl/point_types.hpp>
-#include <rclcpp/time.hpp>
-#include <vector>
-#include <cmath>
-#include <algorithm> 
-#include <queue>   
-#include <memory>   
-#include <rclcpp/rclcpp.hpp>
-#include <ceres/ceres.h>
 #pragma once
 
+#include <ceres/ceres.h>
+#include <Eigen/Core>
+#include <opencv2/core/types.hpp>
+#include <pcl/point_types.h>
+#include <rclcpp/time.hpp>
+
+#include <chrono>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <functional>
+#include <utility>
+#include <vector>
 
 constexpr int StateDim = 4; // 状态维度
 constexpr int MeasurementDim = 2; // 测量维度
@@ -42,7 +41,6 @@ public:
       this->state_(2) = armor_xy.y;
       this->state_(3) = 0;
       state_cov_.setZero();//初始化协方差矩阵为0
-    // std::cout<<"state_:"<<state_.transpose()<<std::endl;
   }//把装甲板中心的像素坐标 armor_xy 初始化到滤波器的状态向量state_中，并把速度设为 0，同时把协方差矩阵清零。
 
 
@@ -107,7 +105,7 @@ public:
     }
 
     return jacobian;
-  }//？难道不和上一个函数重复么？
+  }//计算状态转移函数的雅可比矩阵
 
 
   void predict(const FunctionType &func) 
@@ -117,89 +115,40 @@ public:
     state_cov_ =
         transition_matrix_ * state_cov_ * transition_matrix_.transpose() +
         process_noise_cov_;//求Pk先验
-    // std::cout << "先验状态:" << state_ << std::endl;
-    // std::cout<<"transition_matrix_:" << transition_matrix_ << std::endl;
   }//预测的两个矩阵
 
 
   void update(const Measurement &measurement,
               const MeasurementFunctionType &func) {
     auto ye_jacobian = calcJacobian_H(state_prior_, func);
-    // std::cout << "ye_jacobian.first:" << ye_jacobian.first << std::endl;
-    // std::cout << "ye_jacobian.second:" << ye_jacobian.second << std::endl;
     auto &state_measurement_cov_ = ye_jacobian.second;
     kalman_gain_ = state_cov_ * state_measurement_cov_.transpose() *
                    (state_measurement_cov_ * state_cov_ *
                         state_measurement_cov_.transpose() +
                     measurement_noise_cov_)
                        .inverse();//计算Kk
-    // Eigen::MatrixXf S = state_measurement_cov_ * state_cov_ *
-    // state_measurement_cov_.transpose() + measurement_noise_cov_;
-    // Eigen::LDLT<Eigen::MatrixXf> ldlt(S);  // LDLT 分解、
-    // kalman_gain_ = state_cov_ * state_measurement_cov_.transpose() *
-    // ldlt.solve(Eigen::MatrixXf::Identity(S.rows(), S.cols())); std::cout <<
-    // "kalman_gain:" << kalman_gain_ << std::endl;
 
     state_ = state_prior_ + kalman_gain_ * (measurement - ye_jacobian.first);//计算Xkhat后验
 
     state_cov_ = (Eigen::Matrix<double, StateDim, StateDim>::Identity() -
                   kalman_gain_ * state_measurement_cov_) *
                  state_cov_;//更新Pk后验
-    // std::cout << "后验状态:" << state_ << std::endl;
   }
 
   State getState() { return state_; }
 
   State getPriorState() { return state_prior_; }
 
-  KalmanGain getKalmanGain() { return kalman_gain_; }
-
-  StateCov& getCovariance() { return state_cov_; }
-  
-  const StateCov& getCovariance() const { return state_cov_; }
-
-  void setCovariance(const StateCov& cov) { state_cov_ = cov; }
-
-  KalmanGain& getKalmangain() { return kalman_gain_; }
-  
-  const KalmanGain& getKalmangain() const { return kalman_gain_; }
-
-  void setKalmangain(const KalmanGain& kgain) { kalman_gain_ = kgain; }
-
-  void fixState(const State &state) { state_prior_ = state; }
-
   void set_process_noise_cov(const StateCov &Q) { process_noise_cov_ = Q; }
 
   void set_measurement_noise_cov(const MeasurementCov &R) { measurement_noise_cov_ = R; }
 
-  void reset() {
-    state_.setZero();
-    state_cov_.setZero();
-    transition_matrix_.setZero();
-    process_noise_cov_.setZero();
-    measurement_noise_cov_.setZero();
-    state_measurement_cov_.setZero();
-    kalman_gain_.setZero();
-  }
-
-
-  cv::Point2f getTrackingPos() { // return tracking position
-    const double x = state_(0);
-    const double y = state_(2);
-
-    return cv::Point2f(x,y);
-  }
-
 private:
-  static constexpr double INF = 1e9;
-  // TODO : 参数变量精简，更名
   State state_;
   State state_prior_;
   StateCov state_cov_;
-  StateCov transition_matrix_;
   StateCov process_noise_cov_;
   MeasurementCov measurement_noise_cov_;
-  StateMeasurementCov state_measurement_cov_;
   KalmanGain kalman_gain_;
 };
 
@@ -218,25 +167,30 @@ public:
     double get_time() 
     { //两帧之间时间
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer);
-        // std::cout << duration.count()/1000.0 <<"ms"<< std::endl;
         double t = duration.count() / 1000.0;
-        // if(t > 0.3) return 0.1;
         return t;
     }
 
-    float catch_last_time = 0;
+    static double GetTimeByRosTime(rclcpp::Time& ros_time) 
+    {
+        double ros_time_value =ros_time.nanoseconds()/1e9;
+        return ros_time_value;
+    }//将ros时间转换为秒
+
     float miss_last_time = 0;
     std::chrono::steady_clock::time_point timer;//最后更新时间
-    float delete_time = 2.0;//超时删除
+    double last_radar_catch_time = 0;//最后一次激光雷达点更新时间
+    double last_radio_match_time = 0;//最后一次无线电点匹配时间
+    bool has_radio_match = false;
+    bool is_radio_filter = false;
     std::vector<std::pair<double, pcl::PointXY>> history;//1.时间 2.点坐标
-    std::vector<std::pair<int ,int>> detect_history;//第一个是颜色，第二个是数字
+    std::vector<int> id_history;
     int max_history = 20;
 
     pcl::PointXY predict_point;
     float detect_r = 0.9; //检测半径
-    float car_speed = 2;
     float car_max_speed = 3;
-    cv::Scalar color;
+    cv::Scalar display_color;
     bool has_updated = false;
     double dt_=0.1f;
 
@@ -246,10 +200,7 @@ public:
     double q_pos_x = 10; // 位置噪声
     double q_pos_v = 100; // 速度噪声
 
-    bool is_space = false;//判断是否是空的卡尔曼
-    int now_number=-1;
-    int now_color=-1;
-    int new_id=-1;
+    int target_id = -1;
 
     Kalman_filter_plus(const pcl::PointXY &input,rclcpp::Time time) 
     {  //构造时进行初始化
@@ -260,61 +211,40 @@ public:
 
         history.push_back(std::make_pair(GetTimeByRosTime(time), input));
         timer = std::chrono::steady_clock::now();//记录当前时间
-        color = cv::Scalar(rand() % 255, rand() % 255, rand() % 255);//生成随即颜色
+        last_radar_catch_time = GetTimeByRosTime(time);
+        display_color = cv::Scalar(rand() % 255, rand() % 255, rand() % 255);//生成随机显示颜色
 
         KF.init(measurement);//传递坐标
         
         has_updated = true;
     }
 
-    ~Kalman_filter_plus() {}
-
-    int get_color() 
+    int get_target_id() const
     {
-        if(detect_history.size() == 0) {
-            return 1;
-        }
-        //比较队列中的颜色，返回最多的颜色
-        int red = 0;
-        int blue= 0;
-        for(auto &color : detect_history) {
-            if(color.first == 0) {
-                blue++;
-            }
-            else {
-                red++;
-            }
-        }
-        if(red > blue) {
-            return 2;
-        }
-        else {
-            return 0;
-        }
-    }//0代表蓝色，2代表红色，1代表没有历史点
-
-
-    int get_number() 
-    {
-        int color = get_color();
-        std::map<int, int> number_map;
-        for(auto &number : detect_history) {
-            if(number.first == color) {
-                number_map[number.second]++;
-            }
+        if(id_history.empty()) {
+            return -1;
         }
 
-        // 初始化最大计数和对应的数字
+        std::array<int, 12> id_counts{};
+        for(const int id : id_history) 
+        {
+            if(id >= 0 && id < 12) 
+            {
+                ++id_counts[id];
+            }
+        }
         int max_count = 0;
-        int max_number = 0; // 假设-1为无效数字，或根据实际情况调整
-        for(auto &entry : number_map) {
-            if(entry.second > max_count) {
-                max_count = entry.second;
-                max_number = entry.first;
+        int most_frequent_id = -1;
+        for(int id = 0; id < 12; ++id) 
+        {
+            if(id_counts[id] > max_count) 
+            {
+                max_count = id_counts[id];
+                most_frequent_id = id;
             }
         }
-        return max_number; // 返回出现次数最多的数字
-    }//得到数字
+        return most_frequent_id;
+    }
 
 
 
@@ -351,7 +281,6 @@ public:
         predict_point.x = state(0);  
         predict_point.y = state(2); //更新预测点
         has_updated = true;
-        // last_time = 0;//计时器重置
         auto temp_point = input;
         history.push_back(std::make_pair(GetTimeByRosTime(time), temp_point));
         if (history.size() > max_history) {
@@ -363,8 +292,6 @@ public:
 
     void update_predict_point() 
     { // KF predict
-        // std::cout<<"update predict point"<<std::endl;
-
         dt_ = get_time(); // set dt//两帧之间的时间
         
         double delta_t = dt_; 
@@ -385,8 +312,6 @@ public:
 
         KF.set_process_noise_cov(process_noise);//传递到process_noise_cov_
 
-        // std::cout<<"process_noise:"<<process_noise<<std::endl;
-
         auto predictFunction = [delta_t](const ceres::Jet<double, StateDim> state_j[StateDim],
            ceres::Jet<double, StateDim> result[StateDim]) 
         {
@@ -397,11 +322,9 @@ public:
         };//计算最终预测值
 
         KF.predict(predictFunction);//先验
-        // std::cout<<"last_time:"<<last_time<<std::endl;
         
         auto result = KF.getPriorState();//返回state_prior_
 
-        // last_time += dt_;
         predict_point.x = result(0);
         predict_point.y = result(2);
     }//先验？
@@ -419,17 +342,19 @@ public:
         }
     }
 
-    void camera_match(rclcpp::Time &time, pcl::PointXY &input,int color,int number) 
+    bool radar_match(rclcpp::Time &time, pcl::PointXY &input, int detected_target_id)
     {
+        if(detected_target_id < 0 || detected_target_id >= 12) {
+            return false;
+        }
+
         const double TIME_THRESHOLD = 1.0f;
         double input_time = GetTimeByRosTime(time);
         double differ_time = 1000;
         pcl::PointXY match_point;
         for(auto &point : history) 
         {
-            // std::cout<<"compare"<<point.first<<"and"<<input_time<<std::endl;
             auto differ = abs(point.first - input_time);
-            // std::cout<<"differ"<<differ<<std::endl;
             if(differ < differ_time) 
             {
                 differ_time = differ;
@@ -437,55 +362,58 @@ public:
             }
         }
         if (differ_time>TIME_THRESHOLD) {
-            return ;
+            return false;
         }//首先找到离相机取帧时间戳最近的点
 
         
-        if(Distance(match_point, input) < detect_r){
-            // std::cout<<"match success"<<std::endl;
-            detect_history.push_back(std::make_pair(color, number));
-            if (detect_history.size() > max_history) {
-                detect_history.erase(detect_history.begin());
+        if(Distance(match_point, input) < detect_r)
+        {
+            id_history.push_back(detected_target_id);
+            if (id_history.size() > max_history) 
+            {
+                id_history.erase(id_history.begin());
             }
-        }//如果距离小于检测半径，认为匹配成功
-        now_color = get_color();
-        now_number = get_number();
-    }//雷达的历史点与相机点进行匹配，匹配成功则将颜色和数字存入detect_history
+            target_id = get_target_id();
+            return true;
+        }
+        return false;
+    }//雷达的历史点与相机点进行匹配，匹配成功后对统一 ID 投票
 
-
-    static double GetTimeByRosTime(rclcpp::Time& ros_time) 
+    void camera_catch(rclcpp::Time &time, pcl::PointXY &input, int detected_target_id)
     {
-        double ros_time_value =ros_time.nanoseconds()/1e9;
-        // std::cout<<"ros_time_value"<<ros_time_value<<std::endl;
-        return ros_time_value;
-    }//将ros时间转换为秒
+        if(is_radio_filter)
+        {
+            return;
+        }
+        if(!has_radio_match || GetTimeByRosTime(time) - last_radio_match_time > 1.0)
+        {
+            radar_match(time, input, detected_target_id);
+        }
+    }
+
+    void update_radio(rclcpp::Time &time, pcl::PointXY &input)
+    {
+        update_predict_point();
+        deal_catch(input, time);
+        last_radio_match_time = GetTimeByRosTime(time);
+    }
+
+    bool should_delete(rclcpp::Time &time) const
+    {
+        return GetTimeByRosTime(time) - last_radar_catch_time > 1.0;
+    }
+
 
     void deal_missing(rclcpp::Time time)
     {
         update(predict_point,time);
         miss_last_time+=dt_;
-        // catch_last_time-=dt_;
     }//对未识别到的点进行处理
 
     void deal_catch(pcl::PointXY &input, rclcpp::Time time)
     {
         update(input,time);
+        last_radar_catch_time = GetTimeByRosTime(time);
         miss_last_time=0;//是直接归0还是减@
-        is_space=false;
-        // if(catch_last_time<1.5)
-        // {
-        //     catch_last_time+=dt_;
-        // }
     }//识别到的点处理
-
-    void test()
-    {
-        // std::cout<<"number:"<<now_number<<std::endl;
-        if(now_color==1)
-        {
-        std::cout<<"predict_point:"<<predict_point.x<<","<<predict_point.y<<std::endl;
-        std::cout<<"time"<<history.back().first<<std::endl;
-        }// std::cout<<"new_id:"<<new_id<<std::endl;
-    }
-    
 }; 

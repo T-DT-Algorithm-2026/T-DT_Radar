@@ -8,8 +8,7 @@
 #include "pcl/point_types.h"
 #include "pcl/point_cloud.h"
 #include "pcl/io/pcd_io.h"
-// #include "filter_plus.h"
-#include "guess_point.h"
+#include "filter_plus.h"
 #include <rclcpp/publisher.hpp>
 #include <vision_interface/msg/detect_result.hpp>
 #include <vision_interface/msg/radar2_sentry.hpp>
@@ -18,6 +17,8 @@
 #include <radio_interface/msg/position.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <Eigen/Dense>
+#include <array>
+#include <chrono>
 #include <limits>
 #include <vector>
 
@@ -42,8 +43,9 @@ class KalmanFilter :public rclcpp::Node
     void radio_callback(const radio_interface::msg::Position::SharedPtr msg);
     void publish_car_results(const rclcpp::Time &stamp);
     std::vector<Kalman_filter_plus> KFs;
-    cars car[12];
     vision_interface::msg::MatchInfo match_info;
+    std::array<pcl::PointXY, 12> camera_points{};
+    std::array<rclcpp::Time, 12> camera_times;
 };
 
 std::vector<int> solve_hungarian(const Eigen::MatrixXd& cost_matrix) {

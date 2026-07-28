@@ -21,86 +21,113 @@ KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node
 void KalmanFilter::match_callback(const vision_interface::msg::MatchInfo::SharedPtr msg)
 {
     this->match_info = *msg;
-    RCLCPP_INFO(this->get_logger(), "Match_info_callback");
 }//裁判系统的消息
 
 void KalmanFilter::radio_callback(const radio_interface::msg::Position::SharedPtr msg)
 {
-    int target_start = -1;
-    if(match_info.self_color == 0)
-    {
-        target_start = 6;
-    }
-    else if(match_info.self_color == 1 || match_info.self_color == 2)
-    {
-        target_start = 0;
-    }
-
-    if(target_start < 0)
-    {
-        return;
-    }
-
-    auto radio_time = std::chrono::steady_clock::now();
+    std::array<pcl::PointXY, 6> radio_points{};
     for(int i = 0; i < 6; i++)
     {
-        pcl::PointXY radio_point;
-        radio_point.x = static_cast<float>(msg->x[i]) / 100.0f;
-        radio_point.y = static_cast<float>(msg->y[i]) / 100.0f;
+        radio_points[i].x = static_cast<float>(msg->x[i]) / 100.0f;
+        radio_points[i].y = static_cast<float>(msg->y[i]) / 100.0f;
         if(match_info.self_color == 0)
         {
-            radio_point.x = 28.0f - radio_point.x;
-            radio_point.y = 15.0f - radio_point.y;
+            radio_points[i].x = 28.0f - radio_points[i].x;
+            radio_points[i].y = 15.0f - radio_points[i].y;
         }
-        int radio_color = target_start == 0 ? 0 : 2;
-        car[target_start + i].set_radio_point(radio_point, radio_color, i, radio_time);
     }
-    publish_car_results(this->now());
-    std::cout << "Radio_callback: Received radio position data." << std::endl;
+    rclcpp::Time radio_time = this->now();
+    for(int i = 0; i < 6; i++)
+    {
+        const int target_id = match_info.self_color == 0 ? i + 6 : i;
+        if((msg->x[i] == 0 && msg->y[i] == 0) || (msg->x[i] == 28 && msg->y[i] == 15) )
+        {
+            radio_points[i] = pcl::PointXY{0, 0};
+            for(int kf_index = static_cast<int>(KFs.size()) - 1; kf_index >= 0; kf_index--)
+            {
+                if(KFs[kf_index].is_radio_filter && KFs[kf_index].target_id == target_id)
+                {
+                    KFs.erase(KFs.begin() + kf_index);
+                }
+            }
+            continue;
+        }
+
+        // 该目标有 Radio 时只保留 Radio Kalman，不再使用原来的雷达轨迹。
+        for(int kf_index = static_cast<int>(KFs.size()) - 1; kf_index >= 0; kf_index--)
+        {
+            if(!KFs[kf_index].is_radio_filter && KFs[kf_index].target_id == target_id)
+            {
+                KFs.erase(KFs.begin() + kf_index);
+            }
+        }
+
+        bool updated = false;
+        for(auto &kf : KFs)
+        {
+            if(kf.is_radio_filter && kf.target_id == target_id)
+            {
+                kf.update_radio(radio_time, radio_points[i]);
+                updated = true;
+                break;
+            }
+        }
+        if(!updated)
+        {
+            KFs.emplace_back(radio_points[i], radio_time);
+            KFs.back().target_id = target_id;
+            KFs.back().id_history.push_back(target_id);
+            KFs.back().last_radio_match_time = Kalman_filter_plus::GetTimeByRosTime(radio_time);
+            KFs.back().has_radio_match = true;
+            KFs.back().is_radio_filter = true;
+        }
+    }
 }
 
 void KalmanFilter::detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg)//？获取点位信息？
 {
-    // RCLCPP_INFO(this->get_logger(), "Detect_callback");
-    rclcpp::Time time = msg->header.stamp;
-    for(int i=0;i<6;i++)
+    std::array<pcl::PointXY, 12> camera_points{};
+    std::array<rclcpp::Time, 12> camera_times{};
+
+    for(int i = 0; i < 6; i++)
     {
-        pcl::PointXY red_point;
-        red_point.x = msg->red_x[i];
-        red_point.y = msg->red_y[i];//获取座标点
-        if(red_point.x != 0 || red_point.y != 0)
+        if(msg->blue_x[i] != 0 || msg->blue_y[i] != 0)
         {
-            for(auto &kf : KFs)
-            {
-                // int number = i+1;
-                // if (number == 6)number++;
-                kf.camera_match(time, red_point, 2, i);//相机雷达匹配
-            }
+            camera_points[i].x = msg->blue_x[i];
+            camera_points[i].y = msg->blue_y[i];
+            camera_times[i] = msg->header.stamp;
         }
-        pcl::PointXY blue_point;
-        blue_point.x = msg->blue_x[i];
-        blue_point.y = msg->blue_y[i];
-        if(blue_point.x != 0 || blue_point.y != 0)
+
+        if(msg->red_x[i] != 0 || msg->red_y[i] != 0)
         {
-            for(auto &kf : KFs)
-            {
-                // int number = i+1;
-                // if (number == 6)number++;
-                kf.camera_match(time, blue_point, 0, i);//雷达与相机匹配
-            }
+            camera_points[i + 6].x = msg->red_x[i];
+            camera_points[i + 6].y = msg->red_y[i];
+            camera_times[i + 6] = msg->header.stamp;
         }
     }
-    // for(auto &kf : KFs)
-    // {
-    //     for(int i=kf.history.size() - 1; i >= 0; i--)
-    //     {
-    //         if(Kalman_filter_plus::GetTimeByRosTime(time)-kf.history[i].first > 5)
-    //         {
-    //             kf.history.erase(kf.history.begin() + i);
-    //         }
-    //     }
-    // }
-}//获取相机的检测结果，雷达与相机进行匹配
+
+    for(auto &kf : KFs)
+    {
+        for(int target_id = 0; target_id < 12; target_id++)
+        {
+            bool has_radio_filter = false;
+            for(const auto &candidate_kf : KFs)
+            {
+                if(candidate_kf.is_radio_filter && candidate_kf.target_id == target_id)
+                {
+                    has_radio_filter = true;
+                    break;
+                }
+            }
+            if(has_radio_filter)
+            {
+                continue;
+            }
+            kf.camera_catch(camera_times[target_id], camera_points[target_id], target_id);
+        }
+    }
+
+}
 
 
 void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -124,22 +151,35 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         point_xy.y = point.y;
         // std::cout<<point.z<<std::endl;
         cloud_xy->points.push_back(point_xy);
-    }//三维传二维？
+    }//三维传二维
     if(cloud_xy->points.size() == 0)
     {
+        for(int i = KFs.size() - 1; i >= 0; i--)
+        {
+            if(KFs[i].should_delete(time))
+            {
+                KFs.erase(KFs.begin() + i);
+            }
+        }
         publish_car_results(time);
         return;//没有点的处理
     }
-    for(auto &kf : KFs) 
+    bool has_radar_filter = false;
+    for(auto &kf : KFs)
     {
+        if(kf.is_radio_filter)
+        {
+            continue;
+        }
         kf.update_predict_point();//先验//提供预测点，无测量点//雷达点
         kf.has_updated = false;
+        has_radar_filter = true;
     }
     //对于每个点
     //如果遍历所有卡尔曼都没找到能够匹配的，新建一个卡尔曼
     //若找到了1个，则更新这个卡尔曼
     //若找到了多个，则更新距离最近的那个
-    if (KFs.empty()) 
+    if(!has_radar_filter)
     {
 
         // 如果当前没有跟踪器，则所有检测点都是新目标
@@ -159,6 +199,10 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             bool has_at_least_one_match = false;
             for (size_t i = 0; i < KFs.size(); ++i) 
             {
+                if(KFs[i].is_radio_filter)
+                {
+                    continue;
+                }
                 // 检查该点是否在任何一个KF的匹配门控范围内
                 if (KFs[i].match(cloud_xy->points[j])) 
                 {
@@ -184,7 +228,15 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         
         if (!candidate_points.empty()) 
         {
-            size_t num_kfs = KFs.size();
+            std::vector<size_t> radar_kf_indices;
+            for(size_t i = 0; i < KFs.size(); i++)
+            {
+                if(!KFs[i].is_radio_filter)
+                {
+                    radar_kf_indices.push_back(i);
+                }
+            }
+            size_t num_kfs = radar_kf_indices.size();
             size_t num_candidates = candidate_points.size();
             const double max_cost = 1e9;
 
@@ -195,9 +247,10 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 for (size_t j = 0; j < num_candidates; ++j) 
                 {
                     // 成本矩阵现在是 KFs 和 candidate_points 之间的
-                    if (KFs[i].match(candidate_points[j])) 
+                    Kalman_filter_plus &kf = KFs[radar_kf_indices[i]];
+                    if(kf.match(candidate_points[j]))
                     {
-                        cost_matrix(i, j) = KFs[i].Distance(KFs[i].predict_point, candidate_points[j]);
+                        cost_matrix(i, j) = kf.Distance(kf.predict_point, candidate_points[j]);
                     } 
                     else 
                     {
@@ -217,37 +270,23 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 
                 if (candidate_idx != -1 && cost_matrix(i, candidate_idx) < max_cost) 
                 {
-                    KFs[i].deal_catch(candidate_points[candidate_idx], time);
+                    KFs[radar_kf_indices[i]].deal_catch(candidate_points[candidate_idx], time);
                 }
             }
 
             for(auto &kf : KFs)
             {
-                if(kf.has_updated == false) 
+                if(!kf.is_radio_filter && kf.has_updated == false)
                 {
-                    kf.is_space = true;
                     kf.deal_missing(time);
                 }
-                if(kf.now_color==0)
-                {
-                    kf.new_id= kf.now_number;
-                }
-                else if(kf.now_color==2)
-                {
-                    kf.new_id= kf.now_number+6;
-                }
-                else if(kf.now_color==-1)
-                {
-                    kf.new_id= kf.new_id;//保持不变
-                }
-                // kf.test();
-            }//为赋值给car作准备
+            }
         }//卡尔曼匹配
     }
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
     for(int i = KFs.size() - 1; i >= 0; i--)
     {
-        if ((KFs[i].miss_last_time) > 1.5)
+        if (KFs[i].should_delete(time))
         {
             KFs.erase(KFs.begin() + i);
             // std::cout<<"delete kf"<<std::endl;
@@ -260,22 +299,19 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             point.x = KFs[i].predict_point.x;
             point.y = KFs[i].predict_point.y;
             point.z = 1.5;//？这是什么依据？
-            // int color = KFs[i].get_color();
-            int color = KFs[i].now_color;
-            switch (color) {
-                case 0:
-                    point.b = 255;
-                    break;
-
-                case 2:
-                    point.r = 255;
-                    break;
-
-                default:
-                    point.r = KFs[i].color[0];
-                    point.g = KFs[i].color[1];
-                    point.b = KFs[i].color[2];
-                    break;
+            if(KFs[i].target_id >= 0 && KFs[i].target_id < 6)
+            {
+                point.b = 255;
+            }
+            else if(KFs[i].target_id >= 6 && KFs[i].target_id < 12)
+            {
+                point.r = 255;
+            }
+            else
+            {
+                point.r = KFs[i].display_color[0];
+                point.g = KFs[i].display_color[1];
+                point.b = KFs[i].display_color[2];
             }
             cloud_filtered->points.push_back(point);
             // }
@@ -296,38 +332,53 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
 void KalmanFilter::publish_car_results(const rclcpp::Time &stamp)
 {
-    for (auto &kf : KFs)
+    std::array<const Kalman_filter_plus *, 12> selected_kfs{};
+    for(const auto &kf : KFs)
     {
-        if(kf.new_id>=0&&kf.new_id<12)
+        if(kf.target_id < 0 || kf.target_id >= 12)
         {
-            car[kf.new_id].getcar(&kf);
+            continue;
         }
-    }
 
-    for(auto &tracked_car: car)
-    {
-        tracked_car.deal_car();
-        // tracked_car.test();
+        const Kalman_filter_plus *selected_kf = selected_kfs[kf.target_id];
+        const bool radio_has_priority = selected_kf != nullptr && kf.is_radio_filter && !selected_kf->is_radio_filter;
+        const bool is_newer_same_source = selected_kf != nullptr && kf.is_radio_filter == selected_kf->is_radio_filter &&
+                                          kf.last_radar_catch_time > selected_kf->last_radar_catch_time;
+        if(selected_kf == nullptr || radio_has_priority || is_newer_same_source)
+        {
+            selected_kfs[kf.target_id] = &kf;
+        }
     }
 
     vision_interface::msg::DetectResult detect_msg;
     detect_msg.header.stamp = stamp;
     detect_msg.header.frame_id = "rm_frame";
-    for(const auto &tracked_car: car)//从前到后
+    for(int target_id = 0; target_id < 12; target_id++)
     {
-        if(tracked_car.send_point.x==0&&tracked_car.send_point.y==0)continue;
-        if(tracked_car.number < 0 || tracked_car.number >= 6)continue;
-        if(tracked_car.color == 0)//蓝色
+        const Kalman_filter_plus *selected_kf = selected_kfs[target_id];
+        if(selected_kf == nullptr)
         {
-            int number= tracked_car.number;
-            detect_msg.blue_x[number] = tracked_car.send_point.x;
-            detect_msg.blue_y[number] = tracked_car.send_point.y;
+            continue;
         }
-        if(tracked_car.color == 2)//红色
+
+        const pcl::PointXY &send_point = selected_kf->predict_point;
+        if(send_point.x == 0 && send_point.y == 0)
         {
-            int number= tracked_car.number;
-            detect_msg.red_x[number] = tracked_car.send_point.x;
-            detect_msg.red_y[number] = tracked_car.send_point.y;
+            continue;
+        }
+
+        if(target_id < 6)//蓝色
+        {
+            detect_msg.blue_x[target_id] = send_point.x;
+            detect_msg.blue_y[target_id] = send_point.y;
+            detect_msg.blue_from_radio[target_id] = selected_kf->is_radio_filter;
+        }
+        else//红色
+        {
+            const int red_id = target_id - 6;
+            detect_msg.red_x[red_id] = send_point.x;
+            detect_msg.red_y[red_id] = send_point.y;
+            detect_msg.red_from_radio[red_id] = selected_kf->is_radio_filter;
         }
     }
     // if(match_info.self_color==0)
