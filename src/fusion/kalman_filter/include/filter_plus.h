@@ -180,14 +180,14 @@ public:
     float miss_last_time = 0;
     std::chrono::steady_clock::time_point timer;//最后更新时间
     double last_radar_catch_time = 0;//最后一次激光雷达点更新时间
-    double last_radio_match_time = 0;//最后一次无线电点匹配时间
-    bool has_radio_match = false;
-    bool is_radio_filter = false;
     std::vector<std::pair<double, pcl::PointXY>> history;//1.时间 2.点坐标
     std::vector<int> id_history;
     int max_history = 20;
 
     pcl::PointXY predict_point;
+    pcl::PointXY last_measurement_point{0, 0};
+    double last_measurement_time = 0;
+    bool has_measurement = false;
     float detect_r = 0.9; //检测半径
     float car_max_speed = 3;
     cv::Scalar display_color;
@@ -207,11 +207,14 @@ public:
 
         cv::Point2f measurement(input.x, input.y); //获取测量值
         predict_point = input;
+        last_measurement_point = input;
+        last_measurement_time = GetTimeByRosTime(time);
+        has_measurement = true;
 
 
-        history.push_back(std::make_pair(GetTimeByRosTime(time), input));
+        history.push_back(std::make_pair(last_measurement_time, input));
         timer = std::chrono::steady_clock::now();//记录当前时间
-        last_radar_catch_time = GetTimeByRosTime(time);
+        last_radar_catch_time = last_measurement_time;
         display_color = cv::Scalar(rand() % 255, rand() % 255, rand() % 255);//生成随机显示颜色
 
         KF.init(measurement);//传递坐标
@@ -381,21 +384,13 @@ public:
 
     void camera_catch(rclcpp::Time &time, pcl::PointXY &input, int detected_target_id)
     {
-        if(is_radio_filter)
-        {
-            return;
-        }
-        if(!has_radio_match || GetTimeByRosTime(time) - last_radio_match_time > 1.0)
-        {
-            radar_match(time, input, detected_target_id);
-        }
+        radar_match(time, input, detected_target_id);
     }
 
     void update_radio(rclcpp::Time &time, pcl::PointXY &input)
     {
         update_predict_point();
         deal_catch(input, time);
-        last_radio_match_time = GetTimeByRosTime(time);
     }
 
     bool should_delete(rclcpp::Time &time) const
@@ -412,8 +407,12 @@ public:
 
     void deal_catch(pcl::PointXY &input, rclcpp::Time time)
     {
+        // 只在接收到真实测量时记录，丢失目标时的预测点不会覆盖它。
+        last_measurement_point = input;
+        last_measurement_time = GetTimeByRosTime(time);
+        has_measurement = true;
         update(input,time);
-        last_radar_catch_time = GetTimeByRosTime(time);
+        last_radar_catch_time = last_measurement_time;
         miss_last_time=0;//是直接归0还是减@
     }//识别到的点处理
 }; 
