@@ -9,6 +9,7 @@
 #include "gimbal_interface/msg/gimbal_angle.hpp"
 #include "vision_interface/msg/resolve_result.hpp"
 #include "vision_interface/msg/detect_fly.hpp"
+#include "vision_interface/msg/match_info.hpp"
 #include "kalman_cv.h"
 
 #include <tf2_ros/transform_broadcaster.h>
@@ -39,6 +40,7 @@ private:
     rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_pub;
     rclcpp::Subscription<vision_interface::msg::DetectFly>::SharedPtr fly_sub;
     rclcpp::Subscription<geometry_msgs::msg::Point32>::SharedPtr lidar_sub;
+    rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr match_info_sub;
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Time last_msg_time_;
@@ -48,6 +50,7 @@ private:
     void timer_callback();
     void find_callback();
     void lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg);
+    void match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr msg);
     Gimbal find_closest_time(double target_time);
     void patrol();
     void read_config();
@@ -74,6 +77,12 @@ private:
     double kf_q_rad2_s3;
     double kf_initial_velocity_std_deg_s;
     double control_delay_s = 0.015;
+    double countermeasure_interval_s = 10.0;
+
+    bool enemy_drone_countered = false;
+    bool countermeasure_ended = false;
+    bool is_fire = true;
+    rclcpp::Time countermeasure_end_time;
 
     // read_config() 完成单位转换后，将上述参数汇总到卡尔曼实际使用的配置中。
     AngleKalmanConfig kf_config;

@@ -259,12 +259,10 @@ void KalmanFilter::publish_timer_callback()
     {
         const CarState &car = cars_[target_id];
         const SourceState *source = nullptr;
-        bool from_radio = false;
         // Radio 有效时优先使用，超时清除后立即回退到 Radar。
         if(car.radio.valid)
         {
             source = &car.radio;
-            from_radio = true;
         }
         else if(car.radar.valid)
         {
@@ -284,14 +282,12 @@ void KalmanFilter::publish_timer_callback()
         {
             detect_msg.blue_x[target_id] = future_point.x;
             detect_msg.blue_y[target_id] = future_point.y;
-            detect_msg.blue_from_radio[target_id] = from_radio;
         }
         else
         {
             const int red_id = target_id - 6;
             detect_msg.red_x[red_id] = future_point.x;
             detect_msg.red_y[red_id] = future_point.y;
-            detect_msg.red_from_radio[red_id] = from_radio;
         }
     }
 

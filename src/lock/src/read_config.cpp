@@ -15,6 +15,7 @@ void Lock::read_config()
         kf_q_rad2_s3 = 0.03;
         kf_initial_velocity_std_deg_s = 10.0;
         control_delay_s = 0.015;
+        countermeasure_interval_s = 10.0;
         kp_x = 1.0;
         kp_y = 1.0;
         RCLCPP_WARN(this->get_logger(), "无法打开 ./config/lock_config.yaml，lock 使用全部默认值");
@@ -74,6 +75,17 @@ void Lock::read_config()
         {
             control_delay_s = 0.015;
             RCLCPP_WARN(this->get_logger(), "lock_config 缺少 control_delay_s，" "使用默认值 0.015 s");
+        }
+
+        // 对方无人机反制结束后，再次允许反制的等待时间。
+        if (!fs["countermeasure_interval_s"].empty())
+        {
+            fs["countermeasure_interval_s"] >> countermeasure_interval_s;
+        }
+        else
+        {
+            countermeasure_interval_s = 10.0;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 countermeasure_interval_s，使用默认值 10.0 s");
         }
 
         // yaw 角度误差的比例增益。

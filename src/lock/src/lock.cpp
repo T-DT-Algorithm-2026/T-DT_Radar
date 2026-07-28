@@ -58,6 +58,9 @@ Lock::Lock(const rclcpp::NodeOptions& options)
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>(
         "/livox/lidar_fly_point", 10, std::bind(&Lock::lidar_callback, this, std::placeholders::_1));
 
+    match_info_sub = this->create_subscription<vision_interface::msg::MatchInfo>(
+        "match_info", 10, std::bind(&Lock::match_info_callback, this, std::placeholders::_1));
+
     last_msg_time_ = this->now();
     timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Lock::timer_callback, this));
 
@@ -168,7 +171,7 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     gimbal_msg.header.frame_id = "yaw_link"; 
     gimbal_msg.yaw = yaw;
     gimbal_msg.pitch = pitch;
-    gimbal_msg.is_fire = 1;
+    gimbal_msg.is_fire = is_fire;
     gimbal_msg.force_flag = 1;
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
@@ -186,6 +189,12 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 
 void Lock::timer_callback()
 {
+    if (countermeasure_ended && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s)
+    {
+        is_fire = true;
+        countermeasure_ended = false;
+    }
+
     if(lidar_valid)
     {
         geometry_msgs::msg::PointStamped point_base;
@@ -241,7 +250,7 @@ void Lock::find_callback()
     gimbal_msg.header.frame_id = "yaw_link"; 
     gimbal_msg.yaw = target_yaw;   
     gimbal_msg.pitch = target_pitch; 
-    gimbal_msg.is_fire = 1;
+    gimbal_msg.is_fire = is_fire;
     gimbal_msg.force_flag = 1;
 
     gimbal_pub->publish(gimbal_msg);
@@ -262,6 +271,23 @@ void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
         target_x = A_x / distance + B_x;
         target_y = A_y / distance + B_y;
     }
+}
+
+void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr msg)
+{
+    bool is_countered = msg->mark_progress[1];
+    if (is_countered)
+    {
+        is_fire = false;
+        countermeasure_ended = false;
+    }
+    else if (enemy_drone_countered)
+    {
+        countermeasure_end_time = this->now();
+        countermeasure_ended = true;
+        is_fire = false;
+    }
+    enemy_drone_countered = is_countered;
 }
 
 void Lock::publish_static_tf() 

@@ -53,14 +53,21 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     auto match_info = std::make_shared<vision_interface::msg::MatchInfo>();
     match_info->self_color = ((MatchInfo *)message)->self_color;
     match_info->match_time = ((MatchInfo *)message)->match_time;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
       match_info->robot_hp[i] = ((MatchInfo *)message)->robot_hp[i];
     }
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++)
+    {
       match_info->marks[i] = ((MatchInfo *)message)->marks[i];
     }
     match_info->ultimate = ((MatchInfo *)message)->ultimate;
     match_info->eventtype=((MatchInfo *)message)->eventType;
+    const uint16_t mark_progress = ((MatchInfo *)message)->mark_progress;
+    for (int i = 0; i < 4; i++)
+    {
+      match_info->mark_progress[i] = (mark_progress >> (12 + i)) & 0x01U;
+    }
     matchInfoPub->publish(*match_info);
       // TDT_INFO("matchInfoPub Received&&Pub!");
 

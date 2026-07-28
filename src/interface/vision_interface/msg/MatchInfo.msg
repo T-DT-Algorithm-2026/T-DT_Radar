@@ -4,3 +4,5 @@ uint8[16] robot_hp #参考0x0003
 uint8[6] marks
 uint8 ultimate
 uint32 eventtype
+# bit 12~15：对方被瞄准、对方被反制、己方被瞄准、己方被反制
+bool[4] mark_progress

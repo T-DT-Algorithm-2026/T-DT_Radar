@@ -23,6 +23,9 @@ kf_initial_velocity_std_deg_s: 10.0
 #延迟补偿 s
 control_delay_s: 0.035
 
+# 对方无人机反制结束后，再次允许反制的等待时间，单位 s。
+countermeasure_interval_s: 10.0
+
 # ==================== 云台控制增益 ====================
 # yaw 角度误差的比例增益。
 kp_x: 1
