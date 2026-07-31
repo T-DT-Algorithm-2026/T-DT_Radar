@@ -8,7 +8,7 @@
                 "GainAuto": "Off",
                 "PixelFormat": "BayerRG8",
                 "Width": 4096,
-                "Height": 3500,
+                "Height": 3000,
                 "ExposureTime": 5500.0,
                 "GammaEnable": true,
                 "Gamma": 0.8,
@@ -17,7 +17,7 @@
                 "BlackLevel": 240,
                 "FrameSpecInfoMask": 40,
                 "AcquisitionFrameRateEnable": true,
-                "AcquisitionFrameRate": 1,
+                "AcquisitionFrameRate": 10,
                 "TriggerMode": "Off"
             }
         },
