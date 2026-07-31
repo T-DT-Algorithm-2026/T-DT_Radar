@@ -23,8 +23,19 @@ kf_initial_velocity_std_deg_s: 10.0
 #延迟补偿 s
 control_delay_s: 0.035
 
+# ==================== 无人机反制决策 ====================
 # 对方无人机反制结束后，再次允许反制的等待时间，单位 s。
 countermeasure_interval_s: 10.0
+
+# match_info 超时时间，单位 s。
+match_info_timeout_s: 2.0
+
+# ==================== 第一次雷达锁定偏置 ====================
+# yaw 固定偏置，单位 deg。
+first_lock_yaw_offset_deg: -2.0
+
+# pitch 固定偏置，单位 deg。
+first_lock_pitch_offset_deg: 0.2
 
 # ==================== 云台控制增益 ====================
 # yaw 角度误差的比例增益。
@@ -33,6 +44,7 @@ kp_x: 1
 # pitch 角度误差的比例增益。
 kp_y: 1
 
+# ==================== 数据可视化与录制 ====================
 # 相机1压缩开关：0=不压缩，1=异步压缩并发布 /compressed_image
 compress_detect_image: 1
 

@@ -62,6 +62,7 @@ Lock::Lock(const rclcpp::NodeOptions& options)
         "match_info", 10, std::bind(&Lock::match_info_callback, this, std::placeholders::_1));
 
     last_msg_time_ = this->now();
+    last_match_info_time_ = this->now();
     timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Lock::timer_callback, this));
 
     RCLCPP_INFO(this->get_logger(), "Lock System Initialized with TF Support");
@@ -95,7 +96,6 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     float x = msg->x;
     float y = msg->y;
     // std::cout<<msg->x<<","<<msg->y<<std::endl;
-    bool measurement_valid = (x >= 380.0f && x <= 1060.0f && y >= 270.0f && y <= 790.0f);
 
     // 将准心像素和目标像素分别转换为相机视线角，两者之差就是本帧角度误差。
     float yaw1 = atan2(target_x - cx, fx);
@@ -116,25 +116,18 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 
     cv::Point2d predicted_angle = measured_angle;
     cv::Point2d angle_speed(0.0, 0.0);
-    if (measurement_valid)
+    if (kf_ptr == nullptr)
     {
-        if (kf_ptr == nullptr)
-        {
-            kf_ptr = std::make_shared<Kalman_filter_plus>(measured_angle, time_stamp, kf_config);
-        }
-        else
-        {
-            kf_ptr->update(measured_angle, time_stamp);
-        }
-        predicted_angle = kf_ptr->predict(predict_time);
-        angle_speed = kf_ptr->angular_velocity();
-        // std::cout<<"预测角度"<<predicted_angle.x<<","<<predicted_angle.y<<std::endl;
-        // std::cout<<"速度"<<angle_speed.x<<","<<angle_speed.y<<std::endl;
+        kf_ptr = std::make_shared<Kalman_filter_plus>(measured_angle, time_stamp, kf_config);
     }
     else
     {
-        kf_ptr.reset();
+        kf_ptr->update(measured_angle, time_stamp);
     }
+    predicted_angle = kf_ptr->predict(predict_time);
+    angle_speed = kf_ptr->angular_velocity();
+    // std::cout<<"预测角度"<<predicted_angle.x<<","<<predicted_angle.y<<std::endl;
+    // std::cout<<"速度"<<angle_speed.x<<","<<angle_speed.y<<std::endl;
 
     // 使用最新云台反馈计算控制误差；不能再用图像时刻的旧反馈，否则会重复补偿视觉延迟。
     Gimbal latest_gimbal = find_closest_time(now.seconds());
@@ -189,11 +182,10 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 
 void Lock::timer_callback()
 {
-    if (countermeasure_ended && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s)
+    if ((this->now() - last_match_info_time_).seconds() > match_info_timeout_s)
     {
         is_fire = true;
-        countermeasure_ended = false;
-    }
+    }//match_info失联时特殊处理
 
     if(lidar_valid)
     {
@@ -216,15 +208,16 @@ void Lock::timer_callback()
             float yaw_err = std::atan2(cy, cx); 
             float pitch_err = std::atan2(cz, dist_horizontal);
 
-            radar_yaw = yaw_err * (180.0f / CV_PI) - 2;
-            radar_pitch = pitch_err * (180.0f / CV_PI) +0.2;
+            radar_yaw = yaw_err * (180.0f / CV_PI) + first_lock_yaw_offset_deg;
+            radar_pitch = pitch_err * (180.0f / CV_PI) + first_lock_pitch_offset_deg;
             radar_angle_valid = true;
         }
     }
 
-    // 如果超过 0.5 秒没有收到消息，则认为目标丢失，调用 find_callback
+    // 如果超过 1 秒没有收到消息，则认为目标丢失，重置卡尔曼并调用 find_callback
     if ((this->now() - last_msg_time_).seconds() > 1)
     {
+        kf_ptr.reset();
         find_callback();
     }
 }
@@ -275,18 +268,47 @@ void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
 
 void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr msg)
 {
+    last_match_info_time_ = this->now();
+    if (msg->match_time <= 20)
+    {
+        countermeasure_count = 0;
+        enemy_drone_countered = false;
+        countermeasure_waiting = false;
+        is_fire = true;
+        return;
+    }//比赛结束的初始化
+
     bool is_countered = msg->mark_progress[1];
+    if (is_countered && !enemy_drone_countered)
+    {
+        countermeasure_count++;
+    }//上升沿记录次数
+
     if (is_countered)
     {
         is_fire = false;
-        countermeasure_ended = false;
+        countermeasure_waiting = false;
     }
     else if (enemy_drone_countered)
     {
         countermeasure_end_time = this->now();
-        countermeasure_ended = true;
+        countermeasure_waiting = true;
         is_fire = false;
+    }//下降沿开始等待
+
+    if (countermeasure_waiting && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s)
+    {
+        is_fire = true;
+        countermeasure_waiting = false;
+    }//等待结束
+
+    // 剩余时间只够完成剩余反制时，跳过额外等待
+    if (!is_countered && countermeasure_count < 5 && msg->match_time <= (6 - countermeasure_count) * 5 + (5 - countermeasure_count) * 45)
+    {
+        countermeasure_waiting = false;
+        is_fire = true;
     }
+
     enemy_drone_countered = is_countered;
 }
 

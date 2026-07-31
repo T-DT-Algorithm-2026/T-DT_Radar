@@ -44,6 +44,7 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Time last_msg_time_;
+    rclcpp::Time last_match_info_time_;
 
     void gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr msg);
     void callback(const vision_interface::msg::DetectFly::SharedPtr msg);
@@ -78,10 +79,14 @@ private:
     double kf_initial_velocity_std_deg_s;
     double control_delay_s = 0.015;
     double countermeasure_interval_s = 10.0;
+    double match_info_timeout_s = 2.0;
+    double first_lock_yaw_offset_deg = -2.0;
+    double first_lock_pitch_offset_deg = 0.2;
 
     bool enemy_drone_countered = false;
-    bool countermeasure_ended = false;
+    bool countermeasure_waiting = false;
     bool is_fire = true;
+    int countermeasure_count = 0;
     rclcpp::Time countermeasure_end_time;
 
     // read_config() 完成单位转换后，将上述参数汇总到卡尔曼实际使用的配置中。

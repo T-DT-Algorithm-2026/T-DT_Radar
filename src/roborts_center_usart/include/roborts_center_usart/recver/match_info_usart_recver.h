@@ -33,7 +33,7 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     uint8_t type = 1;
     
     uint8_t self_color=1;
-    int16_t match_time = -200; // 比赛时间，若尚未开始则发送比赛开始倒计时时间的负数，若比赛结束发送-100 若未连接至裁判系统发送-200
+    int16_t match_time = -200; // 比赛时间，若尚未开始则发送比赛开始倒计时时间的，若比赛结束发送-100 若未连接至裁判系统发送-200
     uint8_t robot_hp[16];
     uint8_t marks[6];
     uint8_t ultimate;

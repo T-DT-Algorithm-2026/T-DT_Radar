@@ -29,8 +29,8 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
     if (!file1.good())
     {
         system("python3 src/utils/onnx2trt.py "
-               "--onnx=model/ONNX/fly_all.onnx "
-               "--saveEngine=model/TensorRT/fly_all.engine "
+               "--onnx=model/ONNX/fly_final.onnx "
+               "--saveEngine=model/TensorRT/fly_final.engine "
                "--minBatch 1 "
                "--optBatch 1 "
                "--maxBatch 2 "

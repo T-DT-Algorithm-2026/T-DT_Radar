@@ -16,6 +16,9 @@ void Lock::read_config()
         kf_initial_velocity_std_deg_s = 10.0;
         control_delay_s = 0.015;
         countermeasure_interval_s = 10.0;
+        match_info_timeout_s = 2.0;
+        first_lock_yaw_offset_deg = -2.0;
+        first_lock_pitch_offset_deg = 0.2;
         kp_x = 1.0;
         kp_y = 1.0;
         RCLCPP_WARN(this->get_logger(), "无法打开 ./config/lock_config.yaml，lock 使用全部默认值");
@@ -86,6 +89,38 @@ void Lock::read_config()
         {
             countermeasure_interval_s = 10.0;
             RCLCPP_WARN(this->get_logger(), "lock_config 缺少 countermeasure_interval_s，使用默认值 10.0 s");
+        }
+
+        // match_info 超时时间。
+        if (!fs["match_info_timeout_s"].empty())
+        {
+            fs["match_info_timeout_s"] >> match_info_timeout_s;
+        }
+        else
+        {
+            match_info_timeout_s = 2.0;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 match_info_timeout_s，使用默认值 2.0 s");
+        }
+
+        // 第一次雷达锁定的角度偏置。
+        if (!fs["first_lock_yaw_offset_deg"].empty())
+        {
+            fs["first_lock_yaw_offset_deg"] >> first_lock_yaw_offset_deg;
+        }
+        else
+        {
+            first_lock_yaw_offset_deg = -2.0;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 first_lock_yaw_offset_deg，使用默认值 -2.0 deg");
+        }
+
+        if (!fs["first_lock_pitch_offset_deg"].empty())
+        {
+            fs["first_lock_pitch_offset_deg"] >> first_lock_pitch_offset_deg;
+        }
+        else
+        {
+            first_lock_pitch_offset_deg = 0.2;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 first_lock_pitch_offset_deg，使用默认值 0.2 deg");
         }
 
         // yaw 角度误差的比例增益。
