@@ -64,7 +64,7 @@ class DecisionUsartSender : public BaseUsartSender {
     RadioBuff send_data;
 
     for (int i = 0; i < 5; i++) {
-      if (msg->defence[i] == 100) {
+      if (msg->defence[i] >= 99) {
         send_data.individe[i] = 1;
         individe_state_[i] = 1;  // 新增：保存状态
       } else {

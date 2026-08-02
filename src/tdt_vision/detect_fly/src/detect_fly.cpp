@@ -117,7 +117,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::chrono::steady_clock::time_point begin =std::chrono::steady_clock::now();
     const rclcpp::Time begin_ros = this->now();
     const double timestamp_to_begin_ms = static_cast<double>((begin_ros - time_stamp).nanoseconds()) / 1.0e6;
-    std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
+    // std::cout << "Begin - time_stamp: " << timestamp_to_begin_ms << " ms" << std::endl;
     if (img.empty())
     {
         return;
@@ -260,7 +260,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     fly_pub_->publish(test_msg);
     std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
-    std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
+    // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
     cv::Point2f aim_point;
     if ((this->now().seconds() - lidar_time.seconds()) < 1)
     {

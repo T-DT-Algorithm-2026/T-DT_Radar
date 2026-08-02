@@ -286,7 +286,8 @@ void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr
 
     if (is_countered)
     {
-        is_fire = false;
+        // 对方处于反制状态时仍持续开火，只取消反制结束后的等待状态。
+        is_fire = true;
         countermeasure_waiting = false;
     }
     else if (enemy_drone_countered)
@@ -416,7 +417,7 @@ void Lock::patrol()
     // 巡航逻辑: 绕目标点做正方形巡逻
     float step = 0.05f;
     float max_val = 2.2f;
-    float min_val = -2.0f;
+    float min_val = -2.2f;
 
     switch (patrol_state_) {
         case 0: // 向右扫 (yaw 增加)

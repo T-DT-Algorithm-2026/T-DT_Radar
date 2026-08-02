@@ -33,14 +33,16 @@ public:
   using ye_Jacobian = std::pair<Measurement, StateMeasurementCov>;
 
 
-  void init(const cv::Point2f armor_xy) 
+  void init(const cv::Point2f armor_xy, const StateCov &initial_cov)
   {
-      this->state_(0) = armor_xy.x ;
+      state_.setZero();
+      this->state_(0) = armor_xy.x;
       this->state_(1) = 0;
       this->state_(2) = armor_xy.y;
       this->state_(3) = 0;
-      state_cov_.setZero();//初始化协方差矩阵为0
-  }//把装甲板中心的像素坐标 armor_xy 初始化到滤波器的状态向量state_中，并把速度设为 0，同时把协方差矩阵清零。
+      state_prior_ = state_;
+      state_cov_ = initial_cov;
+  }//把装甲板中心坐标初始化到状态向量中，并设置初始状态协方差。
 
 
   ye_Jacobian calcJacobian_H(const Eigen::VectorXd &state, const std::function<void(ceres::Jet<double, StateDim> *, const ceres::Jet<double, StateDim> *)> &func) 
@@ -200,6 +202,9 @@ public:
     double q_pos_x = 10; // 位置噪声
     double q_pos_v = 100; // 速度噪声
 
+    double p_pos_x = 1; // 初始位置方差
+    double p_pos_v = 9; // 初始速度方差，标准差对应最大车速 3 m/s
+
     int target_id = -1;
 
     Kalman_filter_plus(const pcl::PointXY &input,rclcpp::Time time) 
@@ -216,7 +221,9 @@ public:
         timer = std::chrono::steady_clock::now();//记录当前时间
         last_radar_catch_time = last_measurement_time;
 
-        KF.init(measurement);//传递坐标
+        Eigen::Matrix<double, StateDim, StateDim> initial_cov = Eigen::Matrix<double, StateDim, StateDim>::Zero();
+        initial_cov.diagonal() << p_pos_x, p_pos_v, p_pos_x, p_pos_v;
+        KF.init(measurement, initial_cov);//传递初始状态和协方差
         
         has_updated = true;
     }

@@ -144,11 +144,13 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     else
     {
         std::vector<pcl::PointXY> candidate_points;
-        // 门控范围外的点直接建立新轨迹，范围内的点交给匈牙利算法分配。
+        std::vector<pcl::PointXY> new_track_points;
+        const size_t existing_filter_count = radar_filters.size();
+        // 门控范围内的点参与分配，范围外的点在已有轨迹处理完成后统一建轨。
         for(size_t j = 0; j < cloud_xy->points.size(); ++j)
         {
             bool has_at_least_one_match = false;
-            for(size_t i = 0; i < radar_filters.size(); ++i)
+            for(size_t i = 0; i < existing_filter_count; ++i)
             {
                 if(radar_filters[i].match(cloud_xy->points[j]))
                 {
@@ -163,14 +165,15 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             }
             else
             {
-                radar_filters.emplace_back(cloud_xy->points[j], time);
+                // 延后建轨，避免新轨迹在同一帧未预测就参与卡尔曼更新。
+                new_track_points.push_back(cloud_xy->points[j]);
             }
         }
 
         if(!candidate_points.empty())
         {
             // 无法匹配的组合使用极大代价，避免错误更新 Radar 轨迹。
-            size_t num_kfs = radar_filters.size();
+            size_t num_kfs = existing_filter_count;
             size_t num_candidates = candidate_points.size();
             const double max_cost = 1e9;
             Eigen::MatrixXd cost_matrix(num_kfs, num_candidates);
@@ -210,6 +213,11 @@ void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 // 本帧未匹配到测量时只接受先验状态，不进行虚假测量更新。
                 kf.deal_missing(time);
             }
+        }
+
+        for(const auto &point : new_track_points)
+        {
+            radar_filters.emplace_back(point, time);
         }
     }
 

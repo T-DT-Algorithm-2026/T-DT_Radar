@@ -48,10 +48,10 @@ kp_y: 0.8
 compress_detect_image: 1
 
 # 相机1压缩画面绘制开关：调试时设为1，比赛录制时设为0
-draw_detect_image: 1
+draw_detect_image: 0
 
 # 相机2压缩开关：0=不压缩，1=异步压缩并发布 /compressed_image2
 compress_image: 1
 
 # 压缩画面绘制开关：调试时设为1，比赛录制时设为0
-draw_compressed_image: 1
+draw_compressed_image: 0
