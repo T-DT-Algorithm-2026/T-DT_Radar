@@ -63,14 +63,29 @@ class DecisionUsartSender : public BaseUsartSender {
 
     RadioBuff send_data;
 
-    for (int i = 0; i < 5; i++) {
-      if (msg->defence[i] >= 99) {
-        send_data.individe[i] = 1;
-        individe_state_[i] = 1;  // 新增：保存状态
-      } else {
-        send_data.individe[i] = 0;
-        individe_state_[i] = 0;  // 新增：保存状态
-      }
+    for (int i = 0; i < 5; i++)
+    {
+        // 第 5 台车需要扣除负防御增益，其他车只判断防御增益。
+        bool is_invincible = false;
+        if (i == 4)
+        {
+            const int actual_defence = static_cast<int>(msg->defence[i]) - static_cast<int>(msg->undefence[i]);
+            is_invincible = actual_defence >= 99;
+        }
+        else
+        {
+            is_invincible = msg->defence[i] >= 100;
+        }
+
+        if (is_invincible)
+        {
+            individe_state_[i] = 1;
+        }
+        else
+        {
+            individe_state_[i] = 0;
+        }
+        send_data.individe[i] = individe_state_[i];
     }
 
     send_data.frame_id = frame_id_++;
