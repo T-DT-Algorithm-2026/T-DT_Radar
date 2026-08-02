@@ -10,7 +10,7 @@ cd $SCRIPT_PATH/..
 echo $SCRIPT_PATH
 
 # 设置程序路径
-PROGRAM="./src/tdt_vision/launch/radar.launch.py"
+PROGRAM="./src/tdt_vision/launch/radar_all.launch.py"
 
 source ./install/setup.zsh
 echo "to be launched"

@@ -12,7 +12,8 @@ void Lock::read_config()
         // 配置文件不存在时，明确恢复全部默认值。节点继续运行，同时输出警告方便排查路径。
         kf_measurement_noise_px = 4.0;
         kf_measurement_noise_y_px = 16.0;
-        kf_q_rad2_s3 = 0.03;
+        kf_q_x_rad2_s3 = 0.03;
+        kf_q_y_rad2_s3 = 0.03;
         kf_initial_velocity_std_deg_s = 10.0;
         control_delay_s = 0.015;
         countermeasure_interval_s = 10.0;
@@ -47,15 +48,35 @@ void Lock::read_config()
             RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_measurement_noise_y_px，使用默认值 16.0 px");
         }
 
-        // Q 使用的标量噪声谱密度 q，单位为 rad^2/s^3。
-        if (!fs["kf_q_rad2_s3"].empty())
+        // x/y 分别对应 yaw/pitch 的噪声谱密度，单位为 rad^2/s^3。
+        if (!fs["kf_q_x_rad2_s3"].empty())
         {
-            fs["kf_q_rad2_s3"] >> kf_q_rad2_s3;
+            fs["kf_q_x_rad2_s3"] >> kf_q_x_rad2_s3;
+        }
+        else if (!fs["kf_q_rad2_s3"].empty())
+        {
+            fs["kf_q_rad2_s3"] >> kf_q_x_rad2_s3;
+            RCLCPP_WARN(this->get_logger(), "lock_config 使用旧参数 kf_q_rad2_s3 作为 kf_q_x_rad2_s3");
         }
         else
         {
-            kf_q_rad2_s3 = 0.03;
-            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_q_rad2_s3，使用默认值 0.03 rad^2/s^3");
+            kf_q_x_rad2_s3 = 0.03;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_q_x_rad2_s3，使用默认值 0.03 rad^2/s^3");
+        }
+
+        if (!fs["kf_q_y_rad2_s3"].empty())
+        {
+            fs["kf_q_y_rad2_s3"] >> kf_q_y_rad2_s3;
+        }
+        else if (!fs["kf_q_rad2_s3"].empty())
+        {
+            fs["kf_q_rad2_s3"] >> kf_q_y_rad2_s3;
+            RCLCPP_WARN(this->get_logger(), "lock_config 使用旧参数 kf_q_rad2_s3 作为 kf_q_y_rad2_s3");
+        }
+        else
+        {
+            kf_q_y_rad2_s3 = 0.03;
+            RCLCPP_WARN(this->get_logger(), "lock_config 缺少 kf_q_y_rad2_s3，使用默认值 0.03 rad^2/s^3");
         }
 
         // 卡尔曼初始化时对目标角速度不确定程度的估计，配置单位为 deg/s。
@@ -153,8 +174,9 @@ void Lock::read_config()
     kf_config.measurement_std_yaw_rad = kf_measurement_noise_px / fx;
     kf_config.measurement_std_pitch_rad = kf_measurement_noise_y_px / fy;
 
-    // Q：q 已使用卡尔曼内部需要的 rad^2/s^3，直接写入配置。
-    kf_config.angular_acceleration_noise = kf_q_rad2_s3;
+    // Q：x/y 分别对应 yaw/pitch，数值已经是卡尔曼需要的 rad^2/s^3。
+    kf_config.angular_acceleration_noise_yaw = kf_q_x_rad2_s3;
+    kf_config.angular_acceleration_noise_pitch = kf_q_y_rad2_s3;
 
     // 角速度参数从 deg/s 转换为 rad/s。
     double deg_to_rad = CV_PI / 180.0;

@@ -75,7 +75,8 @@ private:
     //卡尔曼参数
     double kf_measurement_noise_px;
     double kf_measurement_noise_y_px;
-    double kf_q_rad2_s3;
+    double kf_q_x_rad2_s3;
+    double kf_q_y_rad2_s3;
     double kf_initial_velocity_std_deg_s;
     double control_delay_s = 0.015;
     double countermeasure_interval_s = 10.0;
@@ -94,8 +95,8 @@ private:
     float fx;
     float fy;
     
-    float target_x=845;
-    float target_y=500;
+    float target_x=919;
+    float target_y=471;
     float dist1, target_x1, target_y1;
     float dist2, target_x2, target_y2;
     float A_x = 0, B_x = 0;

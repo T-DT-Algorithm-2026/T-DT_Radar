@@ -17,8 +17,9 @@ struct AngleKalmanConfig
     double measurement_std_yaw_rad = 2.0e-4;
     double measurement_std_pitch_rad = 2.0e-4;
 
-    // 连续白噪声角加速度强度，对应过程噪声矩阵 Q，单位 rad^2/s^3。
-    double angular_acceleration_noise = 0.05;
+    // yaw/pitch 独立的连续白噪声角加速度强度，单位 rad^2/s^3。
+    double angular_acceleration_noise_yaw = 0.05;
+    double angular_acceleration_noise_pitch = 0.05;
 
     // 第一次建立滤波器时角速度的不确定度。值大一些能更快建立目标速度。
     double initial_velocity_std_rad_s = 10.0 * 3.14159265358979323846 / 180.0;
@@ -139,15 +140,16 @@ public:
         double dt3 = dt2 * dt;
         StandardKF<4, 2>::StateCov process_noise =
             StandardKF<4, 2>::StateCov::Zero();
-        double q = config_.angular_acceleration_noise;
-        process_noise(0, 0) = dt3 * q / 3.0;
-        process_noise(0, 1) = dt2 * q / 2.0;
-        process_noise(1, 0) = dt2 * q / 2.0;
-        process_noise(1, 1) = dt * q;
-        process_noise(2, 2) = dt3 * q / 3.0;
-        process_noise(2, 3) = dt2 * q / 2.0;
-        process_noise(3, 2) = dt2 * q / 2.0;
-        process_noise(3, 3) = dt * q;
+        double q_yaw = config_.angular_acceleration_noise_yaw;
+        double q_pitch = config_.angular_acceleration_noise_pitch;
+        process_noise(0, 0) = dt3 * q_yaw / 3.0;
+        process_noise(0, 1) = dt2 * q_yaw / 2.0;
+        process_noise(1, 0) = dt2 * q_yaw / 2.0;
+        process_noise(1, 1) = dt * q_yaw;
+        process_noise(2, 2) = dt3 * q_pitch / 3.0;
+        process_noise(2, 3) = dt2 * q_pitch / 2.0;
+        process_noise(3, 2) = dt2 * q_pitch / 2.0;
+        process_noise(3, 3) = dt * q_pitch;
 
         // 此时状态从上一帧后验值推进到当前图像时刻的先验值。
         filter_.predict(transition, process_noise);
