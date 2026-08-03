@@ -89,9 +89,8 @@ private:
 
     cv::Point2f target_point;
     rclcpp::Time lidar_time;
-    float dist1, target_x1, target_y1;
-    float dist2, target_x2, target_y2;
-    float A_x, B_x, A_y, B_y;
+    float A_x = 0.0f, B_x = 845.0f;
+    float A_y = 0.0f, B_y = 500.0f;
 
     std::string save_dir_ = "./saved_images";
     int image_save_counter_{0};

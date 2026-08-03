@@ -1,4 +1,5 @@
 #include "lock.h"
+#include <array>
 
 namespace tdt_lock {
 
@@ -17,24 +18,59 @@ Lock::Lock(const rclcpp::NodeOptions& options)
 
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
-
-    fs2["dist1"] >> dist1;
-    fs2["target_x1"] >> target_x1;
-    fs2["target_y1"] >> target_y1;
-    fs2["dist2"] >> dist2;
-    fs2["target_x2"] >> target_x2;
-    fs2["target_y2"] >> target_y2;
-    
-    // 使用反比例函数模型：u = A/D + B
-    float inv_d1 = 1.0f / dist1;
-    float inv_d2 = 1.0f / dist2;
-    if (std::abs(inv_d1 - inv_d2) > 1e-5) 
+    constexpr std::array<float, 4> calibration_distances = {12.0f, 16.0f, 20.0f, 24.0f};
+    std::array<float, 4> target_x_points{};
+    std::array<float, 4> target_y_points{};
+    bool calibration_valid = fs2.isOpened();
+    for (std::size_t index = 0; index < calibration_distances.size(); ++index)
     {
-        A_x = (target_x1 - target_x2) / (inv_d1 - inv_d2);
-        B_x = target_x1 - A_x * inv_d1;
-        A_y = (target_y1 - target_y2) / (inv_d1 - inv_d2);
-        B_y = target_y1 - A_y * inv_d1;
-        std::cout << "Dynamic Target Loaded! Ax=" << A_x << ", Bx=" << B_x << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+        std::string suffix = std::to_string(index + 1);
+        cv::FileNode distance_node = fs2["dist" + suffix];
+        cv::FileNode target_x_node = fs2["target_x" + suffix];
+        cv::FileNode target_y_node = fs2["target_y" + suffix];
+        if (distance_node.empty() || target_x_node.empty() || target_y_node.empty())
+        {
+            calibration_valid = false;
+            continue;
+        }
+        float distance = static_cast<float>(distance_node);
+        target_x_points[index] = static_cast<float>(target_x_node);
+        target_y_points[index] = static_cast<float>(target_y_node);
+        if (std::abs(distance - calibration_distances[index]) > 1e-3f)
+        {
+            calibration_valid = false;
+        }
+    }
+
+    if (calibration_valid)
+    {
+        cv::Mat fit_matrix(4, 2, CV_32F);
+        cv::Mat target_x_matrix(4, 1, CV_32F);
+        cv::Mat target_y_matrix(4, 1, CV_32F);
+        for (std::size_t index = 0; index < calibration_distances.size(); ++index)
+        {
+            fit_matrix.at<float>(index, 0) = 1.0f / calibration_distances[index];
+            fit_matrix.at<float>(index, 1) = 1.0f;
+            target_x_matrix.at<float>(index, 0) = target_x_points[index];
+            target_y_matrix.at<float>(index, 0) = target_y_points[index];
+        }
+        cv::Mat x_coefficients;
+        cv::Mat y_coefficients;
+        calibration_valid = cv::solve(fit_matrix, target_x_matrix, x_coefficients, cv::DECOMP_QR)
+                            && cv::solve(fit_matrix, target_y_matrix, y_coefficients, cv::DECOMP_QR);
+        if (calibration_valid)
+        {
+            A_x = x_coefficients.at<float>(0, 0);
+            B_x = x_coefficients.at<float>(1, 0);
+            A_y = y_coefficients.at<float>(0, 0);
+            B_y = y_coefficients.at<float>(1, 0);
+            std::cout << "Laser target loaded at 12/16/20/24 m! Ax=" << A_x << ", Bx=" << B_x
+                      << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+        }
+    }
+    if (!calibration_valid)
+    {
+        RCLCPP_ERROR(this->get_logger(), "激光落点需要 12、16、20、24 m 四组完整标定数据，当前使用固定默认准心");
     }
 
     fs2.release();

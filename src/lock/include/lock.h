@@ -95,12 +95,10 @@ private:
     float fx;
     float fy;
     
-    float target_x=919;
-    float target_y=471;
-    float dist1, target_x1, target_y1;
-    float dist2, target_x2, target_y2;
-    float A_x = 0, B_x = 0;
-    float A_y = 0, B_y = 0;//激光落点计算
+    float target_x=845;
+    float target_y=500;
+    float A_x = 0.0f, B_x = 845.0f;
+    float A_y = 0.0f, B_y = 500.0f;//激光落点计算
 
     float cx = 720.0f;
     float cy = 540.0f;//参数

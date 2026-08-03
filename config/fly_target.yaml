@@ -1,8 +1,14 @@
 %YAML:1.0
 ---
-dist1:10
-target_x1:860
-target_y1:509                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-dist2:18
-target_x2:860
-target_y2:475
+dist1: 12
+target_x1: 962.75
+target_y1: 466.75
+dist2: 16
+target_x2: 963.6875
+target_y2: 482.6875
+dist3: 20
+target_x3: 964.25
+target_y3: 492.25
+dist4: 24
+target_x4: 964.625
+target_y4: 498.625
