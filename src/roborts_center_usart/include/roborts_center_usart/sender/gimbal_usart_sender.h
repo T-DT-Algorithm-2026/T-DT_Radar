@@ -68,7 +68,14 @@ class GimbalUsartSender : public BaseUsartSender {
     GimbalData send_data;
     send_data.yaw = msg->yaw;
     send_data.pitch = -msg->pitch;
-    send_data.is_fire = msg->is_fire;
+    if(msg->is_fire == 0)
+    {
+      send_data.is_fire = 1;
+    }
+    else 
+    {
+      send_data.is_fire = 0;
+    }
     send_data.force_flag = msg->force_flag;
     // std::cout<<static_cast<int>(send_data.force_flag)<<std::endl;
     // std::cout<<"Send Gimbal Data: yaw="<<send_data.yaw<<" pitch="<<send_data.pitch<<std::endl;

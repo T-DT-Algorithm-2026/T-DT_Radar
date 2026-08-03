@@ -304,7 +304,7 @@ void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr
     }//等待结束
 
     // 剩余时间只够完成剩余反制时，跳过额外等待
-    if (!is_countered && countermeasure_count < 5 && msg->match_time <= (6 - countermeasure_count) * 5 + (5 - countermeasure_count) * 45)
+    if (!is_countered && countermeasure_count < 5 && msg->match_time <= (6 - countermeasure_count) * 5 + (5 - countermeasure_count) * 55)
     {
         countermeasure_waiting = false;
         is_fire = true;
