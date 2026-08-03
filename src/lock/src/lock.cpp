@@ -98,6 +98,7 @@ Lock::Lock(const rclcpp::NodeOptions& options)
         "match_info", 10, std::bind(&Lock::match_info_callback, this, std::placeholders::_1));
 
     last_msg_time_ = this->now();
+    last_lidar_time_ = this->now();
     last_match_info_time_ = this->now();
     timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Lock::timer_callback, this));
 
@@ -223,7 +224,14 @@ void Lock::timer_callback()
         is_fire = true;
     }//match_info失联时特殊处理
 
-    if(lidar_valid)
+    if ((this->now() - last_lidar_time_).seconds() > 1.0)
+    {
+        lidar_valid = false;
+        radar_yaw = -10.0f;
+        radar_pitch = -4.5f;
+        radar_angle_valid = true;
+    }
+    else if (lidar_valid)
     {
         geometry_msgs::msg::PointStamped point_base;
         point_base.header.stamp = this->now();
@@ -288,6 +296,7 @@ void Lock::find_callback()
 
 void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
 {
+    last_lidar_time_ = this->now();
     fly_pos.x = msg->x;
     fly_pos.y = msg->y;
     fly_pos.z = msg->z;

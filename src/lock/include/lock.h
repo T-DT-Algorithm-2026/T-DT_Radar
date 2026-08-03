@@ -44,6 +44,7 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Time last_msg_time_;
+    rclcpp::Time last_lidar_time_;
     rclcpp::Time last_match_info_time_;
 
     void gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr msg);
