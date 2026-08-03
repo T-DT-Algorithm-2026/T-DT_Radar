@@ -34,6 +34,7 @@ ros2 run databag_tool record
 ```bash
 ros2 run databag_tool merge_bags
 ```         
-执行，将检查数据集储存母文件夹下所有可merge子子数据集的子数据集文件夹，未merge的将自动merge，如果包含损坏的bag，那么运行过程终端虽然提示报错，但并不会将报错的bag写入merged_bag，仍然会得出可用的merged_bag数据集
+执行后，将检查数据集储存母文件夹下所有可 merge 的子数据集文件夹。未 merge 的数据集会生成 `merged_bag/merged_bag_0.mcap` 和 `metadata.yaml`。MCAP 中会保存标准消息和自定义消息的完整定义（包括依赖的消息定义），可供支持 ROS 2 schema 的 MCAP 工具解析。
 
+如果包含损坏的 bag，终端会提示错误；损坏的 bag 及其后的 bag 不会写入 `merged_bag`，但损坏位置之前的有效数据仍会生成可用的 MCAP。已有 `merged_bag` 的数据集不会被覆盖，如需重新生成，请先自行备份或改名旧目录。
 
