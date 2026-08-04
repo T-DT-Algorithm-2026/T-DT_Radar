@@ -65,7 +65,8 @@ class KalmanFilter :public rclcpp::Node
     std::array<rclcpp::Time, 12> camera_times;
     static constexpr double RadarTimeout = 1.0;
     static constexpr double RadioTimeout = 1.0;
-    static constexpr double PredictionHorizon = 0.2;
+    // 根据 0.45 s 实测延迟和独立比赛数据验证，使用更稳健的 0.40 s 前向预测。
+    static constexpr double PredictionHorizon = 0.4;
 };
 
 std::vector<int> solve_hungarian(const Eigen::MatrixXd& cost_matrix) {

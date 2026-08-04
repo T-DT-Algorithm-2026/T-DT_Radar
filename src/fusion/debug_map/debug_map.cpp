@@ -132,123 +132,26 @@ namespace tdt_radar {
             show_map();
 
             vision_interface::msg::Radar2Sentry radar2sentry;
-            if(match_info.self_color==0)
-            {//自己是蓝色 发送红色信息
-                for(int i=0;i<6;i++)
+            // /kalman_detect 已转换到裁判系统坐标，此处只按己方颜色映射敌我数组。
+            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
+            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
+            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
+            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
+            for(int i = 0; i < 6; i++)
+            {
+                if(match_info.self_color == 0)
                 {
-                    if(!relax[i])
-                    {
-                        if(match_info.marks[i]>=117)
-                        {
-                            relax[i]=true;
-                            relax_time[i] = time;
-                        } 
-                        else
-                        {
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                            }
-                        }
-                            // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
-                            //     radar2sentry.radar_enemy_x[i] = 28-14.556;
-                            //     radar2sentry.radar_enemy_y[i] = 6.947;
-                            // }
-                    }
-                    else
-                    {
-                        //当mark在(105,117)间隔0.4s发送一次
-                        if(match_info.marks[i]<105)
-                        {
-                            relax[i]=false;
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                            } 
-                        }
-                        else if(time-relax_time[i]>0.35)
-                        {
-                            relax_time[i] = time;
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y; 
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                            }
-                        }
-                    }
+                    radar2sentry.radar_enemy_x[i] = msg->red_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->red_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->blue_y[i];
                 }
-            }
-            if(match_info.self_color==2){//自己是红色 发送蓝色信息
-                for(int i=0;i<6;i++){
-                    if(!relax[i]){
-                        if(match_info.marks[i]>=117){
-                            relax[i]=true;
-                            relax_time[i] = time;
-                        } 
-                        else{
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            }
-                            // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
-                            //     radar2sentry.radar_enemy_x[i] = 14.556;
-                            //     radar2sentry.radar_enemy_y[i] = 8.057;
-                            // }                    
-                        }
-                    }else{
-                        //当mark在(105,117)间隔0.4s发送一次
-                        if(match_info.marks[i]<105){
-                            relax[i]=false;
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            } 
-                        }else if(time-relax_time[i]>0.35){
-                            relax_time[i] = time;
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            } 
-                        }
-                    }
+                else if(match_info.self_color == 2)
+                {
+                    radar2sentry.radar_enemy_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->blue_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->red_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->red_y[i];
                 }
             }
             radar2sentry_pub->publish(radar2sentry);
@@ -275,9 +178,6 @@ namespace tdt_radar {
 
         double blue_time[6];//单位s
         double red_time[6];//单位s
-
-        bool relax[6];
-        double relax_time[6];
 
         double blue_update[6];
         double red_update[6];

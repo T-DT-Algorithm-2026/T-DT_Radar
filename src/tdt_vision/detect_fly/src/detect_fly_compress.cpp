@@ -82,8 +82,8 @@ void DetectFly::compressAndPublish(const CompressTask& task)
         if (draw_compressed_image_ && task.has_target)
         {
             cv::rectangle(image, task.target_rect, cv::Scalar(0, 255, 0), 1);
-            cv::circle(image, task.detect_point, 1, cv::Scalar(255, 255, 0), -1);
-            cv::circle(image, task.aim_point, 1, cv::Scalar(255, 0, 255), -1);
+            cv::circle(image, task.detect_point, 3, cv::Scalar(255, 255, 0), -1);
+            cv::circle(image, task.aim_point, 3, cv::Scalar(255, 0, 255), -1);
         }
 
         sensor_msgs::msg::CompressedImage compressed_msg;
