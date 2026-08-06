@@ -1,14 +1,14 @@
 %YAML:1.0
 ---
 dist1: 12
-target_x1: 956
-target_y1: 503
+target_x1: 951
+target_y1: 490
 dist2: 16
-target_x2: 956
-target_y2: 488
+target_x2: 950
+target_y2: 475
 dist3: 20
-target_x3: 955
-target_y3: 479
+target_x3: 950
+target_y3: 467
 dist4: 24
-target_x4: 955
-target_y4: 473
+target_x4: 950
+target_y4: 461

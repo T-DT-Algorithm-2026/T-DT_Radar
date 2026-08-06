@@ -140,11 +140,13 @@ DetectFly::DetectFly(const rclcpp::NodeOptions& options)
 void DetectFly::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
 {
     float distance = std::sqrt(msg->x * msg->x + msg->y * msg->y + msg->z * msg->z);
-    lidar_time = this->now();
-    
-    // 如果启用了动态靶心，根据当前距离实时更新 target_point
-    target_point.x = A_x / distance + B_x;
-    target_point.y = A_y / distance + B_y;
+
+    // 与 lock 保持一致：仅使用有效距离更新，异常或超时则保留上一次落点。
+    if (distance > 1e-3f)
+    {
+        target_point.x = A_x / distance + B_x;
+        target_point.y = A_y / distance + B_y;
+    }
 }
 
 void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
@@ -182,14 +184,7 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     if (result.size() == 0)
     {
         // RCLCPP_INFO(this->get_logger(), "No Fly!");
-        // if((this->now().seconds() - lidar_time.seconds()) < 1)
-        // {
-        //     cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
-        // }
-        // else
-        // {
-        //     cv::circle(img, cv::Point(720, 540), 1, cv::Scalar(255, 0, 255), -1); //准心
-        // }
+        // cv::circle(img, target_point, 1, cv::Scalar(255, 0, 255), -1); //准心
         // cv::imshow("detect_fly", img);
         // cv::waitKey(1);
 
@@ -298,15 +293,8 @@ void DetectFly::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::chrono::steady_clock::time_point end_pub =std::chrono::steady_clock::now();
     std::chrono::duration<double> time_used_pub =std::chrono::duration_cast<std::chrono::duration<double>>(end_pub - begin);
     // std::cout << "Publish Time: " << time_used_pub.count() * 1000 << "ms" << std::endl;
-    cv::Point2f aim_point;
-    if ((this->now().seconds() - lidar_time.seconds()) < 1)
-    {
-        aim_point = target_point;
-    }
-    else
-    {
-        aim_point = cv::Point2f(720, 540);
-    }
+    // lock 在雷达超时后会保留最后一次动态落点，因此显示也始终使用同一落点。
+    cv::Point2f aim_point = target_point;
     // std::cout<<"target_point:"<<target_point.x<<","<<target_point.y<<std::endl;
 
     // cv::imshow("detect_fly", img);

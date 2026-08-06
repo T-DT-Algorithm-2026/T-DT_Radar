@@ -70,7 +70,7 @@ class DecisionUsartSender : public BaseUsartSender {
         if (i == 4)
         {
             const int actual_defence = static_cast<int>(msg->defence[i]) - static_cast<int>(msg->undefence[i]);
-            is_invincible = actual_defence >= 99;
+            is_invincible = (actual_defence >= 99 || msg->defence[i] >= 100);
         }
         else
         {
