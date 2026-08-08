@@ -38,6 +38,9 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
     uint8_t marks[6];
     uint8_t ultimate;
     uint32_t eventType;
+    uint8_t dart_remaining_time;
+    uint16_t dart_info;
+    uint8_t sentry_go_kill;
     uint16_t mark_progress;
 
     float time_stamp;
@@ -62,7 +65,16 @@ class MatchInfoUsartRecver : public BaseUsartRecver {
       match_info->marks[i] = ((MatchInfo *)message)->marks[i];
     }
     match_info->ultimate = ((MatchInfo *)message)->ultimate;
-    match_info->eventtype=((MatchInfo *)message)->eventType;
+    const uint32_t event_type = ((MatchInfo *)message)->eventType;
+    match_info->eventtype = event_type;
+    match_info->large_energy_status = (event_type >> 5) & 0x03U;
+    TDT_INFO("Large energy status: %u", static_cast<unsigned int>(match_info->large_energy_status));
+    const uint16_t dart_info = ((MatchInfo *)message)->dart_info;
+    match_info->dart_hit_target = dart_info & 0x07U;
+    match_info->dart_selected_target = (dart_info >> 6) & 0x07U;
+    TDT_INFO("Dart hit target: %u, selected target: %u", static_cast<unsigned int>(match_info->dart_hit_target), static_cast<unsigned int>(match_info->dart_selected_target));
+    match_info->sentry_go_kill = ((MatchInfo *)message)->sentry_go_kill;
+    TDT_INFO("Sentry go kill: %u" , static_cast<unsigned int>(match_info->sentry_go_kill));
     const uint16_t mark_progress = ((MatchInfo *)message)->mark_progress;
     for (int i = 0; i < 4; i++)
     {

@@ -20,7 +20,6 @@
   <depend>localization_interface</depend>
   <depend>navigation_interface</depend>
   <depend>vision_interface</depend>
-  <depend>visualization_msgs</depend>
   <depend>gimbal_interface</depend>
   <depend>radio_interface</depend>
   

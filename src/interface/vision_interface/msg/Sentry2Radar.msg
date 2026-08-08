@@ -1,2 +1,1 @@
-float32[6] self_x
-float32[6] self_y
+uint8 sentry_go_kill
