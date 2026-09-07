@@ -319,6 +319,7 @@ void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr
         countermeasure_count = 0;
         enemy_drone_countered = false;
         countermeasure_waiting = false;
+        sentry_go_kill_received = false;
         is_fire = true;
         return;
     }//比赛结束的初始化
@@ -328,6 +329,12 @@ void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr
     {
         countermeasure_count++;
     }//上升沿记录次数
+
+    // 第四次结束后的等待阶段计数仍为 4，此时收到击杀指令也会解锁第五次反制。
+    if (countermeasure_count < 5 && msg->sentry_go_kill == 1)
+    {
+        sentry_go_kill_received = true;
+    }
 
     if (is_countered)
     {
@@ -342,7 +349,7 @@ void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr
         is_fire = false;
     }//下降沿开始等待
 
-    if (countermeasure_waiting && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s)
+    if (countermeasure_waiting && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s && (countermeasure_count != 4 || sentry_go_kill_received))
     {
         is_fire = true;
         countermeasure_waiting = false;

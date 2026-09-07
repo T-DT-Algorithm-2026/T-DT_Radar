@@ -87,6 +87,7 @@ private:
 
     bool enemy_drone_countered = false;
     bool countermeasure_waiting = false;
+    bool sentry_go_kill_received = false;
     bool is_fire = true;
     int countermeasure_count = 0;
     rclcpp::Time countermeasure_end_time;
@@ -96,10 +97,10 @@ private:
     float fx;
     float fy;
     
-    float target_x=947;
-    float target_y=466;
-    float A_x = 0.0f, B_x = 947.0f;
-    float A_y = 0.0f, B_y = 466.0f;//激光落点计算
+    float target_x=1053;
+    float target_y=500;
+    float A_x = 0.0f, B_x = 1053.0f;
+    float A_y = 0.0f, B_y = 500.0f;//激光落点计算
 
     float cx = 720.0f;
     float cy = 540.0f;//参数

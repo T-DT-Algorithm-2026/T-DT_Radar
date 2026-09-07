@@ -171,7 +171,7 @@ void DynamicCloud::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }//点云筛选
     // std::cout << "filter time: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-ta).count()/1000.0 << std::endl;
     pcl::PointCloud<pcl::PointXYZ> dynamic_pointcloud;
-    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.07,12);//提取动态点云
+    GetDynamicCloud(filtered_cloud,dynamic_pointcloud,0.06,12);//提取动态点云
 
     if(accumulate_count<accumulate_time){
         accumulated_clouds_.push_back(dynamic_pointcloud.makeShared());
