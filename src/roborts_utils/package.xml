@@ -12,7 +12,6 @@
   <depend>std_msgs</depend>
   <depend>rclcpp</depend>
   
-  <depend>base_interface</depend>
   <depend>vision_interface</depend>
 
   <depend>OpenCV</depend>

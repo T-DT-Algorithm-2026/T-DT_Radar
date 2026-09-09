@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <opencv2/opencv.hpp>
 #include "gimbal_interface/msg/gimbal_angle.hpp"
-#include "vision_interface/msg/resolve_result.hpp"
 #include "vision_interface/msg/detect_fly.hpp"
 #include "vision_interface/msg/match_info.hpp"
 #include "kalman_cv.h"

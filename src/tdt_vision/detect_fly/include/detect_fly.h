@@ -24,8 +24,6 @@
 #include "geometry_msgs/msg/vector3.hpp"
 #include "opencv2/opencv.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
-#include "vision_interface/msg/fly_detect.hpp"
-#include "vision_interface/msg/resolve_result.hpp"
 #include "vision_interface/msg/detect_fly.hpp"
 
 #include <tf2/LinearMath/Quaternion.h>

@@ -11,7 +11,6 @@ add_definitions(-w)
 find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(base_interface REQUIRED)
 find_package(vision_interface REQUIRED)
 
 find_package(OpenCV 4 REQUIRED)
@@ -63,7 +62,6 @@ ament_target_dependencies(
   OpenMP
   jsoncpp
   Boost
-  base_interface
   vision_interface
 )
 
@@ -76,7 +74,6 @@ ament_export_dependencies(
         OpenMP
         jsoncpp
         Boost
-        base_interface
         vision_interface
 )
 
