@@ -13,7 +13,6 @@
   <test_depend>ament_lint_common</test_depend>
   <depend>rclcpp</depend>
   <depend>OpenCV</depend>
-  <depend>roborts_utils</depend>
   <depend>geometry_msgs</depend>
   <depend>vision_interface</depend>
   <depend>perception_interface</depend>
@@ -43,7 +42,6 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>foxglove_bridge</exec_depend>
   <exec_depend>tdt_lock</exec_depend>
-  <exec_depend>databag_tool</exec_depend>
 
 
   <!-- <depend>builtin_interfaces</depend> -->

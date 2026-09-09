@@ -1,9 +1,6 @@
 #ifndef VISION_DEBUG_H
 #define VISION_DEBUG_H
 
-// roborts_utils
-#include "roborts_utils/roborts_utils.h"
-
 // hik
 // #include <MvCameraControl.h>
 

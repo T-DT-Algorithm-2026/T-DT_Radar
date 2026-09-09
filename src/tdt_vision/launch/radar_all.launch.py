@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import Shutdown
-from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
 
@@ -51,13 +51,6 @@ def generate_launch_description():
         extra_arguments=common_extra_arguments,
     )
 
-    record_node = Node(
-        package="databag_tool",
-        executable="BagRecorderNode",
-        name="record_node",
-        output="both",
-    )
-
     radar_container = ComposableNodeContainer(
         name="camera_detector_container",
         namespace="",
@@ -77,4 +70,4 @@ def generate_launch_description():
         on_exit=Shutdown(),
     )
 
-    return LaunchDescription([radar_container , record_node])
+    return LaunchDescription([radar_container])
