@@ -35,13 +35,20 @@
 **v2.0**
 - 进入2025赛季，更新README
 
+**v3.0**
+- 进入2026赛季，增加反制无人机功能，引入无线电坐标消息
+
 # 项目介绍
 
 
-本项目通过激光雷达和单目相机的目标检测，进行传感器后融合，实现了传感器之间的完全解耦合，避免了联合标定带来的误差，同时开发难度不随传感器数量增加而增加。  
+本项目通过激光雷达和单目相机的目标检测，进行传感器后融合，实现了传感器之间的完全解耦合，避免了联合标定带来的误差，同时开发难度不随传感器数量增加而增加，同时加入了无线电的坐标信息，可以自动切换。  
+
+`tdt_lock` 是工作空间中的反制无人机模块。详细设计、接口和调试方法见 [`src/lock/README.md`](./src/lock/README.md)。
 
 东北大学RM2024雷达技术报告 [https://bbs.robomaster.com/wiki/260375/27115](https://bbs.robomaster.com/wiki/260375/27115)
+东北大学RM2025雷达技术报告[https://bbs.robomaster.com/article/803954?source=8](https://bbs.robomaster.com/article/803954?source=8)
 
+**如果你没有无线电信息，也可以直接使用本项目的雷达相机后融合方案（在2025，2024两次进入全明星）**
 **如果你没有激光雷达，也可以直接使用本项目的单目相机方案 (在RM2023的0.6m误差规则下取得了最高91%的准确率，荣获2023年雷达MVP)**
 
 <p align="center">
@@ -57,12 +64,14 @@
 - 4.三层神经网络实现了更好的鲁棒性和可修复性，极大地降低了模型训练和数据集整理的难度和时间。
 - 5.低耦合，易于维护和扩展
 - 6.雷达全自动配准，节约3分钟部署时间
+- 7.可以自动切换雷达信息或者无线电信息，不依赖与无线电
 ## 硬件条件
 
 - 激光雷达 Livox Avia
 - 单目相机 Hikvision CH-120-10UC
 - CPU i7-12700KF
 - GPU RTX A4000 * 2
+- 微相 ANTSDR SDR 软件无线电
 
 ## 项目结构说明
 
@@ -96,7 +105,7 @@
 
 ### 激光雷达
 
-- GICP配准 **RM2024场地地图(有墙版)存储在config/RM2024.pcd**
+- GICP配准 **RM2026场地地图(有墙版)存储在config/RM2026.pcd**
 - KdTree离群点检测
 - 欧几里得聚类
 - 飞镖检测
@@ -109,6 +118,9 @@
 ### 工具包
 - 进程内播放rosbag (ros2 jazzy已支持)
 
+### 无线电
+- 无线电模块参考开源
+
 ## 模块介绍
 
 | 模块 | 说明 |
@@ -118,6 +130,7 @@
 | [`interface`](./src/interface/) | 自定义消息接口 |
 | [`livox_driver`](./src/livox_driver/) | Livox驱动 |
 | [`fusion`](./src/fusion/) | 传感器后融合模块 |
+| [`lock`](./src/lock/) | 反制无人机锁定与云台控制模块 |
 | [`utils`](./src/utils/) | 工具包 |
 
 ## 依赖
@@ -155,6 +168,11 @@ Livox_SDK(1)
 | detect_result | topic< vision_interface::msg::DetectResult > | 识别结果 |
 | resolve_result | topic< vision_interface::msg::DetectResult > | 解算结果 |
 
+#### 无线电
+| 名称 | 类型 | 用途 |
+| --- | --- | --- |
+| robot_position | topic< radio_interface::msg::Position > | 无线电坐标 |
+
 
 #### 传感器融合
 
@@ -185,8 +203,7 @@ ros2 launch livox_ros2_driver livox_lidar_launch.py #启动Livox驱动
 ```bash
 ros2 run tdt_vision calib_rosbag.launch.py
 ```
-按Enter键开始标定,依次点击R0/B0左上，右上，己方前哨站血条最高点(满血)，敌方基地引导灯，敌方前哨站引导灯。
-
+按Enter键开始标定,依次点击堡垒最下放，己方前哨站血条最下端，敌方前哨战引导灯，敌方方斜坡围挡，敌方高地角点。
 
 每次点击后可使用wasd调节上下左右，按n键保存当前点，保存5个点后自动计算外参并保存在config/out_matrix.yaml
 ## 可视化
@@ -196,9 +213,11 @@ Launch文件已集成foxglove-bridge,启动后直接打开foxglove-studio即可�
 - 改进聚类算法
 - 使用ros参数，实时调参
 # 联系方式
-Email: zhujunheng2005@gmail.com  
-QQ: 820288431  
----
-Email: shenxuewen0127@gmail.com  
-QQ: 2738226430
+
+| Email | QQ |
+| --- | --- |
+| [liuhansen026@gmail.com](mailto:liuhansen026@gmail.com) | 3978818034 |
+| [zhujunheng2005@gmail.com](mailto:zhujunheng2005@gmail.com) | 820288431 |
+| [shenxuewen0127@gmail.com](mailto:shenxuewen0127@gmail.com) | 2738226430 |
+
 </div>

@@ -428,6 +428,6 @@ public:
         update(input,time);
         state_time = last_measurement_time;
         last_radar_catch_time = last_measurement_time;
-        miss_last_time=0;//是直接归0还是减@
+        miss_last_time=0;
     }//识别到的点处理
 }; 

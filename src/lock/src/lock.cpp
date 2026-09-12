@@ -184,18 +184,6 @@ void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
     yaw = (latest_gimbal.yaw + final_yaw) * 180.0 / CV_PI;
     pitch = (latest_gimbal.pitch + final_pitch) * 180.0 / CV_PI;
 
-    // if(radar_angle_valid)
-    // {
-    //     yaw = std::clamp(yaw, radar_yaw - radar_yaw_limit, radar_yaw + radar_yaw_limit);
-    //     pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
-    // }
-
-    // std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
-    // std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI
-    //          <<", predict_ms:"<<predict_time*1000.0
-    //          <<", yaw_rate:"<<angle_speed.x*180.0/CV_PI
-    //          <<", pitch_rate:"<<angle_speed.y*180.0/CV_PI<<std::endl;
-
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
     gimbal_msg.header.frame_id = "yaw_link"; 
