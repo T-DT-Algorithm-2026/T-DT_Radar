@@ -1,0 +1,1 @@
+uint8 sentry_go_kill

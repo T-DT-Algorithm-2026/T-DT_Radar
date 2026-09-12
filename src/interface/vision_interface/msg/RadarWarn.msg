@@ -1,0 +1,2 @@
+uint8 base_state
+uint8 out_post_state
