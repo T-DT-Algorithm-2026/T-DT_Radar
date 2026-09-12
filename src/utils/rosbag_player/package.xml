@@ -25,9 +25,12 @@
     <depend>image_transport</depend>
     <depend>sensor_msgs</depend>
     <depend>std_msgs</depend>
+    <depend>jsoncpp</depend>
     <depend>PCL</depend>
     <depend>pcl_conversions</depend>
     <depend>vision_interface</depend>
+    <depend>gimbal_interface</depend>
+    <depend>radio_interface</depend>
 
   
   <build_depend>rosidl_default_generators</build_depend>

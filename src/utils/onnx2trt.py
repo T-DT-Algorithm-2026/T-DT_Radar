@@ -1,14 +1,34 @@
 import argparse
+import os
+import shutil
 import subprocess
+import sys
+
+
+def find_trtexec():
+    env_path = os.environ.get("TRTEXEC_PATH")
+    if env_path:
+        executable = shutil.which(env_path)
+        if executable:
+            return executable
+        raise FileNotFoundError(f"TRTEXEC_PATH is not executable: {env_path}")
+
+    path_trtexec = shutil.which("trtexec")
+    if path_trtexec:
+        return path_trtexec
+
+    raise FileNotFoundError(
+        "trtexec not found. Set TRTEXEC_PATH or add trtexec to PATH."
+    )
 
 def run_trtexec(onnx_path, save_engine_path, min_batch, opt_batch, max_batch, input_name,shape):
-    command = ["/usr/src/tensorrt/bin/trtexec",
+    command = [find_trtexec(),
                "--onnx=" + onnx_path,
                "--saveEngine=" + save_engine_path,
                "--minShapes=" + input_name + ":" + min_batch + "x3x" +shape,
                "--optShapes=" + input_name + ":" + opt_batch + "x3x" +shape,
                "--maxShapes=" + input_name + ":" + max_batch + "x3x" +shape]
-    subprocess.run(command)
+    subprocess.run(command, check=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run TensorRT with specified parameters.")
@@ -21,4 +41,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_name", default="input", help="Name of the input tensor.")
     args = parser.parse_args()
 
-    run_trtexec(args.onnx, args.saveEngine, args.minBatch, args.optBatch, args.maxBatch,args.input_name,args.Shape)
+    try:
+        run_trtexec(args.onnx, args.saveEngine, args.minBatch, args.optBatch, args.maxBatch,args.input_name,args.Shape)
+    except Exception as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(1)

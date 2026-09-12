@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(cluster)
 set(CMAKE_BUILD_TYPE "RELEASE")
 find_package (ament_cmake_auto REQUIRED) 
+find_package(jsoncpp CONFIG REQUIRED)
 ament_auto_find_build_dependencies ()
 
 include_directories(include)

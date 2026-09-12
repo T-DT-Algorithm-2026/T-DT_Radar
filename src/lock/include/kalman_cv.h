@@ -1,213 +1,209 @@
-#include "opencv2/opencv.hpp"
-#include "pcl/point_types.h"
-#include "pcl/point_cloud.h"
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/types.hpp>
-#include <pcl/impl/point_types.hpp>
-#include <rclcpp/time.hpp>
-#include <vector>
-#include <cmath>
-#include <algorithm> 
-#include <queue>   
-#include <memory>   
-#include <rclcpp/rclcpp.hpp>
 #pragma once
 
-constexpr int StateDim = 4; // x, vx, y, vy
-constexpr int MeasurementDim = 2; // x, y
+#include <Eigen/Dense>
+#include <opencv2/core/types.hpp>
+#include <rclcpp/time.hpp>
 
-// 纯线性卡尔曼，去掉了冗余的 ceres 依赖
-template <int StateDim, int MeasurementDim> class StandardKF 
+#include <algorithm>
+#include <cmath>
+
+namespace tdt_lock {
+
+// 角度卡尔曼的配置。角度统一使用 rad，角速度统一使用 rad/s。
+// 节点侧以像素或角度定义的固定参数会在初始化时换算后写入这里。
+struct AngleKalmanConfig
 {
-public:
-  using State = Eigen::Matrix<double, StateDim, 1>;
-  using Measurement = Eigen::Matrix<double, MeasurementDim, 1>;
-  using StateCov = Eigen::Matrix<double, StateDim, StateDim>;
-  using MeasurementCov = Eigen::Matrix<double, MeasurementDim, MeasurementDim>;
-  using TransitionMatrix = Eigen::Matrix<double, StateDim, StateDim>;
-  using MeasurementMatrix = Eigen::Matrix<double, MeasurementDim, StateDim>;
-  using KalmanGain = Eigen::Matrix<double, StateDim, MeasurementDim>;
+    // 相机测得的绝对目标 yaw/pitch 的标准差，对应测量噪声矩阵 R。
+    double measurement_std_yaw_rad = 2.0e-4;
+    double measurement_std_pitch_rad = 2.0e-4;
 
-  void init(const cv::Point2f armor_xy) 
-  {
-      state_.setZero();
-      state_(0) = armor_xy.x;
-      state_(1) = 0; // vx
-      state_(2) = armor_xy.y;
-      state_(3) = 0; // vy
-      
-      state_cov_.setIdentity(); 
-      state_cov_(0, 0) = 1.0;  // 初始位置方差小
-      state_cov_(2, 2) = 1.0; 
-      state_cov_(1, 1) = 1000.0; // 初始速度方差极大
-      state_cov_(3, 3) = 1000.0; 
-  }
+    // yaw/pitch 独立的连续白噪声角加速度强度，单位 rad^2/s^3。
+    double angular_acceleration_noise_yaw = 0.05;
+    double angular_acceleration_noise_pitch = 0.05;
 
-  void predict(const TransitionMatrix& F) 
-  {
-      state_prior_ = F * state_;
-      state_cov_ = F * state_cov_ * F.transpose() + process_noise_cov_;
-  }
+    // 第一次建立滤波器时角速度的不确定度。值大一些能更快建立目标速度。
+    double initial_velocity_std_rad_s = 10.0 * 3.14159265358979323846 / 180.0;
 
-  void update(const Measurement& z, const MeasurementMatrix& H) 
-  {
-      Eigen::Matrix<double, MeasurementDim, MeasurementDim> S = H * state_cov_ * H.transpose() + measurement_noise_cov_;
-      kalman_gain_ = state_cov_ * H.transpose() * S.inverse();
-      state_ = state_prior_ + kalman_gain_ * (z - H * state_prior_);
-      Eigen::Matrix<double, StateDim, StateDim> I = Eigen::Matrix<double, StateDim, StateDim>::Identity();
-      state_cov_ = (I - kalman_gain_ * H) * state_cov_;
-  }
-
-  State getState() { return state_; }
-  State getPriorState() { return state_prior_; }
-  void set_process_noise_cov(const StateCov &Q) { process_noise_cov_ = Q; }
-  void set_measurement_noise_cov(const MeasurementCov &R) { measurement_noise_cov_ = R; }
-
-private:
-  State state_;
-  State state_prior_;
-  StateCov state_cov_;
-  StateCov process_noise_cov_;
-  MeasurementCov measurement_noise_cov_;
-  KalmanGain kalman_gain_;
 };
 
-
-class Kalman_filter_plus 
+// 标准线性卡尔曼的最小实现。
+// 在本文件中的实际状态为 [yaw, yaw_rate, pitch, pitch_rate]，
+// 测量为 [yaw, pitch]。模板保留了矩阵维度，便于检查矩阵运算是否匹配。
+template <int StateDim, int MeasurementDim>
+class StandardKF
 {
-private:
-    StandardKF<4,2> KF; 
 public:
+    using State = Eigen::Matrix<double, StateDim, 1>;
+    using Measurement = Eigen::Matrix<double, MeasurementDim, 1>;
+    using StateCov = Eigen::Matrix<double, StateDim, StateDim>;
+    using MeasurementCov = Eigen::Matrix<double, MeasurementDim, MeasurementDim>;
+    using TransitionMatrix = Eigen::Matrix<double, StateDim, StateDim>;
+    using MeasurementMatrix = Eigen::Matrix<double, MeasurementDim, StateDim>;
 
-    float Distance(const pcl::PointXY &a, const pcl::PointXY &b) { return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2)); }
-
-    double get_time() 
-    { 
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer);
-        return duration.count() / 1000.0; 
-    }
-
-    std::chrono::steady_clock::time_point timer;
-    std::vector<std::pair<double, pcl::PointXY>> history;
-    std::vector<std::pair<int ,int>> detect_history;
-    int max_history = 20;
-
-    pcl::PointXY predict_point;
-    float detect_r = 0.9; 
-    float car_max_speed = 3;
-    bool has_updated = false;
-    double dt_=0.01;
-
-    float r_pos_x= 1;
-    float r_pos_y= 1;
-    double noise_v = 20.0; // 速度噪声
-
-    // DEMA 滤波变量
-    cv::Point2f ema1_last = cv::Point2f(0, 0);
-    cv::Point2f ema2_last = cv::Point2f(0, 0);
-    bool is_first_output = true;
-    float dema_alpha = 0.8f;
-
-
-    Kalman_filter_plus(const pcl::PointXY &input, rclcpp::Time time) 
-    {  
-        cv::Point2f measurement(input.x, input.y);
-        predict_point = input;
-        timer = std::chrono::steady_clock::now();
-        KF.init(measurement);
-        has_updated = true;
-    }
-
-    void update(pcl::PointXY &input, rclcpp::Time time) 
+    void init(const cv::Point2d& angles, double yaw_variance,
+              double pitch_variance, double velocity_variance)
     {
-        timer = std::chrono::steady_clock::now();
-        Eigen::Matrix<double, 2, 1> measurement; 
-        measurement << input.x, input.y;
+        // 初始角度直接使用第一帧测量，初始角速度设为 0。
+        state_.setZero();
+        state_(0) = angles.x;
+        state_(2) = angles.y;
 
-        Eigen::Matrix<double, 2, 2> measurement_noise = Eigen::Matrix<double, 2, 2>::Zero();
-        measurement_noise(0,0) = r_pos_x;
-        measurement_noise(1,1) = r_pos_y;
-
-        KF.set_measurement_noise_cov(measurement_noise);
-
-        // 构建观测矩阵 H [x, y] 分别对应索引 0 和 2
-        Eigen::Matrix<double, 2, 4> H = Eigen::Matrix<double, 2, 4>::Zero();
-        H(0, 0) = 1.0;
-        H(1, 2) = 1.0;
-
-        KF.update(measurement, H);
-        auto state = KF.getState();
-        predict_point.x = state(0);  
-        predict_point.y = state(2); 
-        has_updated = true;
+        // P 的对角线表示各状态初始方差。角速度方差较大，表示初速度未知。
+        state_cov_.setZero();
+        state_cov_(0, 0) = yaw_variance;
+        state_cov_(1, 1) = velocity_variance;
+        state_cov_(2, 2) = pitch_variance;
+        state_cov_(3, 3) = velocity_variance;
     }
 
-    void update_predict_point() 
+    void predict(const TransitionMatrix& transition, const StateCov& process_noise)
     {
-        dt_ = get_time(); 
-        double delta_t = dt_; 
-        // std::cout << "Delta t: " << delta_t << " seconds" << std::endl;
+        // 时间预测：x(k|k-1) = F*x(k-1|k-1)
+        // 协方差预测：P(k|k-1) = F*P*F^T + Q
+        state_ = transition * state_;
+        state_cov_ = transition * state_cov_ * transition.transpose() + process_noise;
+    }//先验
 
-        Eigen::Matrix<double, 4, 4> process_noise = Eigen::Matrix<double, 4, 4>::Zero(); 
-        
-        // CV 模型的离散白噪声矩阵 Q
-        double dt2 = dt_ * dt_;
-        double dt3 = dt2 * dt_;
-        
-        // X 轴 (x, vx)
-        process_noise(0, 0) = 0.33 * dt3 * noise_v;
-        process_noise(0, 1) = 0.5 * dt2 * noise_v;
-        process_noise(1, 0) = 0.5 * dt2 * noise_v;
-        process_noise(1, 1) = dt_ * noise_v;
+    void update(const Measurement& measurement, const MeasurementMatrix& observation,
+                const MeasurementCov& measurement_noise)
+    {
+        // 创新协方差 S = H*P*H^T + R，卡尔曼增益 K = P*H^T*S^-1。
+        MeasurementCov innovation_cov =
+            observation * state_cov_ * observation.transpose() + measurement_noise;
+        Eigen::Matrix<double, StateDim, MeasurementDim> gain =
+            state_cov_ * observation.transpose() * innovation_cov.inverse();
 
-        // Y 轴 (y, vy)
-        process_noise(2, 2) = 0.33 * dt3 * noise_v;
-        process_noise(2, 3) = 0.5 * dt2 * noise_v;
-        process_noise(3, 2) = 0.5 * dt2 * noise_v;
-        process_noise(3, 3) = dt_ * noise_v;
+        // 测量校正：x(k|k) = x(k|k-1) + K*(z - H*x(k|k-1))。
+        state_ += gain * (measurement - observation * state_);
 
-        KF.set_process_noise_cov(process_noise);
-
-        // 构建状态转移矩阵 F (CV 模型)
-        Eigen::Matrix<double, 4, 4> F = Eigen::Matrix<double, 4, 4>::Identity();
-        F(0, 1) = delta_t; // x = x + vx*dt
-        F(2, 3) = delta_t; // y = y + vy*dt
-
-        KF.predict(F);
-        auto result = KF.getPriorState();
-        predict_point.x = result(0);
-        predict_point.y = result(2);
+        // Joseph 形式更新 P。相比 P=(I-KH)P，在角度方差很小时数值稳定性更好。
+        StateCov identity = StateCov::Identity();
+        StateCov correction = identity - gain * observation;
+        state_cov_ = correction * state_cov_ * correction.transpose()
+                   + gain * measurement_noise * gain.transpose();
     }
 
-    cv::Point2f get_predict_point()
-    {
-        auto state = KF.getState();
-        float x = state(0) + state(1) * dt_; 
-        float y = state(2) + state(3) * dt_; 
-        cv::Point2f raw_predict(x, y);
+    const State& state() const { return state_; }
 
-        if (is_first_output) {
-            ema1_last = raw_predict; 
-            ema2_last = raw_predict;
-            is_first_output = false;
-            return raw_predict;
+private:
+    State state_ = State::Zero();
+    StateCov state_cov_ = StateCov::Identity();
+};
+
+// 面向 lock 节点的角度 CV（匀角速度）卡尔曼封装。
+//
+// 每收到一帧视觉测量，update() 内依次执行：
+//   1. 根据相邻图像时间戳计算 dt；
+//   2. 用匀角速度模型预测本帧时刻的角度和角速度；
+//   3. 将本帧视觉测量用于卡尔曼校正；
+//   4. 控制层调用 predict()，再从图像时刻外推到实际控制时刻。
+class Kalman_filter_plus
+{
+public:
+    Kalman_filter_plus(const cv::Point2d& angles, const rclcpp::Time& time,
+                       const AngleKalmanConfig& config)
+        : last_time_(time), config_(config)
+    {
+        reset(angles);
+    }
+
+    void update(const cv::Point2d& input, const rclcpp::Time& time)
+    {
+        // 第 1 步：使用图像时间戳计算帧间隔，而不是使用函数执行耗时。
+        double dt = (time - last_time_).seconds();
+        if (!std::isfinite(dt) || dt <= 0.0)
+        {
+            // 回放、时间戳重复或时钟异常时使用 10 ms 兜底值。
+            dt = 0.01;
         }
+        // 检测中断时间过长后，旧角速度已没有参考价值，直接从当前测量重新开始。
+        if (dt > 0.1)
+        {
+            last_time_ = time;
+            reset(input);
+            return;
+        }
+        // 防止极小或极大的异常 dt 破坏状态转移和过程噪声矩阵。
+        dt = std::clamp(dt, 0.001, 0.1);
+        last_time_ = time;
 
-        cv::Point2f ema1;
-        ema1.x = dema_alpha * raw_predict.x + (1.0f - dema_alpha) * ema1_last.x;
-        ema1.y = dema_alpha * raw_predict.y + (1.0f - dema_alpha) * ema1_last.y;
-        
-        cv::Point2f ema2;
-        ema2.x = dema_alpha * ema1.x + (1.0f - dema_alpha) * ema2_last.x;
-        ema2.y = dema_alpha * ema1.y + (1.0f - dema_alpha) * ema2_last.y;
-        
-        cv::Point2f final_predict;
-        final_predict.x = 2.0f * ema1.x - ema2.x;
-        final_predict.y = 2.0f * ema1.y - ema2.y;
+        // 第 2 步：构造 CV 状态转移矩阵。
+        // yaw(k) = yaw(k-1) + yaw_rate(k-1)*dt，pitch 同理。
+        StandardKF<4, 2>::TransitionMatrix transition =
+            StandardKF<4, 2>::TransitionMatrix::Identity();
+        transition(0, 1) = dt;
+        transition(2, 3) = dt;
 
-        ema1_last = ema1; ema2_last = ema2;
-        return final_predict; 
+        // 连续白噪声角加速度模型离散化得到 Q：
+        // q * [dt^3/3, dt^2/2; dt^2/2, dt]，yaw/pitch 两轴各一组。
+        double dt2 = dt * dt;
+        double dt3 = dt2 * dt;
+        StandardKF<4, 2>::StateCov process_noise =
+            StandardKF<4, 2>::StateCov::Zero();
+        double q_yaw = config_.angular_acceleration_noise_yaw;
+        double q_pitch = config_.angular_acceleration_noise_pitch;
+        process_noise(0, 0) = dt3 * q_yaw / 3.0;
+        process_noise(0, 1) = dt2 * q_yaw / 2.0;
+        process_noise(1, 0) = dt2 * q_yaw / 2.0;
+        process_noise(1, 1) = dt * q_yaw;
+        process_noise(2, 2) = dt3 * q_pitch / 3.0;
+        process_noise(2, 3) = dt2 * q_pitch / 2.0;
+        process_noise(3, 2) = dt2 * q_pitch / 2.0;
+        process_noise(3, 3) = dt * q_pitch;
+
+        // 此时状态从上一帧后验值推进到当前图像时刻的先验值。
+        filter_.predict(transition, process_noise);
+
+        // 第 3 步：z 是视觉测得的绝对目标角度。
+        StandardKF<4, 2>::Measurement z;
+        z << input.x, input.y;
+
+        // H 从状态 [yaw, yaw_rate, pitch, pitch_rate] 中只取 yaw 和 pitch。
+        StandardKF<4, 2>::MeasurementMatrix observation =
+            StandardKF<4, 2>::MeasurementMatrix::Zero();
+        observation(0, 0) = 1.0;
+        observation(1, 2) = 1.0;
+
+        // R 的对角线为 yaw/pitch 测量标准差的平方，两轴暂按互不相关处理。
+        StandardKF<4, 2>::MeasurementCov measurement_noise =
+            StandardKF<4, 2>::MeasurementCov::Zero();
+        measurement_noise(0, 0) = std::pow(config_.measurement_std_yaw_rad, 2);
+        measurement_noise(1, 1) = std::pow(config_.measurement_std_pitch_rad, 2);
+        filter_.update(z, observation, measurement_noise);
     }
 
-    static double GetTimeByRosTime(rclcpp::Time& ros_time) { return ros_time.nanoseconds()/1e9; }
+    cv::Point2d predict(double horizon_seconds) const
+    {
+        // 第 4 步：当前滤波状态位于图像时间戳，继续按估计角速度向未来外推。
+        // horizon = 图像处理延迟 + 串口/云台附加响应延迟。
+        // 这里只计算输出，不改变滤波器内部状态，避免影响下一帧测量更新。
+        auto state = filter_.state();
+        return {
+            state(0) + state(1) * horizon_seconds,
+            state(2) + state(3) * horizon_seconds
+        };
+    }
+
+    cv::Point2d angular_velocity() const
+    {
+        // 返回 yaw_rate 和 pitch_rate，主要用于日志观察与实机调参。
+        auto state = filter_.state();
+        return {state(1), state(3)};
+    }
+
+private:
+    void reset(const cv::Point2d& angles)
+    {
+        // 重置时角度使用当前测量，角速度重新置零，并恢复初始协方差。
+        double yaw_variance = std::pow(config_.measurement_std_yaw_rad, 2);
+        double pitch_variance = std::pow(config_.measurement_std_pitch_rad, 2);
+        double velocity_variance = std::pow(config_.initial_velocity_std_rad_s, 2);
+        filter_.init(angles, yaw_variance, pitch_variance, velocity_variance);
+    }
+
+    StandardKF<4, 2> filter_;       // 四状态、两测量的线性卡尔曼
+    rclcpp::Time last_time_;        // 上一帧图像时间戳，用于计算 dt
+    AngleKalmanConfig config_;      // 当前滤波器使用的固定参数
 };
+
+}  // namespace tdt_lock

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(kalman_filter)
 
 find_package (ament_cmake_auto REQUIRED) 
+find_package(jsoncpp CONFIG REQUIRED)
 ament_auto_find_build_dependencies ()
 
 include_directories(include)

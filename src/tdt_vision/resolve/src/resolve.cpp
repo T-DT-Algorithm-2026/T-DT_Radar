@@ -7,7 +7,7 @@ namespace tdt_radar {
 Resolve::Resolve(const rclcpp::NodeOptions& node_options)
     : Node("radar_resolve_node", node_options) {
       parser_ = new parser();
-      minimap=cv::imread("config/RM2025.png");
+      minimap=cv::imread("config/RM2026.png");
   point_sub = this->create_subscription<geometry_msgs::msg::Vector3>(
       "camera_point2D", rclcpp::SensorDataQoS(),
       std::bind(&Resolve::callback, this, std::placeholders::_1));
@@ -111,7 +111,9 @@ void Resolve::DetectCallback(const vision_interface::msg::DetectResult::SharedPt
   send_data.header.stamp=msg->header.stamp;
   pub_radar->publish(send_data);
   auto cloud_msg = sensor_msgs::msg::PointCloud2();
-  pcl::toROSMsg(*cloud, cloud_msg);
+  pcl::PCLPointCloud2 pcl_cloud_msg;
+  pcl::toPCLPointCloud2(*cloud, pcl_cloud_msg);
+  pcl_conversions::moveFromPCL(pcl_cloud_msg, cloud_msg);
   cloud_msg.header.frame_id = "rm_frame";
   cloud_msg.header.stamp = msg->header.stamp;
   pub->publish(cloud_msg);

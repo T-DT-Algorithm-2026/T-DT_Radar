@@ -3,6 +3,4 @@
 yolo_path: "model/TensorRT/yolo.engine"
 armor_path: "model/TensorRT/armor_yolo.engine"
 classify_path: "model/TensorRT/classify.engine"
-# fly_path: "model/TensorRT/fly.engine"
-# fly_path: "model/TensorRT/fly_uncolor.engine"
-fly_path: "model/TensorRT/fly_all.engine"
+fly_path: "model/TensorRT/fly_final.engine"

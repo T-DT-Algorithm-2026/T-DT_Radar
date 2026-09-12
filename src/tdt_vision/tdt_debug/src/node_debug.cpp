@@ -1,7 +1,5 @@
 #include "node_debug.h"
 
-#include <roborts_utils/base_msg.h>
-
 #include <numeric>
 #include <rclcpp/qos.hpp>
 
@@ -75,7 +73,7 @@ void NodeDebug::image_pub(const sensor_msgs::msg::Image::SharedPtr msg) {
   compressed_image.data.assign(buf.begin(), buf.end());
 
   image_pub_->publish(compressed_image);
-  TDT_INFO("Compressed Image Publish!");
+  RCLCPP_INFO(this->get_logger(), "Compressed Image Publish!");
   image_update_ = false;
 }
 

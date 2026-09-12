@@ -8,20 +8,36 @@
 #include "pcl/point_types.h"
 #include "pcl/point_cloud.h"
 #include "pcl/io/pcd_io.h"
-// #include "filter_plus.h"
-#include "guess_point.h"
+#include "filter_plus.h"
 #include <rclcpp/publisher.hpp>
 #include <vision_interface/msg/detect_result.hpp>
-#include <vision_interface/msg/radar2_sentry.hpp>
 #include <vision_interface/msg/radar_warn.hpp>
 #include <vision_interface/msg/match_info.hpp>
 #include <radio_interface/msg/position.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <Eigen/Dense>
+#include <array>
+#include <chrono>
 #include <limits>
+#include <memory>
 #include <vector>
 
 namespace tdt_radar{
+struct SourceState
+{
+    pcl::PointXY position{0, 0};
+    pcl::PointXY velocity{0, 0};
+    double state_time = 0;
+    double measurement_time = 0;
+    bool valid = false;
+};
+
+struct CarState
+{
+    SourceState radar;
+    SourceState radio;
+};
+
 class KalmanFilter :public rclcpp::Node
 {
     public:
@@ -33,16 +49,24 @@ class KalmanFilter :public rclcpp::Node
     rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr sub_detect_;
     rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr sub_match_;
     rclcpp::Subscription<radio_interface::msg::Position>::SharedPtr sub_radio_;
-    rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar_pub_;
     rclcpp::Publisher<vision_interface::msg::DetectResult>::SharedPtr radar_detect_pub_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
+    rclcpp::TimerBase::SharedPtr publish_timer_;
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
     void detect_callback(const vision_interface::msg::DetectResult::SharedPtr msg);
     void match_callback(const vision_interface::msg::MatchInfo::SharedPtr msg);
     void radio_callback(const radio_interface::msg::Position::SharedPtr msg);
-    std::vector<Kalman_filter_plus> KFs;
-    car arr[12];
+    void publish_timer_callback();
+    void update_source_state(SourceState &source, const Kalman_filter_plus &filter);
+    std::vector<Kalman_filter_plus> radar_filters;
+    std::array<std::unique_ptr<Kalman_filter_plus>, 12> radio_filters_{};
+    std::array<CarState, 12> cars_{};
     vision_interface::msg::MatchInfo match_info;
+    std::array<pcl::PointXY, 12> camera_points{};
+    std::array<rclcpp::Time, 12> camera_times;
+    static constexpr double RadarTimeout = 1.0;
+    static constexpr double RadioTimeout = 1.0;
+    // 根据 0.45 s 实测延迟和独立比赛数据验证，使用更稳健的 0.40 s 前向预测。
+    static constexpr double PredictionHorizon = 0.4;
 };
 
 std::vector<int> solve_hungarian(const Eigen::MatrixXd& cost_matrix) {

@@ -5,6 +5,7 @@
     "python.analysis.extraPaths": [
         "/opt/ros/jazzy/lib/python3.12/site-packages"
     ],
-    "cmake.sourceDirectory": "/home/robot/T-DT_Radar/src/calibrate",
-    "C_Cpp.errorSquiggles": "disabled"
+    "cmake.sourceDirectory": "/home/tdt/T-DT_Radar/src/calibrate",
+    "C_Cpp.errorSquiggles": "disabled",
+    "ROS2.distro": "jazzy"
 }

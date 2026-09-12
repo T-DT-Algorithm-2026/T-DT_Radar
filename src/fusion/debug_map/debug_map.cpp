@@ -19,7 +19,7 @@ namespace tdt_radar {
                 "/kalman_detect", 10, std::bind(&DebugMap::callback, this, std::placeholders::_1));
             camera_detect_sub = this->create_subscription<vision_interface::msg::DetectResult>(
                 "/resolve_result", rclcpp::SensorDataQoS(), std::bind(&DebugMap::camera_callback, this, std::placeholders::_1));
-            map = cv::imread("config/RM2025.png");
+            map = cv::imread("config/RM2026.png");
             match_info_sub = this->create_subscription<vision_interface::msg::MatchInfo>(
                 "/match_info", 10, std::bind(&DebugMap::save_match_info, this, std::placeholders::_1));
             fly_sub = this->create_subscription<vision_interface::msg::FlyPoints>(
@@ -37,43 +37,53 @@ namespace tdt_radar {
             // std::cout<<"self_color:"<<(int *)match_info.self_color<<std::endl;
         }
 
-        void show_map(){
+        void show_map()
+        {
             auto now_time = std::chrono::system_clock::now();
             double time = std::chrono::duration_cast<std::chrono::milliseconds>(now_time.time_since_epoch()).count()/1000.0;
             auto clone_map = map.clone();
-            for(int i=0;i<6;i++){
+            for(int i=0;i<6;i++)
+            {
                 int number = i+1;
-                if(number==6)number++;
-                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5){
+                if(number==6)
+                {
+                    number++;
+                }
+                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5)
+                {
                     cv::Point2f point = cv::Point2f(clone_map.cols*blue_point[i].x/28,clone_map.rows*(15-blue_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(200,0,0),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
                 }
-                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5){
+                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5)
+                {
                     cv::Point2f point = cv::Point2f(clone_map.cols*red_point[i].x/28,clone_map.rows*(15-red_point[i].y)/15);
                     cv::circle(clone_map,point,10,cv::Scalar(0,0,200),-1);
                     cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
                 }
             }
-            if(fly_enemy_point.x*fly_enemy_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(28-fly_enemy_point.x)/28,clone_map.rows*(fly_enemy_point.y)/15);
-                    cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(0,0,255),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
-                }
-                if(fly_ally_point.x*fly_ally_point.y){
-                    cv::Point2f point = cv::Point2f(clone_map.cols*(28-fly_ally_point.x)/28,clone_map.rows*(fly_ally_point.y)/15);
-                    cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(200,0,0),2);
-                    cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(200,0,0),2);
-                }
+            if(fly_enemy_point.x*fly_enemy_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_enemy_point.x)/28,clone_map.rows*(15 - fly_enemy_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
+            }
+            if(fly_ally_point.x*fly_ally_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_ally_point.x)/28,clone_map.rows*(15 - fly_ally_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(200,0,0),2);
+            }
             cv::imshow("map", clone_map);
             cv::waitKey(1);
         }
+
         void camera_callback(const std::shared_ptr<vision_interface::msg::DetectResult> msg){
             auto now = std::chrono::system_clock::now();
             double time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
@@ -122,123 +132,26 @@ namespace tdt_radar {
             show_map();
 
             vision_interface::msg::Radar2Sentry radar2sentry;
-            if(match_info.self_color==0)
-            {//自己是蓝色 发送红色信息
-                for(int i=0;i<6;i++)
+            // /kalman_detect 已转换到裁判系统坐标，此处只按己方颜色映射敌我数组。
+            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
+            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
+            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
+            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
+            for(int i = 0; i < 6; i++)
+            {
+                if(match_info.self_color == 0)
                 {
-                    if(!relax[i])
-                    {
-                        if(match_info.marks[i]>=117)
-                        {
-                            relax[i]=true;
-                            relax_time[i] = time;
-                        } 
-                        else
-                        {
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            }
-                        }
-                            // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
-                            //     radar2sentry.radar_enemy_x[i] = 28-14.556;
-                            //     radar2sentry.radar_enemy_y[i] = 6.947;
-                            // }
-                    }
-                    else
-                    {
-                        //当mark在(105,117)间隔0.4s发送一次
-                        if(match_info.marks[i]<105)
-                        {
-                            relax[i]=false;
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y;
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            } 
-                        }
-                        else if(time-relax_time[i]>0.35)
-                        {
-                            relax_time[i] = time;
-                            if(time-red_update[i]<0.5)
-                            {
-                                radar2sentry.radar_enemy_x[i] = red_point[i].x;
-                                radar2sentry.radar_enemy_y[i] = red_point[i].y; 
-                                radar2sentry.radar_ally_x[i] = blue_point[i].x;
-                                radar2sentry.radar_ally_y[i] = blue_point[i].y;
-                                radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                                radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                                radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                                radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            }
-                        }
-                    }
+                    radar2sentry.radar_enemy_x[i] = msg->red_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->red_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->blue_y[i];
                 }
-            }
-            if(match_info.self_color==2){//自己是红色 发送蓝色信息
-                for(int i=0;i<6;i++){
-                    if(!relax[i]){
-                        if(match_info.marks[i]>=117){
-                            relax[i]=true;
-                            relax_time[i] = time;
-                        } 
-                        else{
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            }
-                            // else if(match_info.match_time<420&&match_info.match_time>360&&i==1){
-                            //     radar2sentry.radar_enemy_x[i] = 14.556;
-                            //     radar2sentry.radar_enemy_y[i] = 8.057;
-                            // }                    
-                        }
-                    }else{
-                        //当mark在(105,117)间隔0.4s发送一次
-                        if(match_info.marks[i]<105){
-                            relax[i]=false;
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            } 
-                        }else if(time-relax_time[i]>0.35){
-                            relax_time[i] = time;
-                            if(time-blue_update[i]<0.5){
-                            radar2sentry.radar_enemy_x[i] = blue_point[i].x;
-                            radar2sentry.radar_enemy_y[i] = blue_point[i].y;
-                            radar2sentry.radar_ally_x[i] = red_point[i].x;
-                            radar2sentry.radar_ally_y[i] = red_point[i].y;
-                            radar2sentry.radar_enemy_x[4] = 28-fly_enemy_point.x;
-                            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
-                            radar2sentry.radar_ally_x[4] = 28-fly_ally_point.x;
-                            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
-                            } 
-                        }
-                    }
+                else if(match_info.self_color == 2)
+                {
+                    radar2sentry.radar_enemy_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->blue_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->red_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->red_y[i];
                 }
             }
             radar2sentry_pub->publish(radar2sentry);
@@ -246,8 +159,14 @@ namespace tdt_radar {
 
         void fly_callback(const std::shared_ptr<vision_interface::msg::FlyPoints> msg)
         {
-            fly_enemy_point = cv::Point2f(msg->fly_enemy_x, msg->fly_enemy_y);
-            fly_ally_point = cv::Point2f(msg->fly_ally_x, msg->fly_ally_y);
+            if(match_info.self_color==2){
+                fly_enemy_point = cv::Point2f(msg->fly_enemy_x, msg->fly_enemy_y);
+                fly_ally_point = cv::Point2f(msg->fly_ally_x, msg->fly_ally_y);
+            }
+            else if(match_info.self_color==0){  
+            fly_enemy_point = cv::Point2f(28 - msg->fly_enemy_x, 15 - msg->fly_enemy_y);
+            fly_ally_point = cv::Point2f(28 - msg->fly_ally_x, 15 - msg->fly_ally_y);
+            }
         }
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr detect_result_sub;
         rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr camera_detect_sub;
@@ -260,9 +179,6 @@ namespace tdt_radar {
         double blue_time[6];//单位s
         double red_time[6];//单位s
 
-        bool relax[6];
-        double relax_time[6];
-
         double blue_update[6];
         double red_update[6];
 
@@ -271,7 +187,7 @@ namespace tdt_radar {
 
         cv::Point2f fly_enemy_point;
         cv::Point2f fly_ally_point;
-
+        
         vision_interface::msg::MatchInfo match_info;
         cv::Mat map;
         int count = 0;//20帧保存一次

@@ -22,6 +22,7 @@ add_definitions(-DROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" ) 
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
 ament_auto_find_build_dependencies()
 
 set(ROSBAG_PLAYER "rosbag_player")

@@ -12,7 +12,6 @@ find_package(std_msgs REQUIRED)
 # 声明 msg 和 srv 文件
 # 注意：CMake 会在 src/camera_interface/ 下寻找这些路径
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/CameraStatus.msg"
   "srv/CameraControl.srv"
   DEPENDENCIES std_msgs
 )

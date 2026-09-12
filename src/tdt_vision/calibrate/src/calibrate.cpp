@@ -22,7 +22,7 @@ namespace tdt_radar {
         // real_points.push_back(midle);
         // real_points.push_back(buffer);
         // real_points.push_back(right_behind);
-        // real_points.push_back(left_behind);
+        // real_points.push_back(left_behind);        
         real_points.push_back(self_FORTRESS);
         real_points.push_back(self_Tower);
         real_points.push_back(enemy_Base);
@@ -75,21 +75,9 @@ namespace tdt_radar {
                 parser_->Change_Matrix();
             }
         }
-        else if (is_location) {
-            parser_->draw_ui(img);
-            cv::putText(img, "Locate Mode: " + std::to_string(locate_points.size()) + "/4", cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 255, 0), 2);
-            cv::putText(img, "Click and press 'n' to save", cv::Point(50, 300), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 255, 0), 2);
-            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
-            if(locate_points.size() == 4){
-                store_locate();
-                draw_locate(img);
-            }
-        }
         else{
             parser_->draw_ui(img);
-            draw_locate(img);
             cv::putText(img,"Press Enter to Calibrate !!!",cv::Point(50,200),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,0,255),2);
-            cv::putText(img,"Press 'P' to Locate !!!",cv::Point(50,300),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,255,0),2);
         }  
             
         auto temp = img.clone();
@@ -102,18 +90,14 @@ namespace tdt_radar {
             case 13:
                 is_calibrating = true;
                 break;
-            case 'p':
-            case 'P':
-                is_location = true;
-                locate_points.clear();
-                break;
             default:
                 break;
         }      
     }
 
     void Calibrate::compressed_callback(const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
-        auto img = cv::imdecode(msg->data, cv::IMREAD_COLOR);
+        cv::Mat encoded_image(1, static_cast<int>(msg->data.size()), CV_8UC1, msg->data.data());
+        auto img = cv::imdecode(encoded_image, cv::IMREAD_COLOR);
         cv::Mat calib_img;
         cv::resize(img, calib_img, cv::Size(1536, 1125));
         cvimage_ = calib_img;
@@ -127,21 +111,9 @@ namespace tdt_radar {
                 parser_->Change_Matrix();
             }
         }
-        else if (is_location) {
-            parser_->draw_ui(img);
-            cv::putText(img, "Locate Mode: " + std::to_string(locate_points.size()) + "/4", cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 255, 0), 2);
-            cv::putText(img, "Click and press 'n' to save", cv::Point(50, 300), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 255, 0), 2);
-            cv::putText(img, "Press 'o' to quit", cv::Point(50, 600), cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255), 2);
-            if(locate_points.size() == 4){
-                store_locate();
-                draw_locate(img);
-            }
-        }
         else{
             parser_->draw_ui(img);
-            draw_locate(img);
             cv::putText(img,"Press Enter to Calibrate !!!",cv::Point(50,200),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,0,255),2);
-            cv::putText(img,"Press 'P' to Locate !!!",cv::Point(50,300),cv::FONT_HERSHEY_SIMPLEX,3,cv::Scalar(0,255,0),2);
         }  
             
         auto temp = img.clone();
@@ -153,11 +125,6 @@ namespace tdt_radar {
         {
             case 13:
                 is_calibrating = true;
-                break;
-            case 'p':
-            case 'P':
-                is_location = true;
-                locate_points.clear();
                 break;
             default:
                 break;
@@ -204,38 +171,6 @@ namespace tdt_radar {
                 std::cout << "x:" << x << " y:" << y << std::endl;
                 pick_points.push_back(cv::Point2f(x, y));
             }
-        else if(is_location){
-                do {
-                temp_key = cv::waitKey(10);
-                switch (temp_key)
-                {
-                    case 'w': y -= 1; break; // 向上移动
-                    case 'a': x -= 1; break; // 向左移动
-                    case 's': y += 1; break; // 向下移动
-                    case 'd': x += 1; break; // 向右移动
-                }
-
-                // 确保x和y在安全区域内
-                x = std::max(50, std::min(x, cvimage_.cols - 50));
-                y = std::max(50, std::min(y, cvimage_.rows - 50));
-
-                // 更新ROI和显示
-                cv::Mat roi = cvimage_(cv::Rect(x - 50, y - 50, 100, 100));
-                cv::Mat dst;
-                cv::resize(roi, dst, cv::Size(400, 400));
-                cv::line(dst, cv::Point(200, 100), cv::Point(200, 300), cv::Scalar(0, 0, 255), 1);
-                cv::line(dst, cv::Point(100, 200), cv::Point(300, 200), cv::Scalar(0, 0, 255), 1);
-                cv::imshow("ROI", dst);
-
-            } 
-            while (temp_key != 'n'); // 按'n'退出循环
-
-
-            x *= 1.3333333333 * 2;
-            y *= 1.3333333333 * 2;
-            std::cout << "x:" << x << " y:" << y << std::endl;
-            locate_points.push_back(cv::Point2f(x, y));
-        }
             break;
 
         case cv::EVENT_MOUSEMOVE:
@@ -266,38 +201,6 @@ namespace tdt_radar {
         std::cout<<"标定完毕！\n";
     }
 
-    void Calibrate::store_locate() {
-        cv::FileStorage fs("./config/locate_points.yaml", cv::FileStorage::WRITE);
-        fs << "locate_points" << locate_points;
-        std::cout<<"基地前哨坐标储存完毕！\n";
-        fs.release();
-        is_location = false;
-    }
-
-    void Calibrate::draw_locate(cv::Mat& img) {
-        if (!is_location && locate_points.empty()) {
-            try {
-                cv::FileStorage fs("./config/locate_points.yaml", cv::FileStorage::READ);
-                if (fs.isOpened()) {
-                    fs["locate_points"] >> locate_points;
-                }
-                fs.release();
-            } catch (const cv::Exception& e) {
-                std::cout << "Warning: Could not read locate_points.yaml (file may be empty or invalid)." << std::endl;
-            }
-        }
-        
-        // 绘制正在选取过程中的点
-        for (const auto& pt : locate_points) {
-            cv::circle(img, pt, 5, cv::Scalar(0, 0, 255), -1);
-        }
-
-        // 如果已经有四个点，则绘制两个矩形
-        if (locate_points.size() == 4) {
-            cv::rectangle(img, locate_points[0], locate_points[1], cv::Scalar(0, 255, 0), 2);
-            cv::rectangle(img, locate_points[2], locate_points[3], cv::Scalar(0, 255, 0), 2);
-        }
-    }
 }
 
 RCLCPP_COMPONENTS_REGISTER_NODE(tdt_radar::Calibrate);

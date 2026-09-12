@@ -1,4 +1,5 @@
 #include "lock.h"
+#include <array>
 
 namespace tdt_lock {
 
@@ -13,26 +14,63 @@ Lock::Lock(const rclcpp::NodeOptions& options)
     fs1["f_y"] >> fy;
     fs1.release();
 
+    read_config();
+
     cv::FileStorage fs2;
     fs2.open("./config/fly_target.yaml", cv::FileStorage::READ);
-
-    fs2["dist1"] >> dist1;
-    fs2["target_x1"] >> target_x1;
-    fs2["target_y1"] >> target_y1;
-    fs2["dist2"] >> dist2;
-    fs2["target_x2"] >> target_x2;
-    fs2["target_y2"] >> target_y2;
-    
-    // 使用反比例函数模型：u = A/D + B
-    float inv_d1 = 1.0f / dist1;
-    float inv_d2 = 1.0f / dist2;
-    if (std::abs(inv_d1 - inv_d2) > 1e-5) 
+    constexpr std::array<float, 4> calibration_distances = {12.0f, 16.0f, 20.0f, 24.0f};
+    std::array<float, 4> target_x_points{};
+    std::array<float, 4> target_y_points{};
+    bool calibration_valid = fs2.isOpened();
+    for (std::size_t index = 0; index < calibration_distances.size(); ++index)
     {
-        A_x = (target_x1 - target_x2) / (inv_d1 - inv_d2);
-        B_x = target_x1 - A_x * inv_d1;
-        A_y = (target_y1 - target_y2) / (inv_d1 - inv_d2);
-        B_y = target_y1 - A_y * inv_d1;
-        std::cout << "Dynamic Target Loaded! Ax=" << A_x << ", Bx=" << B_x << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+        std::string suffix = std::to_string(index + 1);
+        cv::FileNode distance_node = fs2["dist" + suffix];
+        cv::FileNode target_x_node = fs2["target_x" + suffix];
+        cv::FileNode target_y_node = fs2["target_y" + suffix];
+        if (distance_node.empty() || target_x_node.empty() || target_y_node.empty())
+        {
+            calibration_valid = false;
+            continue;
+        }
+        float distance = static_cast<float>(distance_node);
+        target_x_points[index] = static_cast<float>(target_x_node);
+        target_y_points[index] = static_cast<float>(target_y_node);
+        if (std::abs(distance - calibration_distances[index]) > 1e-3f)
+        {
+            calibration_valid = false;
+        }
+    }
+
+    if (calibration_valid)
+    {
+        cv::Mat fit_matrix(4, 2, CV_32F);
+        cv::Mat target_x_matrix(4, 1, CV_32F);
+        cv::Mat target_y_matrix(4, 1, CV_32F);
+        for (std::size_t index = 0; index < calibration_distances.size(); ++index)
+        {
+            fit_matrix.at<float>(index, 0) = 1.0f / calibration_distances[index];
+            fit_matrix.at<float>(index, 1) = 1.0f;
+            target_x_matrix.at<float>(index, 0) = target_x_points[index];
+            target_y_matrix.at<float>(index, 0) = target_y_points[index];
+        }
+        cv::Mat x_coefficients;
+        cv::Mat y_coefficients;
+        calibration_valid = cv::solve(fit_matrix, target_x_matrix, x_coefficients, cv::DECOMP_QR)
+                            && cv::solve(fit_matrix, target_y_matrix, y_coefficients, cv::DECOMP_QR);
+        if (calibration_valid)
+        {
+            A_x = x_coefficients.at<float>(0, 0);
+            B_x = x_coefficients.at<float>(1, 0);
+            A_y = y_coefficients.at<float>(0, 0);
+            B_y = y_coefficients.at<float>(1, 0);
+            std::cout << "Laser target loaded at 12/16/20/24 m! Ax=" << A_x << ", Bx=" << B_x
+                      << ", Ay=" << A_y << ", By=" << B_y << std::endl;
+        }
+    }
+    if (!calibration_valid)
+    {
+        RCLCPP_ERROR(this->get_logger(), "激光落点需要 12、16、20、24 m 四组完整标定数据，当前使用固定默认准心");
     }
 
     fs2.release();
@@ -51,12 +89,17 @@ Lock::Lock(const rclcpp::NodeOptions& options)
         "GimbalPub", rclcpp::SensorDataQoS());
 
     fly_sub = this->create_subscription<vision_interface::msg::DetectFly>(
-        "detect_fly", 10, std::bind(&Lock::callback, this, std::placeholders::_1));
+        "detect_fly", rclcpp::SensorDataQoS().keep_last(1), std::bind(&Lock::callback, this, std::placeholders::_1));
 
     lidar_sub = this->create_subscription<geometry_msgs::msg::Point32>(
         "/livox/lidar_fly_point", 10, std::bind(&Lock::lidar_callback, this, std::placeholders::_1));
 
+    match_info_sub = this->create_subscription<vision_interface::msg::MatchInfo>(
+        "match_info", 10, std::bind(&Lock::match_info_callback, this, std::placeholders::_1));
+
     last_msg_time_ = this->now();
+    last_lidar_time_ = this->now();
+    last_match_info_time_ = this->now();
     timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Lock::timer_callback, this));
 
     RCLCPP_INFO(this->get_logger(), "Lock System Initialized with TF Support");
@@ -66,7 +109,6 @@ Lock::Lock(const rclcpp::NodeOptions& options)
 void Lock::gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr msg)
 {
     // std::cout<<"Gimbal Callback!"<<std::endl;
-    rclcpp::Time time_stamp = msg->header.stamp;
     double t = rclcpp::Time(msg->header.stamp).seconds();
     Gimbal gimbal;
     gimbal.yaw = msg->yaw*CV_PI/180.0;
@@ -83,119 +125,101 @@ void Lock::gimbal_callback(const gimbal_interface::msg::GimbalAngle::SharedPtr m
 void Lock::callback(const vision_interface::msg::DetectFly::SharedPtr msg)
 {
     last_msg_time_ = this->now();
-    std::chrono::steady_clock::time_point begin =std::chrono::steady_clock::now();
     rclcpp::Time time_stamp = msg->header.stamp;
-    double t = rclcpp::Time(msg->header.stamp).seconds();
+    double t = time_stamp.seconds();
     Gimbal gimbal = find_closest_time(t);
     float yaw = gimbal.yaw;
     float pitch = gimbal.pitch;
-    std::cout<<"dt"<<(t-gimbal.time)<<std::endl;
     float x = msg->x;
     float y = msg->y;
-    // std::cout<<"x:"<<x<<"y:"<<y<<std::endl;
-    if(x>=380&&x<=1060&&y>=270&&y<=790)
-    {
-        is_find ++;
-        if(is_first)
-        {
-            base_yaw = yaw;
-            base_pitch = pitch;
-            is_first = false;
-        }
-    }
-    else
-    {
-        is_find = 0;
-        is_first = true;
-    }//判断是否开启kf
+    // std::cout<<msg->x<<","<<msg->y<<std::endl;
 
-    cv::Mat img = cv::Mat::zeros(cv::Size(1440, 1080), CV_8UC3);
-    cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 255), -1);
-    cv::rectangle(img, cv::Point(380, 270), cv::Point(1060, 790), cv::Scalar(0, 255, 0), 3);
-
-    if(is_find >= 20)
-    {
-        
-        float dx = tan(yaw - base_yaw) * fx;
-        float dy = tan(pitch - base_pitch) * fy;
-        cv::circle(img, cv::Point2f(x-dx, y-dy), 4, cv::Scalar(0, 255, 255), -1);
-        pcl::PointXY abject_point(x-dx, y-dy);
-        // rclcpp::Time now_time = this->now();
-        cv::Point2f predict_point;//卡尔曼准备 
-
-        if(kf_ptr == nullptr)
-        {
-            kf_ptr = std::make_shared<Kalman_filter_plus>(abject_point, time_stamp);
-        }
-        else if(kf_ptr != nullptr)
-        {
-            kf_ptr->update_predict_point();
-            kf_ptr->update(abject_point, time_stamp);
-            predict_point = kf_ptr->get_predict_point();
-        }
-        // x = predict_point.x + dx;
-        // y = predict_point.y + dy;
-        // x = std::clamp(x, 380.0f, 1060.0f);
-        // y = std::clamp(y, 270.0f, 790.0f);
-    }
-    else
-    {
-        kf_ptr.reset();
-    }
-    cv::circle(img, cv::Point2f(x, y), 4, cv::Scalar(255, 255, 0), -1);
-
+    // 将准心像素和目标像素分别转换为相机视线角，两者之差就是本帧角度误差。
     float yaw1 = atan2(target_x - cx, fx);
     float pitch1 = atan2(target_y - cy, fy);
 
     float yaw2 = atan2(x - cx, fx);
     float pitch2 = atan2(y - cy, fy);
 
-    float current_yaw = -(yaw2 - yaw1);
-    float current_pitch = -(pitch2 - pitch1);//计算旋转角度
+    double current_yaw = -(yaw2 - yaw1);
+    double current_pitch = -(pitch2 - pitch1);
+    // 图像时间戳处的云台反馈 + 相机角度误差 = 世界中的绝对目标角度测量。
+    cv::Point2d measured_angle(yaw + current_yaw, pitch + current_pitch);
 
-    float current_dyaw = current_yaw - last_dyaw;
-    float current_dpitch = current_pitch - last_dpitch;
+    rclcpp::Time now = this->now();
+    double measurement_age_s = std::max(0.0, (now - time_stamp).seconds());
+    // 从图像采集时刻预测到未来控制真正生效的时刻。
+    double predict_time = std::clamp( measurement_age_s + control_delay_s, 0.0, max_prediction_horizon_s);
 
-    float final_yaw = current_yaw * kp_x + kd * current_dyaw;
-    float final_pitch = current_pitch * kp_y + kd * current_dpitch;
-
-    last_dyaw = current_yaw;
-    last_dpitch = current_pitch;
-
-    yaw = (yaw + final_yaw)*180.0/CV_PI;
-    pitch = (pitch + final_pitch)*180.0/CV_PI;
-
-    if(radar_angle_valid)
+    cv::Point2d predicted_angle = measured_angle;
+    cv::Point2d angle_speed(0.0, 0.0);
+    if (kf_ptr == nullptr)
     {
-        yaw = std::clamp(yaw, radar_yaw - radar_yaw_limit, radar_yaw + radar_yaw_limit);
-        pitch = std::clamp(pitch, radar_pitch - radar_pitch_limit, radar_pitch + radar_pitch_limit);
+        kf_ptr = std::make_shared<Kalman_filter_plus>(measured_angle, time_stamp, kf_config);
+    }
+    else
+    {
+        kf_ptr->update(measured_angle, time_stamp);
+    }
+    predicted_angle = kf_ptr->predict(predict_time);
+    angle_speed = kf_ptr->angular_velocity();
+    // std::cout<<"预测角度"<<predicted_angle.x<<","<<predicted_angle.y<<std::endl;
+    // std::cout<<"速度"<<angle_speed.x<<","<<angle_speed.y<<std::endl;
+
+    // 使用最新云台反馈计算控制误差；不能再用图像时刻的旧反馈，否则会重复补偿视觉延迟。
+    Gimbal latest_gimbal = find_closest_time(now.seconds());
+    double yaw_error = predicted_angle.x - latest_gimbal.yaw;
+    double pitch_error = predicted_angle.y - latest_gimbal.pitch;
+    if (std::abs(yaw_error) < angle_deadband_rad)
+    {
+        yaw_error = 0.0;
+    }
+    if (std::abs(pitch_error) < angle_deadband_rad)
+    {
+        pitch_error = 0.0;
     }
 
-    std::cout<<"Lock Command - Yaw: "<<yaw<<", Pitch: "<<pitch<<std::endl;
-    std::cout<<"dyaw:"<<final_yaw*180.0/CV_PI<<",dpitch:"<<final_pitch*180.0/CV_PI<<std::endl;
+    double final_yaw = yaw_error * kp_x;
+    double final_pitch = pitch_error * kp_y;
+    yaw = (latest_gimbal.yaw + final_yaw) * 180.0 / CV_PI;
+    pitch = (latest_gimbal.pitch + final_pitch) * 180.0 / CV_PI;
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
     gimbal_msg.header.frame_id = "yaw_link"; 
-    gimbal_msg.yaw = yaw;   
+    gimbal_msg.yaw = yaw;
     gimbal_msg.pitch = pitch;
-    gimbal_msg.is_fire = 1;
+    gimbal_msg.is_fire = is_fire;
     gimbal_msg.force_flag = 1;
     // std::cout<<"Test Callback - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
     // std::cout<<"Lock Command - Yaw: "<<gimbal_msg.yaw<<", Pitch: "<<gimbal_msg.pitch<<std::endl;
-    gimbal_pub->publish(gimbal_msg);//发布数据（yaw为增量，pitch为绝对角度，相对于重力)
-    std::chrono::steady_clock::time_point end =std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_used =std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
-    // std::cout << "Lock Time: " << time_used.count() * 1000 << "ms" << std::endl;
+    gimbal_pub->publish(gimbal_msg);// 发布预测后的绝对云台角度指令
+
+    // end 和检测消息时间戳都使用 ROS 时钟，计算从图像时间戳到锁定回调结束的总延迟。
+    rclcpp::Time end = this->now();
+    double end_to_timestamp_ms = static_cast<double>((end - time_stamp).nanoseconds()) / 1.0e6;
+    std::cout << "End - time_stamp: " << end_to_timestamp_ms << " ms\n";
     
-    // cv::imshow("lock_test", img);
-    cv::waitKey(1);
+    // // cv::imshow("lock_test", img);
+    // cv::waitKey(1);
 
 }
 
 void Lock::timer_callback()
 {
-    if(lidar_valid)
+    if ((this->now() - last_match_info_time_).seconds() > match_info_timeout_s)
+    {
+        is_fire = true;
+    }//match_info失联时特殊处理
+
+    if ((this->now() - last_lidar_time_).seconds() > 1.0)
+    {
+        lidar_valid = false;
+        radar_yaw = -10.0f;
+        radar_pitch = -4.5f;
+        radar_angle_valid = true;
+    }
+    else if (lidar_valid)
     {
         geometry_msgs::msg::PointStamped point_base;
         point_base.header.stamp = this->now();
@@ -216,15 +240,16 @@ void Lock::timer_callback()
             float yaw_err = std::atan2(cy, cx); 
             float pitch_err = std::atan2(cz, dist_horizontal);
 
-            radar_yaw = yaw_err * (180.0f / CV_PI) - 2;
-            radar_pitch = pitch_err * (180.0f / CV_PI);
+            radar_yaw = yaw_err * (180.0f / CV_PI) + first_lock_yaw_offset_deg;
+            radar_pitch = pitch_err * (180.0f / CV_PI) + first_lock_pitch_offset_deg;
             radar_angle_valid = true;
         }
     }
 
-    // 如果超过 0.5 秒没有收到消息，则认为目标丢失，调用 find_callback
+    // 如果超过 1 秒没有收到消息，则认为目标丢失，重置卡尔曼并调用 find_callback
     if ((this->now() - last_msg_time_).seconds() > 1)
     {
+        kf_ptr.reset();
         find_callback();
     }
 }
@@ -243,13 +268,14 @@ void Lock::find_callback()
     // 将误差补偿到当前云台角度上，得到最终的绝对命令角度
     float target_yaw = radar_yaw + yaw_cmd_first; // 雷达偏移补偿，经验值
     float target_pitch = radar_pitch + pitch_cmd_first; 
+    std::cout<<"target_yaw: "<<target_yaw<<" , "<<"target_pitch: "<<target_pitch<<std::endl;
 
     gimbal_interface::msg::GimbalAngle gimbal_msg;
     gimbal_msg.header.stamp = this->now();
     gimbal_msg.header.frame_id = "yaw_link"; 
     gimbal_msg.yaw = target_yaw;   
-    gimbal_msg.pitch = target_pitch;
-    gimbal_msg.is_fire = 1;
+    gimbal_msg.pitch = target_pitch; 
+    gimbal_msg.is_fire = is_fire;
     gimbal_msg.force_flag = 1;
 
     gimbal_pub->publish(gimbal_msg);
@@ -258,6 +284,7 @@ void Lock::find_callback()
 
 void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
 {
+    last_lidar_time_ = this->now();
     fly_pos.x = msg->x;
     fly_pos.y = msg->y;
     fly_pos.z = msg->z;
@@ -270,6 +297,60 @@ void Lock::lidar_callback(const geometry_msgs::msg::Point32::SharedPtr msg)
         target_x = A_x / distance + B_x;
         target_y = A_y / distance + B_y;
     }
+}
+
+void Lock::match_info_callback(const vision_interface::msg::MatchInfo::SharedPtr msg)
+{
+    last_match_info_time_ = this->now();
+    if (msg->match_time <= 20)
+    {
+        countermeasure_count = 0;
+        enemy_drone_countered = false;
+        countermeasure_waiting = false;
+        sentry_go_kill_received = false;
+        is_fire = true;
+        return;
+    }//比赛结束的初始化
+
+    bool is_countered = msg->mark_progress[1];
+    if (is_countered && !enemy_drone_countered)
+    {
+        countermeasure_count++;
+    }//上升沿记录次数
+
+    // 第四次结束后的等待阶段计数仍为 4，此时收到击杀指令也会解锁第五次反制。
+    if (countermeasure_count < 5 && msg->sentry_go_kill == 1)
+    {
+        sentry_go_kill_received = true;
+    }
+
+    if (is_countered)
+    {
+        // 对方处于反制状态时仍持续开火，只取消反制结束后的等待状态。
+        is_fire = true;
+        countermeasure_waiting = false;
+    }
+    else if (enemy_drone_countered)
+    {
+        countermeasure_end_time = this->now();
+        countermeasure_waiting = true;
+        is_fire = false;
+    }//下降沿开始等待
+
+    if (countermeasure_waiting && (this->now() - countermeasure_end_time).seconds() >= countermeasure_interval_s && (countermeasure_count != 4 || sentry_go_kill_received))
+    {
+        is_fire = true;
+        countermeasure_waiting = false;
+    }//等待结束
+
+    // 剩余时间只够完成剩余反制时，跳过额外等待
+    if (!is_countered && countermeasure_count < 5 && msg->match_time <= (6 - countermeasure_count) * 5 + (5 - countermeasure_count) * 55)
+    {
+        countermeasure_waiting = false;
+        is_fire = true;
+    }
+
+    enemy_drone_countered = is_countered;
 }
 
 void Lock::publish_static_tf() 
@@ -375,8 +456,8 @@ void Lock::patrol()
 {
     // 巡航逻辑: 绕目标点做正方形巡逻
     float step = 0.05f;
-    float max_val = 1.0f;
-    float min_val = -1.0f;
+    float max_val = 2.2f;
+    float min_val = -2.2f;
 
     switch (patrol_state_) {
         case 0: // 向右扫 (yaw 增加)

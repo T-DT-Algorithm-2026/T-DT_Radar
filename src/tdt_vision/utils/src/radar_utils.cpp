@@ -104,7 +104,7 @@ namespace tdt_radar
         return srcPointMat.at<cv::Point2f>(0, 0);
     }
     std::vector<cv::Point3f> Parser_Points::ReadPoints(const std::string &points_name){
-        cv::FileStorage fs("./config/RM2025_Points.yaml", cv::FileStorage::READ); // 打开YAML文件
+        cv::FileStorage fs("./config/RM2026_Points.yaml", cv::FileStorage::READ); // 打开YAML文件
 
         if (!fs.isOpened()) {
             std::cout << "无法打开文件" << std::endl;

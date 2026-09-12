@@ -89,13 +89,14 @@ cv::Rect getSafeRect(cv::Mat& image, cv::Rect& rect)
 Detect::Detect(const rclcpp::NodeOptions& node_options)
     : Node("radar_detect_node", node_options)
 {
-    cv::namedWindow("detect", cv::WINDOW_NORMAL);
-
     // 使用system函数调用nvidia-smi命令
     std::cout << "Checking CUDA with nvidia-smi...\n";
-    if (system("nvidia-smi") == 0) {
+    if (system("nvidia-smi") == 0)
+    {
         RCLCPP_INFO(this->get_logger(), "CUDA is available.");
-    } else {
+    }
+    else
+    {
         RCLCPP_ERROR(this->get_logger(), "CUDA is not available. Exiting.");
         rclcpp::shutdown();
     }
@@ -106,12 +107,22 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
     fs["classify_path"] >> classify_path;
     fs.release();
 
-    fs.open("./config/locate_points.yaml", cv::FileStorage::READ);
-    fs["locate_points"] >> locate_points;
-    fs.release();//读取参数
+    cv::FileStorage lock_fs("./config/lock_config.yaml", cv::FileStorage::READ);
+    if (!lock_fs.isOpened())
+    {
+        RCLCPP_WARN(this->get_logger(), "Cannot open lock_config.yaml, image compression disabled.");
+    }
+    else
+    {
+        lock_fs["compress_detect_image"] >> compress_detect_image_;
+        lock_fs["draw_detect_image"] >> draw_detect_image_;
+        lock_fs.release();
+    }
+    RCLCPP_INFO(this->get_logger(), "compress_detect_image: %d, draw_detect_image: %d", compress_detect_image_, draw_detect_image_);
 
     std::ifstream file1(yolo_path.c_str());
-    if (!file1.good()) {
+    if (!file1.good())
+    {
         system("python3 src/utils/onnx2trt.py "
                "--onnx=model/ONNX/RM2025.onnx "
                "--saveEngine=model/TensorRT/yolo.engine "
@@ -120,11 +131,14 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
                "--maxBatch 2 "
                "--Shape=1280x1280 "
                "--input_name=images");
-    } else {
+    }
+    else
+    {
         TDT_INFO("Load yolo engine!");
     }
     std::ifstream file2(armor_path.c_str());
-    if (!file2.good()) {
+    if (!file2.good())
+    {
         system("python3 src/utils/onnx2trt.py "
                "--onnx=model/ONNX/armor_yolo.onnx "
                "--saveEngine=model/TensorRT/armor_yolo.engine "
@@ -133,11 +147,14 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
                "--maxBatch 12 "
                "--Shape=192x192 "
                "--input_name=images");
-    } else {
+    }
+    else
+    {
         TDT_INFO("Load armor_yolo engine!");
     }
     std::ifstream file3(classify_path.c_str());
-    if (!file3.good()) {
+    if (!file3.good())
+    {
         system("python3 src/utils/onnx2trt.py "
                "--onnx=model/ONNX/classify.onnx "
                "--saveEngine=model/TensorRT/classify.engine "
@@ -146,7 +163,9 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
                "--maxBatch 20 "
                "--Shape=224x224 "
                "--input_name=input");
-    } else {
+    }
+    else
+    {
         TDT_INFO("Load classify engine!");
     }
     std::cout << "yolo_path:" << yolo_path << "\n";
@@ -171,8 +190,12 @@ Detect::Detect(const rclcpp::NodeOptions& node_options)
         std::bind(&Detect::fly_callback, this, std::placeholders::_1));
     pub = this->create_publisher<vision_interface::msg::DetectResult>(
         "detect_result", rclcpp::SensorDataQoS());
-    radar_warn_pub = this->create_publisher<vision_interface::msg::RadarWarn>(
-        "lidar_detect", 10);
+    if (compress_detect_image_)
+    {
+        compressed_image_pub_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("compressed_image", rclcpp::SensorDataQoS().keep_last(1));
+        compress_running_.store(true, std::memory_order_release);
+        compress_thread_ = std::thread(&Detect::compressLoop, this);
+    }
     RCLCPP_INFO(this->get_logger(), "Detect node has been started.");
 }
 
@@ -182,76 +205,35 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     //           << std::endl;
     std::chrono::steady_clock::time_point begin =
         std::chrono::steady_clock::now();
-    std::cout << "Detecting..." << std::endl;
+    // std::cout << "Detecting..." << std::endl;
+    TDT_INFO("Detect!");
     auto        img = cv_bridge::toCvShare(msg, "bgr8")->image;
-
-    if (locate_points.size() == 4) 
-    {
-        cv::Rect rect1(locate_points[0], locate_points[1]);
-        cv::Rect rect2(locate_points[2], locate_points[3]);
-        
-        rect1 &= cv::Rect(0, 0, img.cols, img.rows);
-        rect2 &= cv::Rect(0, 0, img.cols, img.rows);
-
-        auto count_high_v = [&img](const cv::Rect& rect) {
-            if (rect.area() <= 0) {
-                return 0;
-            }
-
-            cv::Mat hsv_img;
-            cv::cvtColor(img(rect), hsv_img, cv::COLOR_BGR2HSV);
-            std::vector<cv::Mat> hsv_channels;
-            cv::split(hsv_img, hsv_channels);
-            cv::Mat v_mask;
-            cv::inRange(hsv_channels[2], 180, 255, v_mask);
-            return cv::countNonZero(v_mask);
-        };
-
-        int rect1_count = count_high_v(rect1);
-        int rect2_count = count_high_v(rect2);
-        int roi_count_sum = rect1_count + rect2_count;
-
-        std::cout << "Locate ROI V>=180 count: rect1=" << rect1_count
-                  << ", rect2=" << rect2_count
-                  << ", sum=" << roi_count_sum << std::endl;
-
-        vision_interface::msg::RadarWarn lidar_detect;
-        lidar_detect.base_state = 1;
-        lidar_detect.out_post_state = roi_count_sum > 10 ? 1 : 0;
-        radar_warn_pub->publish(lidar_detect);
-
-        cv::rectangle(img, rect1, cv::Scalar(0, 255, 0), 2);
-        cv::rectangle(img, rect2, cv::Scalar(255, 0, 0), 2);
-        cv::putText(img, std::to_string(rect1_count), rect1.tl(),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 125), 2);
-        cv::putText(img, std::to_string(rect2_count), rect2.tl(),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 0, 0), 2);
-    }
+    CompressTask compress_task;
+    compress_task.image = msg;
 
     tdt_radar::Image image(img.data, img.cols, img.rows);
 
     auto result = yolo->forward(image);
-    if (result.size() == 0) {
+    if (result.size() == 0)
+    {
         RCLCPP_INFO(this->get_logger(), "No Car!");
-        cv::Mat final_img;
-        cv::resize(img, final_img, cv::Size(1536, 1125));
-        cv::imshow("detect", final_img);
-        cv::waitKey(1);
+        scheduleCompress(std::move(compress_task));
         return;
-    } else if (result.size() > MAX_CARS) {
+    }
+    else if (result.size() > MAX_CARS)
+    {
         RCLCPP_INFO(this->get_logger(), "Too Many Car!");
-        cv::Mat final_img;
-        cv::resize(img, final_img, cv::Size(1536, 1125));
-        cv::imshow("detect", final_img);
-        cv::waitKey(1);
+        scheduleCompress(std::move(compress_task));
         return;
     }
 
     std::vector<tdt_radar::Image> images;
     std::vector<cv::Mat>     car_imgs;
     std::vector<Car>         cars;
-    for (auto& box : result) {
-        if (box.class_label == 0 || box.class_label == 1) {
+    for (auto& box : result)
+    {
+        if (box.class_label == 0 || box.class_label == 1)
+        {
             Car car;
             car.car = box;
             // if(box.class_label==0)car.color=2;
@@ -260,7 +242,8 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         }
     }
 
-    for (auto& car : cars) {
+    for (auto& car : cars)
+    {
         auto     temp_rect = cv::Rect(car.car.left, car.car.top,
                                       car.car.right - car.car.left,
                                       car.car.bottom - car.car.top);
@@ -276,23 +259,30 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         car.car_rect = temp_car_rect;
     }  // 将car的图片存储到car_imgs中
 
-    for (auto& car_img : car_imgs) {
+    for (auto& car_img : car_imgs)
+    {
         auto image = tdt_radar::Image(car_img.data, car_img.cols, car_img.rows);
         images.push_back(image);
     }
 
     auto armor_boxes = armor_yolo->forwards(images);
     bool has_armor = false;
-    for (int i = 0; i < armor_boxes.size(); i++) {
-        if (armor_boxes[i].size() == 0) {
+    for (int i = 0; i < armor_boxes.size(); i++)
+    {
+        if (armor_boxes[i].size() == 0)
+        {
             continue;
-        } else {
+        }
+        else
+        {
             cars[i].armors = armor_boxes[i];
             has_armor = true;
         }
     }  // 将armor_boxes存储到cars中
-    if (!has_armor) {
+    if (!has_armor)
+    {
         RCLCPP_INFO(this->get_logger(), "No Armor!");
+        scheduleCompress(std::move(compress_task));
         return;
     }
     // for(int i=0;i<cars.size();i++){
@@ -310,11 +300,14 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     std::vector<cv::Mat>         armor_imgs;
     std::vector<classify::Image> armor_images;
 
-    for (auto& car : cars) {
-        if (car.armors.size() == 0) {
+    for (auto& car : cars)
+    {
+        if (car.armors.size() == 0)
+        {
             continue;
         }
-        for (auto& armor : car.armors) {
+        for (auto& armor : car.armors)
+        {
             cv::Rect rect_img_1(
                 armor.left + car.car.left, armor.top + car.car.top,
                 armor.right - armor.left, armor.bottom - armor.top);
@@ -323,7 +316,8 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
             armor_imgs.push_back(armor_img.clone());
         }
     }  // 将armor的图片存储到armor_imgs中
-    for (auto& armor_img : armor_imgs) {
+    for (auto& armor_img : armor_imgs)
+    {
         auto image =
             classify::Image(armor_img.data, armor_img.cols, armor_img.rows);
         armor_images.push_back(image);
@@ -336,36 +330,38 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
     //    cv::imwrite("/home/mozihe/Label/fenqu_armor/"+std::to_string(armor_result[i])+"/"+std::to_string(count_img++)+".jpg",armor_imgs[i]);
     //  }
     // 按照相同的顺序将armor的分类结果存储到Cars中
-    for (auto& car : cars) {
-        if (car.armors.size() == 0) {
+    for (auto& car : cars)
+    {
+        if (car.armors.size() == 0)
+        {
             continue;
         }
-        for (auto& armor : car.armors) {
+        for (auto& armor : car.armors)
+        {
             armor.class_label = armor_result[0];
             armor_result.erase(armor_result.begin());
-            if (debug) {
-                cv::putText(img, std::to_string(armor.class_label),
-                            cv::Point(armor.left + car.car.left,
-                                      armor.top + car.car.top),
-                            cv::FONT_HERSHEY_SIMPLEX, 1,
-                            cv::Scalar(255, 255, 255), 2);
+            if (draw_detect_image_)
+            {
+                compress_task.texts.push_back({std::to_string(armor.class_label), cv::Point(armor.left + car.car.left, armor.top + car.car.top), 1.0, cv::Scalar(255, 255, 255), 2});
             }
         }
     }
     // 接下来对识别结果进行处理
     // 1.将车和装甲板的信息存储到detect_result中
     vision_interface::msg::DetectResult detect_result;
-    for (auto& car : cars) {
-        if (car.armors.size() == 0) {
+    for (auto& car : cars)
+    {
+        if (car.armors.size() == 0)
+        {
             continue;
         }
         // 找到置信度最大的非0armor
         cv::Rect max_rect;
         float    max_confidence = 0;
-        for (auto& armor : car.armors) {
-            if (armor.class_label != 0 &&
-                armor.class_label != 5 &&
-                armor.confidence > max_confidence) {
+        for (auto& armor : car.armors)
+        {
+            if (armor.class_label != 0 && armor.class_label != 5 && armor.confidence > max_confidence)
+            {
                 max_rect = cv::Rect(
                     armor.left + car.car.left, armor.top + car.car.top,
                     armor.right - armor.left, armor.bottom - armor.top);
@@ -373,10 +369,12 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
                 car.number = armor.class_label;
             }
         }
-        if (max_confidence == 0) {
-            if (debug)
-                cv::rectangle(img, car.car_rect, cv::Scalar(255, 255, 255),
-                              2);
+        if (max_confidence == 0)
+        {
+            if (draw_detect_image_)
+            {
+                compress_task.rectangles.push_back({car.car_rect, cv::Scalar(255, 255, 255), 2});
+            }
             continue;
         }
         auto safe_rect = getSafeRect(img, max_rect);
@@ -387,42 +385,44 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
         car.center = cv::Point2f(max_rect.x + max_rect.width / 2,
                                  max_rect.y + max_rect.height / 2);
         // car.center_rect=cv::Rect(car.center.x-10,car.center.y-10,20,20);
-        if (car.color == 0) {
+        if (car.color == 0)
+        {
             detect_result.blue_x[car.number - 1] = car.center.x;
             detect_result.blue_y[car.number - 1] = car.center.y;
             // 如果只有一个为0，打印error
-            if (car.center.x * car.center.y == 0 && car.number != 0) {
+            if (car.center.x * car.center.y == 0 && car.number != 0)
+            {
                 RCLCPP_ERROR(this->get_logger(),
                              "Error: blue car center is 0");
             }
-            if (debug) {
-                cv::rectangle(img, car.car_rect, cv::Scalar(255, 0, 0), 2);
-                cv::putText(img, std::to_string(car.car.confidence),
-                            cv::Point(car.car.left, car.car.top),
-                            cv::FONT_HERSHEY_SIMPLEX, 1,
-                            cv::Scalar(255, 255, 255), 2);
+            if (draw_detect_image_)
+            {
+                compress_task.rectangles.push_back({car.car_rect, cv::Scalar(255, 0, 0), 2});
+                compress_task.texts.push_back({std::to_string(car.car.confidence), cv::Point(car.car.left, car.car.top), 1.0, cv::Scalar(255, 255, 255), 2});
             }
         }
-        if (car.color == 2) {
+        if (car.color == 2)
+        {
             detect_result.red_x[car.number - 1] = car.center.x;
             detect_result.red_y[car.number - 1] = car.center.y;
             // 如果只有一个为0，打印error
-            if (car.center.x * car.center.y == 0 && car.number != 0) {
+            if (car.center.x * car.center.y == 0 && car.number != 0)
+            {
                 RCLCPP_ERROR(this->get_logger(),
                              "Error: red car center is 0");
             }
-            if (debug) {
-                cv::rectangle(img, car.car_rect, cv::Scalar(0, 0, 255), 2);
-                cv::putText(img, std::to_string(car.car.confidence),
-                            cv::Point(car.car.left, car.car.top),
-                            cv::FONT_HERSHEY_SIMPLEX, 1,
-                            cv::Scalar(255, 255, 255), 2);
+            if (draw_detect_image_)
+            {
+                compress_task.rectangles.push_back({car.car_rect, cv::Scalar(0, 0, 255), 2});
+                compress_task.texts.push_back({std::to_string(car.car.confidence), cv::Point(car.car.left, car.car.top), 1.0, cv::Scalar(255, 255, 255), 2});
             }
         }
-        if (car.color == 1) {
-            if (debug)
-                cv::rectangle(img, car.car_rect, cv::Scalar(255, 255, 255),
-                              2);
+        if (car.color == 1)
+        {
+            if (draw_detect_image_)
+            {
+                compress_task.rectangles.push_back({car.car_rect, cv::Scalar(255, 255, 255), 2});
+            }
         }
     }
     detect_result.header.stamp = msg->header.stamp;
@@ -434,8 +434,8 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
                                                                   begin);
     // RCLCPP_INFO(this->get_logger(), "Time used: %fms",
     // time_used.count()*1000);
-    std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
-              << std::endl;
+    // std::cout << "Detect Time: " << time_used.count() * 1000 << "ms"
+    //           << std::endl;
     
 // if(fly_point.z && fly_point.x && fly_point.y)
 // {
@@ -463,13 +463,7 @@ void Detect::callback(const std::shared_ptr<sensor_msgs::msg::Image> msg)
 //                   cv::Point(fly_2d.x + 200, fly_2d.y + 150), cv::Scalar(0, 0, 255), 2);
 // }
 
-    cv::Mat final_img;
-    cv::resize(img, final_img, cv::Size(1536, 1125));
-    cv::imshow("detect", final_img);
-    auto key = cv::waitKey(1);
-    if (key == 'r') {
-        debug = !debug;
-    }
+    scheduleCompress(std::move(compress_task));
 }
 
 

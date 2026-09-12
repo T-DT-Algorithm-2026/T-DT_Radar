@@ -1,7 +1,7 @@
 #include "cluster.h"
-#include <tf2/LinearMath/Transform.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Transform.hpp>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/LinearMath/Vector3.hpp>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/common/common.h>
@@ -84,14 +84,14 @@ void Cluster::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     output.header.frame_id = "rm_frame";
     output.header.stamp = msg->header.stamp;
     pub_->publish(output);
-    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    RCLCPP_INFO(this->get_logger(), "Cluster callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
+//     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//     RCLCPP_INFO(this->get_logger(), "Cluster callback time: %f", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.0);
 }
 
 
 void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-    std::cout<<"找到飞机"<<std::endl;
+    // std::cout<<"找到飞机"<<std::endl;
     try 
     {
         transform_stamped = tf_buffer_.lookupTransform("rm_frame", "livox_frame", tf2::TimePointZero);
@@ -110,27 +110,29 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     double lidar_x = transform_stamped.transform.translation.x;
     double lidar_y = transform_stamped.transform.translation.y;
     double lidar_z = transform_stamped.transform.translation.z;
-    std::cout << "雷达在地图中的坐标: " << lidar_x <<" "<< lidar_y <<" "<< lidar_z <<std::endl;
+    // std::cout << "雷达在地图中的坐标: " << lidar_x <<" "<< lidar_y <<" "<< lidar_z <<std::endl;
 
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud);
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
     ec.setClusterTolerance (0.25);
-    ec.setMinClusterSize (40);
+    ec.setMinClusterSize (20);
     ec.setMaxClusterSize (1000);
     ec.setSearchMethod (tree);
     ec.setInputCloud (cloud);
     std::vector<pcl::PointIndices> cluster_indices;
     ec.extract (cluster_indices);//欧几里德聚类//TODO: 调参
 
-    std::vector<pcl::PointXYZ> clouds;
+    // 敌方飞机范围 x[9,28] y[0,7.5]，我方飞机范围 x[0,19] y[7.5,15]，各自只保留范围内点数最多的聚类
+    pcl::PointXYZ enemy_center, ally_center;
+    size_t enemy_cluster_size = 0, ally_cluster_size = 0;
     for(auto it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
     {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
         for(auto pit = it->indices.begin(); pit != it->indices.end(); ++pit)
         {
             cloud_cluster->points.push_back(cloud->points[*pit]);
-        }        
+        }
         cloud_cluster->width = cloud_cluster->points.size();
         cloud_cluster->height = 1;
         cloud_cluster->is_dense = true;//根据索引得到一个聚类后的点云
@@ -144,74 +146,59 @@ void Cluster::fly_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         }
         move_point.x /= cloud_cluster->points.size();
         move_point.y /= cloud_cluster->points.size();
-        move_point.z /= cloud_cluster->points.size();
-        clouds.push_back(move_point);//取质心        
+        move_point.z /= cloud_cluster->points.size();//取质心
+
+        if(move_point.x >= 9.0 && move_point.x <= 28.0 && move_point.y >= 0.0 && move_point.y <= 7.5)
+        {
+            if(cloud_cluster->points.size() > enemy_cluster_size)
+            {
+                enemy_cluster_size = cloud_cluster->points.size();
+                enemy_center = move_point;
+            }
+        }
+        else if(move_point.x >= 0.0 && move_point.x <= 19.0 && move_point.y > 7.5 && move_point.y <= 15.0)
+        {
+            if(cloud_cluster->points.size() > ally_cluster_size)
+            {
+                ally_cluster_size = cloud_cluster->points.size();
+                ally_center = move_point;
+            }
+        }
     }
 
     vision_interface::msg::FlyPoints fly_points_msg;
-    // std::cout<<"飞机数量:"<<clouds.size()<<std::endl;
-
-    if(clouds.size() == 0)
+    if(enemy_cluster_size == 0 && ally_cluster_size == 0)
     {
         RCLCPP_WARN(this->get_logger(), "未检测到飞机");
         return;
     }
-    if(clouds.size() == 1)
+    if(enemy_cluster_size > 0)
     {
-        if(clouds[0].y<7.5)
-        {
-            fly_points_msg.fly_enemy_x = clouds[0].x;
-            fly_points_msg.fly_enemy_y = clouds[0].y;
-            fly_points_msg.fly_enemy_z = clouds[0].z;
-            fly_points_msg.fly_ally_x = 0.0;
-            fly_points_msg.fly_ally_y = 0.0;
-            fly_points_msg.fly_ally_z = 0.0;
-        }
-        else
-        {
-            fly_points_msg.fly_ally_x = clouds[0].x;
-            fly_points_msg.fly_ally_y = clouds[0].y;
-            fly_points_msg.fly_ally_z = clouds[0].z;
-            fly_points_msg.fly_enemy_x = 0.0;
-            fly_points_msg.fly_enemy_y = 0.0;
-            fly_points_msg.fly_enemy_z = 0.0;
-        }
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
-        // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
+        fly_points_msg.fly_enemy_x = enemy_center.x;
+        fly_points_msg.fly_enemy_y = enemy_center.y;
+        fly_points_msg.fly_enemy_z = enemy_center.z;
+        RCLCPP_INFO(this->get_logger(), "检测到敌方飞机");
     }
-    if(clouds.size() >= 2)
+    if(ally_cluster_size > 0)
     {
-        if(clouds[0].y>clouds[1].y)
-        {
-            fly_points_msg.fly_ally_x = clouds[0].x;
-            fly_points_msg.fly_ally_y = clouds[0].y;
-            fly_points_msg.fly_ally_z = clouds[0].z;
-            fly_points_msg.fly_enemy_x = clouds[1].x;
-            fly_points_msg.fly_enemy_y = clouds[1].y;
-            fly_points_msg.fly_enemy_z = clouds[1].z;
-
-        }
-        else
-        {
-            fly_points_msg.fly_ally_x = clouds[1].x;
-            fly_points_msg.fly_ally_y = clouds[1].y;
-            fly_points_msg.fly_ally_z = clouds[1].z;
-            fly_points_msg.fly_enemy_x = clouds[0].x;
-            fly_points_msg.fly_enemy_y = clouds[0].y;
-            fly_points_msg.fly_enemy_z = clouds[0].z;
-        }   
-        std::cout<<"敌方飞机坐标:("<<fly_points_msg.fly_enemy_x<<","<<fly_points_msg.fly_enemy_y<<","<<fly_points_msg.fly_enemy_z<<")"<<std::endl;
-        // std::cout<<"我方飞机坐标:("<<fly_points_msg.fly_ally_x<<","<<fly_points_msg.fly_ally_y<<")"<<std::endl;
+        fly_points_msg.fly_ally_x = ally_center.x;
+        fly_points_msg.fly_ally_y = ally_center.y;
+        fly_points_msg.fly_ally_z = ally_center.z;
+        RCLCPP_INFO(this->get_logger(), "检测到我方飞机");
     }
-    std::cout<<"成功"<<std::endl;
     fly_pub_->publish(fly_points_msg);
+
+    if(enemy_cluster_size == 0)
+    {
+        return;//敌方范围内无点云，不发送锁定点
+    }
 
     tf2::Quaternion q(
         transform_stamped.transform.rotation.x,
         transform_stamped.transform.rotation.y,
         transform_stamped.transform.rotation.z,
         transform_stamped.transform.rotation.w);
-    
+
     tf2::Vector3 t(
         transform_stamped.transform.translation.x,
         transform_stamped.transform.translation.y,

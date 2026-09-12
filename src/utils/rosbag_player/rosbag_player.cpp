@@ -9,12 +9,28 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <gimbal_interface/msg/gimbal_angle.hpp>
+#include <radio_interface/msg/buff.hpp>
+#include <radio_interface/msg/fire.hpp>
+#include <radio_interface/msg/hp.hpp>
+#include <radio_interface/msg/password.hpp>
+#include <radio_interface/msg/position.hpp>
+#include <radio_interface/msg/state.hpp>
 #include <vision_interface/msg/match_info.hpp>
+#include <vision_interface/msg/radar2_sentry.hpp>
+#include <vision_interface/msg/radar_warn.hpp>
+#include <vision_interface/msg/sentry2_radar.hpp>
+#include <csignal>
+#include <cstdlib>
 #include <thread>
 #include <std_msgs/msg/string.hpp>
 #include <atomic>
 #include <condition_variable>
+#include <cmath>
+#include <limits>
+#include <algorithm>
 #include <mutex>
+#include <string>
 
 using namespace std::chrono_literals;
 
@@ -35,13 +51,23 @@ public:
         image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera1/image", rclcpp::SensorDataQoS());
         image2_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera2/image", rclcpp::SensorDataQoS());
         match_info_publisher_ = this->create_publisher<vision_interface::msg::MatchInfo>("/match_info", 10);
+        sentry2radar_publisher_ = this->create_publisher<vision_interface::msg::Sentry2Radar>("/sentry2RadarData", 10);
+        robot_position_publisher_ = this->create_publisher<radio_interface::msg::Position>("/robot_position", 10);
+        gimbal_usart_data_publisher_ = this->create_publisher<gimbal_interface::msg::GimbalAngle>("/gimbalUsartData", 10);
+        gimbal_pub_publisher_ = this->create_publisher<gimbal_interface::msg::GimbalAngle>("/GimbalPub", 10);
+        lidar_detect_publisher_ = this->create_publisher<vision_interface::msg::RadarWarn>("/lidar_detect", 10);
+        key_usart_sender_publisher_ = this->create_publisher<radio_interface::msg::Password>("/key_usart_sender", 10);
+        radio_buff_publisher_ = this->create_publisher<radio_interface::msg::Buff>("/radio_buff", 10);
+        radio_fire_publisher_ = this->create_publisher<radio_interface::msg::Fire>("/radio_fire", 10);
+        radio_hp_publisher_ = this->create_publisher<radio_interface::msg::Hp>("/radio_hp", 10);
+        radio_state_publisher_ = this->create_publisher<radio_interface::msg::State>("/radio_state", 10);
         // 订阅控制话题，用于 pause/resume/toggle
         control_sub_ = this->create_subscription<std_msgs::msg::String>(
             "rosbag_player/control", 10,
             std::bind(&RosbagPlayer::control_callback, this, std::placeholders::_1));
         signal(SIGINT, on_exit);
         // 创建一个新的线程来处理bag文件
-            reader_.open(rosbag_file);
+        reader_.open(rosbag_file);
 
         processing_thread_ = std::make_shared<std::thread>(&RosbagPlayer::play_bag, this);
     }
@@ -86,14 +112,51 @@ private:
                 publish_compressed_image(bag_message, image2_publisher_, ros_time);
             }
             // 处理match_info消息
-            else if (bag_message->topic_name == "/match_info") {
-                // RCLCPP_INFO(this->get_logger(), "Received match_info message");
-                auto match_info_msg = std::make_shared<vision_interface::msg::MatchInfo>();
-                rclcpp::Serialization<vision_interface::msg::MatchInfo> serialization;
-                rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
-                // std::cout<<"serialized_msg.size():"<<serialized_msg.size()<<std::endl;
-                serialization.deserialize_message(&serialized_msg, match_info_msg.get());
-                match_info_publisher_->publish(*match_info_msg);
+            else if (bag_message->topic_name == "/match_info")
+            {
+                publish_match_info_message(bag_message);
+            }
+            else if (bag_message->topic_name == "/sentry2RadarData") {
+                publish_serialized_message<vision_interface::msg::Sentry2Radar>(
+                    bag_message, sentry2radar_publisher_);
+            }
+            else if (bag_message->topic_name == "/Radar2Sentry")
+            {
+                publish_robot_position(bag_message);
+            }
+            else if (bag_message->topic_name == "/gimbalUsartData") {
+                publish_gimbal_message(bag_message, gimbal_usart_data_publisher_, ros_time);
+            }
+            else if (bag_message->topic_name == "/GimbalPub") {
+                publish_gimbal_message(bag_message, gimbal_pub_publisher_, ros_time);
+            }
+            else if (bag_message->topic_name == "/lidar_detect") {
+                publish_serialized_message<vision_interface::msg::RadarWarn>(
+                    bag_message, lidar_detect_publisher_);
+            }
+            else if (bag_message->topic_name == "/key_usart_sender")
+            {
+                publish_serialized_message<radio_interface::msg::Password>(
+                    bag_message, key_usart_sender_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_buff")
+            {
+                publish_radio_buff_message(bag_message);
+            }
+            else if (bag_message->topic_name == "/radio_fire")
+            {
+                publish_serialized_message<radio_interface::msg::Fire>(
+                    bag_message, radio_fire_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_hp")
+            {
+                publish_serialized_message<radio_interface::msg::Hp>(
+                    bag_message, radio_hp_publisher_);
+            }
+            else if (bag_message->topic_name == "/radio_state")
+            {
+                publish_serialized_message<radio_interface::msg::State>(
+                    bag_message, radio_state_publisher_);
             }
 
             auto end_time = std::chrono::high_resolution_clock::now();
@@ -116,7 +179,8 @@ private:
         rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
         serialization.deserialize_message(&serialized_msg, image_msg.get());
 
-        auto img = cv::imdecode(image_msg->data, cv::IMREAD_COLOR);
+        cv::Mat encoded_image(1, static_cast<int>(image_msg->data.size()), CV_8UC1, image_msg->data.data());
+        auto img = cv::imdecode(encoded_image, cv::IMREAD_COLOR);
         if (img.empty()) {
             RCLCPP_WARN(this->get_logger(), "Failed to decode compressed image from topic %s",
                         bag_message->topic_name.c_str());
@@ -127,6 +191,119 @@ private:
         header.stamp = stamp;
         auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
         publisher->publish(*msg);
+    }
+
+    template <typename MessageT>
+    void publish_serialized_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message,
+        const typename rclcpp::Publisher<MessageT>::SharedPtr &publisher) {
+        auto msg = std::make_shared<MessageT>();
+        rclcpp::Serialization<MessageT> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        publisher->publish(*msg);
+    }
+
+    void publish_radio_buff_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message)
+    {
+        auto msg = std::make_shared<radio_interface::msg::Buff>();
+        rclcpp::Serialization<radio_interface::msg::Buff> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+
+        // 旧 bag 的 Buff 末尾没有 main_posture，反序列化前将缺少的数据补 0。
+        static const size_t expected_size = []()
+        {
+            radio_interface::msg::Buff empty_msg;
+            rclcpp::Serialization<radio_interface::msg::Buff> buff_serialization;
+            rclcpp::SerializedMessage empty_serialized_msg;
+            buff_serialization.serialize_message(&empty_msg, &empty_serialized_msg);
+            return empty_serialized_msg.size();
+        }();
+        if (serialized_msg.size() < expected_size)
+        {
+            const size_t original_size = serialized_msg.size();
+            serialized_msg.reserve(expected_size);
+            auto & serialized_data = serialized_msg.get_rcl_serialized_message();
+            std::fill(serialized_data.buffer + original_size, serialized_data.buffer + expected_size, 0);
+            serialized_data.buffer_length = expected_size;
+        }
+
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        radio_buff_publisher_->publish(*msg);
+    }
+
+    void publish_match_info_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message)
+    {
+        auto msg = std::make_shared<vision_interface::msg::MatchInfo>();
+        rclcpp::Serialization<vision_interface::msg::MatchInfo> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+
+        // 旧 bag 的 MatchInfo 末尾没有 mark_progress，反序列化前将缺少的数据补 0。
+        static const size_t expected_size = []()
+        {
+            vision_interface::msg::MatchInfo empty_msg;
+            rclcpp::Serialization<vision_interface::msg::MatchInfo> match_info_serialization;
+            rclcpp::SerializedMessage empty_serialized_msg;
+            match_info_serialization.serialize_message(&empty_msg, &empty_serialized_msg);
+            return empty_serialized_msg.size();
+        }();
+        if (serialized_msg.size() < expected_size)
+        {
+            const size_t original_size = serialized_msg.size();
+            serialized_msg.reserve(expected_size);
+            auto & serialized_data = serialized_msg.get_rcl_serialized_message();
+            std::fill(serialized_data.buffer + original_size, serialized_data.buffer + expected_size, 0);
+            serialized_data.buffer_length = expected_size;
+        }
+
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        match_info_publisher_->publish(*msg);
+    }
+
+    void publish_gimbal_message(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message,
+        const rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr &publisher,
+        const rclcpp::Time &stamp) {
+        auto msg = std::make_shared<gimbal_interface::msg::GimbalAngle>();
+        rclcpp::Serialization<gimbal_interface::msg::GimbalAngle> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, msg.get());
+        msg->header.stamp = stamp;
+        publisher->publish(*msg);
+    }
+
+    static uint16_t meters_to_centimeters(float coordinate)
+    {
+        if(!std::isfinite(coordinate) || coordinate <= 0)
+        {
+            return 0;
+        }
+
+        const double centimeters = std::round(static_cast<double>(coordinate) * 100.0);
+        if(centimeters >= std::numeric_limits<uint16_t>::max())
+        {
+            return std::numeric_limits<uint16_t>::max();
+        }
+        return static_cast<uint16_t>(centimeters);
+    }
+
+    void publish_robot_position(
+        const std::shared_ptr<rosbag2_storage::SerializedBagMessage> &bag_message)
+    {
+        vision_interface::msg::Radar2Sentry radar_msg;
+        rclcpp::Serialization<vision_interface::msg::Radar2Sentry> serialization;
+        rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
+        serialization.deserialize_message(&serialized_msg, &radar_msg);
+
+        radio_interface::msg::Position position_msg;
+        for(int i = 0; i < 6; i++)
+        {
+            position_msg.x[i] = meters_to_centimeters(radar_msg.radar_enemy_x[i]);
+            position_msg.y[i] = meters_to_centimeters(radar_msg.radar_enemy_y[i]);
+        }
+        robot_position_publisher_->publish(position_msg);
     }
 
     void control_callback(const std_msgs::msg::String::SharedPtr msg) {
@@ -154,6 +331,16 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image2_publisher_;
     rclcpp::Publisher<vision_interface::msg::MatchInfo>::SharedPtr match_info_publisher_;
+    rclcpp::Publisher<vision_interface::msg::Sentry2Radar>::SharedPtr sentry2radar_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Position>::SharedPtr robot_position_publisher_;
+    rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_usart_data_publisher_;
+    rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_pub_publisher_;
+    rclcpp::Publisher<vision_interface::msg::RadarWarn>::SharedPtr lidar_detect_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Password>::SharedPtr key_usart_sender_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Buff>::SharedPtr radio_buff_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Fire>::SharedPtr radio_fire_publisher_;
+    rclcpp::Publisher<radio_interface::msg::Hp>::SharedPtr radio_hp_publisher_;
+    rclcpp::Publisher<radio_interface::msg::State>::SharedPtr radio_state_publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr control_sub_;
     rosbag2_cpp::Reader reader_;
     std::shared_ptr<std::thread> processing_thread_;

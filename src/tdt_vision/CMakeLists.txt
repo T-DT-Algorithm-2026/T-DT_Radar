@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.23)
 project(tdt_vision)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,13 +13,13 @@ include_directories(
     "calibrate/include"
     "calibrate_fly/include"
     "camera/include"
-    "tdt_debug/include"
     "TDT_Camera/include"
     "record/include"
 )
 
 add_subdirectory(TDT_Camera)#tdt新相机
 find_package(ament_cmake_auto REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
 ament_auto_find_build_dependencies()
 
 set(CAMERA_NODE "camera")   # 相机节点名称
@@ -37,9 +37,6 @@ rclcpp_components_register_node(${CAMERA_NODE}
 
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
-include_directories(/usr/local/cuda/include)
-link_directories(/usr/local/cuda/lib64)
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
@@ -52,12 +49,16 @@ file(GLOB_RECURSE RADAR_DETECT_SRCS "detect/src/*.cpp")
 ament_auto_add_library(${RADAR_DETECT} SHARED
     ${RADAR_DETECT_SRCS}
 )
-find_package(CUDA)
-include(${PROJECT_SOURCE_DIR}/cmake/modules/libnvinferConfig.cmake)
-message("Using Cuda Version: ${CUDA_VERSION} and TensorRT Version: ${nvinfer_VERSION}")
-add_definitions(-D use_tensorrt)
+# Build native code for every major architecture supported by the installed
+# CUDA toolkit and keep PTX for the newest one as a forward-compatible fallback.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "all-major" CACHE STRING "CUDA architectures")
+endif()
 enable_language(CUDA)
-include_directories(${CUDA_INCLUDE_DIRS})
+find_package(CUDAToolkit REQUIRED)
+include(${PROJECT_SOURCE_DIR}/cmake/modules/libnvinferConfig.cmake)
+message(STATUS "Using CUDA ${CUDAToolkit_VERSION} and TensorRT ${nvinfer_LIBRARY}")
+add_definitions(-D use_tensorrt)
 include_directories(${nvinfer_INCLUDE_DIRS})
 
 add_subdirectory(infer)
@@ -66,9 +67,9 @@ include_directories(${PROJECT_SOURCE_DIR}/infer/include)
 target_link_libraries(${RADAR_DETECT}
     utils
     infer 
-    ${nvinfer_LIBRARY} 
-    cudart 
-    nvonnxparser 
+    ${nvinfer_LIBRARY}
+    ${nvonnxparser_LIBRARY}
+    CUDA::cudart
     fmt 
     ${PCL_LIBRARIES}
     )
@@ -82,16 +83,12 @@ file(GLOB_RECURSE RADAR_DETECT_FLY_SRCS "detect_fly/src/*.cpp")
 ament_auto_add_library(${RADAR_DETECT_FLY} SHARED
     ${RADAR_DETECT_FLY_SRCS}
 )
-ament_target_dependencies(${RADAR_DETECT_FLY} 
-    vision_interface 
-)
-
 target_link_libraries(${RADAR_DETECT_FLY}
     utils          
     infer          
-    ${nvinfer_LIBRARY} 
-    cudart         
-    nvonnxparser   
+    ${nvinfer_LIBRARY}
+    ${nvonnxparser_LIBRARY}
+    CUDA::cudart
     fmt            
 )
 rclcpp_components_register_node(${RADAR_DETECT_FLY}
@@ -130,17 +127,6 @@ rclcpp_components_register_node(${RADAR_CALIBRATE_FLY}
     EXECUTABLE ${RADAR_CALIBRATE_FLY}_node
 )
 
-set(TDT_DEBUG_NODE "tdt_debug") # tdt_debug节点名称
-file(GLOB_RECURSE TDT_DEBUG_SRCS "tdt_debug/src/*.cpp")
-ament_auto_add_library(${TDT_DEBUG_NODE} SHARED
-    ${TDT_DEBUG_SRCS}
-)
-rclcpp_components_register_node(${TDT_DEBUG_NODE}
-    PLUGIN "tdt_vision::NodeDebug"
-    EXECUTABLE ${TDT_DEBUG_NODE}_node
-)
-
-
 set(RADAR_RECORD_NODE "radar_record") # radar_record节点名称
 file(GLOB_RECURSE RADAR_RECORD_SRCS "record/src/*.cpp")
 ament_auto_add_library(${RADAR_RECORD_NODE} SHARED
@@ -151,8 +137,10 @@ rclcpp_components_register_node(${RADAR_RECORD_NODE}
     EXECUTABLE ${RADAR_RECORD_NODE}_node
 )
 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../config/RM2026.png DESTINATION share/${PROJECT_NAME}/maps)
 
 ament_auto_package(
     INSTALL_TO_SHARE
     launch
+    maps
 )

@@ -1,9 +1,0 @@
-[submodule "src/tdt_vision/tdt_camera"]
-	path = src/tdt_vision/tdt_camera
-	url = git@github.com:T-DT-Algorithm-2026/TDT_Camera.git
-[submodule "src/tdt_vision/TDT_camera"]
-	path = src/tdt_vision/TDT_camera
-	url = git@github.com:T-DT-Algorithm-2026/TDT_Camera.git
-[submodule "src/tdt_vision/TDT_Camera"]
-	path = src/tdt_vision/TDT_Camera
-	url = git@github.com:T-DT-Algorithm-2026/TDT_Camera.git

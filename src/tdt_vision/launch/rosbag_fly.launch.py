@@ -27,7 +27,7 @@ def generate_launch_description():
                     "rosbag_file":
                     # '/home/robot/T-DT_Radar/ros2bags/radar_record0314_1413_00/merged_bag/merged_bag_0.db3'
                     # '/home/robot/T-DT_Radar/ros2bags/radar_record0326_1622_16/bag_0326_1623_16'
-                    '/home/robot/T-DT_Radar/ros2bags/radar_record0415_1547_19/bag_0415_1547_49'
+                    '/home/robot/merged_bag'
 
 
                 }
@@ -74,7 +74,7 @@ def generate_launch_description():
             composable_node_descriptions=[
                 # 变向设置启动顺序
                 radar_detect_fly_node,
-                radar_resolve_node,
+                # radar_resolve_node,
                 foxglove_node,
                 ros_bag_player_node,
             ],

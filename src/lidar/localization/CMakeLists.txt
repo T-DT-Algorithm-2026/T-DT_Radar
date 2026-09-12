@@ -4,6 +4,7 @@ set(CMAKE_BUILD_TYPE "RELEASE")
 #gicp配准需要release编译
 
 find_package (ament_cmake_auto REQUIRED) 
+find_package(jsoncpp CONFIG REQUIRED)
 ament_auto_find_build_dependencies ()
 
 set(LOCALIZATION_NODE "localization")

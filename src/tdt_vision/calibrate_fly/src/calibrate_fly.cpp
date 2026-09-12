@@ -19,7 +19,24 @@ namespace tdt_radar {
         compressed_image_sub = this->create_subscription<sensor_msgs::msg::CompressedImage>(
                 "compressed_image2", rclcpp::SensorDataQoS(),
                 std::bind(&CalibrateFly::compressed_callback, this, std::placeholders::_1));
+        gimbal_pub = this->create_publisher<gimbal_interface::msg::GimbalAngle>(
+                "GimbalPub", rclcpp::SensorDataQoS());
+        // 标定期间持续发送零位指令，避免云台角度影响激光落点采样。
+        gimbal_timer = this->create_wall_timer(
+                std::chrono::milliseconds(20), std::bind(&CalibrateFly::publish_zero_gimbal, this));
+        publish_zero_gimbal();
         std::cout<<"Calibrate Fly end"<<std::endl;
+    }
+
+    void CalibrateFly::publish_zero_gimbal()
+    {
+        gimbal_interface::msg::GimbalAngle gimbal_msg;
+        gimbal_msg.header.stamp = this->now();
+        gimbal_msg.yaw = 0.0F;
+        gimbal_msg.pitch = 0.0F;
+        gimbal_msg.is_fire = true;
+        gimbal_msg.force_flag = true;
+        gimbal_pub->publish(gimbal_msg);
     }
 
     void CalibrateFly::callback(const sensor_msgs::msg::Image::SharedPtr msg) {
@@ -56,7 +73,8 @@ namespace tdt_radar {
     }
 
     void CalibrateFly::compressed_callback(const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
-        auto img = cv::imdecode(msg->data, cv::IMREAD_COLOR);
+        cv::Mat encoded_image(1, static_cast<int>(msg->data.size()), CV_8UC1, msg->data.data());
+        auto img = cv::imdecode(encoded_image, cv::IMREAD_COLOR);
         cvimage_fly_ = img;
 
         if(is_calibrating_fly){

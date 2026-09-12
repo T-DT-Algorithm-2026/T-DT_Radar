@@ -7,6 +7,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include "gimbal_interface/msg/gimbal_angle.hpp"
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include "cv_bridge/cv_bridge.hpp"
@@ -28,8 +29,11 @@ namespace tdt_radar {
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;
         rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_image_sub;
+        rclcpp::Publisher<gimbal_interface::msg::GimbalAngle>::SharedPtr gimbal_pub;
+        rclcpp::TimerBase::SharedPtr gimbal_timer;
 
         void solve();
+        void publish_zero_gimbal();
     };
 
     void fly_mousecallback(int event, int x, int y, int flags, void *userdata);
