@@ -1,0 +1,203 @@
+#include <rclcpp/logger.hpp>
+#include <rclcpp/node.hpp>
+#include <rclcpp/qos.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <opencv4/opencv2/opencv.hpp>
+#include <vision_interface/msg/detect_result.hpp>
+#include <vision_interface/msg/radar2_sentry.hpp>
+#include <vision_interface/msg/match_info.hpp>
+#include <vision_interface/msg/fly_points.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <cv_bridge/cv_bridge.hpp>
+#include <fstream>
+namespace tdt_radar {
+    class DebugMap : public rclcpp::Node {
+    public:
+        explicit DebugMap(const rclcpp::NodeOptions & options)
+            : Node("debug_map", options){
+            detect_result_sub = this->create_subscription<vision_interface::msg::DetectResult>(
+                "/kalman_detect", 10, std::bind(&DebugMap::callback, this, std::placeholders::_1));
+            camera_detect_sub = this->create_subscription<vision_interface::msg::DetectResult>(
+                "/resolve_result", rclcpp::SensorDataQoS(), std::bind(&DebugMap::camera_callback, this, std::placeholders::_1));
+            map = cv::imread("config/RM2026.png");
+            match_info_sub = this->create_subscription<vision_interface::msg::MatchInfo>(
+                "/match_info", 10, std::bind(&DebugMap::save_match_info, this, std::placeholders::_1));
+            fly_sub = this->create_subscription<vision_interface::msg::FlyPoints>(
+                "/livox/lidar_fly_cluster", 10, std::bind(&DebugMap::fly_callback, this, std::placeholders::_1));
+            // radio_sub = this->create_subscription<vision_interface::msg::CameraResult>(
+                // "/radio_point", 10, std::bind(&DebugMap::radio_callback, this, std::placeholders::_1));
+            debug_map_pub = this->create_publisher<sensor_msgs::msg::Image>("/map_2d", 10);
+            radar2sentry_pub = this->create_publisher<vision_interface::msg::Radar2Sentry>("/Radar2Sentry", rclcpp::SensorDataQoS());
+            cv::resize(map, map, cv::Size(28*25, 15*25));
+        }
+        void save_match_info(const std::shared_ptr<vision_interface::msg::MatchInfo> msg){
+            this->match_info = *msg;
+            if(msg->self_color==1)
+            match_info.self_color = 2;
+            // std::cout<<"self_color:"<<(int *)match_info.self_color<<std::endl;
+        }
+
+        void show_map()
+        {
+            auto now_time = std::chrono::system_clock::now();
+            double time = std::chrono::duration_cast<std::chrono::milliseconds>(now_time.time_since_epoch()).count()/1000.0;
+            auto clone_map = map.clone();
+            for(int i=0;i<6;i++)
+            {
+                int number = i+1;
+                if(number==6)
+                {
+                    number++;
+                }
+                if(blue_point[i].x*blue_point[i].y&&time-blue_update[i]<0.5)
+                {
+                    cv::Point2f point = cv::Point2f(clone_map.cols*blue_point[i].x/28,clone_map.rows*(15-blue_point[i].y)/15);
+                    cv::circle(clone_map,point,10,cv::Scalar(200,0,0),-1);
+                    cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
+                }
+                if(red_point[i].x*red_point[i].y&&time-red_update[i]<0.5)
+                {
+                    cv::Point2f point = cv::Point2f(clone_map.cols*red_point[i].x/28,clone_map.rows*(15-red_point[i].y)/15);
+                    cv::circle(clone_map,point,10,cv::Scalar(0,0,200),-1);
+                    cv::putText(clone_map,std::to_string(number),cv::Point(point.x-6,point.y+5),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255));
+                }
+            }
+            if(fly_enemy_point.x*fly_enemy_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_enemy_point.x)/28,clone_map.rows*(15 - fly_enemy_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(0,0,255),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(0,0,255),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(0,0,255),2);
+            }
+            if(fly_ally_point.x*fly_ally_point.y)
+            {
+                cv::Point2f point = cv::Point2f(clone_map.cols*(fly_ally_point.x)/28,clone_map.rows*(15 - fly_ally_point.y)/15);
+                cv::circle(clone_map,point,1,cv::Scalar(255,0,0),-1);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y+5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x+5,point.y-5),5,cv::Scalar(200,0,0),2);
+                cv::circle(clone_map,cv::Point2f(point.x-5,point.y-5),5,cv::Scalar(200,0,0),2);
+            }
+            cv::imshow("map", clone_map);
+            cv::waitKey(1);
+        }
+
+        void camera_callback(const std::shared_ptr<vision_interface::msg::DetectResult> msg){
+            auto now = std::chrono::system_clock::now();
+            double time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
+            for(int i=0;i<6;i++){
+                if(msg->blue_x[i]*msg->blue_y[i]){//如果是蓝色，所有坐标都要转换
+                    if(time - blue_time[i] > 5){
+                        blue_point[i] = cv::Point2f(msg->blue_x[i], msg->blue_y[i]);
+                        if(!match_info.self_color){
+                            blue_point[i] = cv::Point2f(28-msg->blue_x[i], 15-msg->blue_y[i]);
+                        }
+                        blue_update[i] = time;
+                    }
+                }
+                if(msg->red_x[i]*msg->red_y[i]){
+                    if(time - red_time[i] > 5){
+                        red_point[i] = cv::Point2f(msg->red_x[i], msg->red_y[i]);
+                        if(!match_info.self_color){
+                            red_point[i] = cv::Point2f(28-msg->red_x[i], 15-msg->red_y[i]);
+                        }
+                        red_update[i] = time;
+                    }
+                }
+            }
+            show_map();
+        }
+
+        void callback(const std::shared_ptr<vision_interface::msg::DetectResult> msg){
+            auto now = std::chrono::system_clock::now();
+            double time = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
+            for(int i = 0; i<6; i++)
+            {
+                if(msg->blue_x[i]*msg->blue_y[i])
+                {
+                    blue_point[i] = cv::Point2f(msg->blue_x[i], msg->blue_y[i]);
+                    blue_time[i] = time;
+                    blue_update[i] = time;
+
+                }
+                if(msg->red_x[i]*msg->red_y[i])
+                {
+                    red_point[i] = cv::Point2f(msg->red_x[i], msg->red_y[i]);
+                    red_time[i] = time;
+                    red_update[i] = time;
+                }
+            }
+            show_map();
+
+            vision_interface::msg::Radar2Sentry radar2sentry;
+            // /kalman_detect 已转换到裁判系统坐标，此处只按己方颜色映射敌我数组。
+            radar2sentry.radar_enemy_x[4] = fly_enemy_point.x;
+            radar2sentry.radar_enemy_y[4] = fly_enemy_point.y;
+            radar2sentry.radar_ally_x[4] = fly_ally_point.x;
+            radar2sentry.radar_ally_y[4] = fly_ally_point.y;
+            for(int i = 0; i < 6; i++)
+            {
+                if(match_info.self_color == 0)
+                {
+                    radar2sentry.radar_enemy_x[i] = msg->red_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->red_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->blue_y[i];
+                }
+                else if(match_info.self_color == 2)
+                {
+                    radar2sentry.radar_enemy_x[i] = msg->blue_x[i];
+                    radar2sentry.radar_enemy_y[i] = msg->blue_y[i];
+                    radar2sentry.radar_ally_x[i] = msg->red_x[i];
+                    radar2sentry.radar_ally_y[i] = msg->red_y[i];
+                }
+            }
+            radar2sentry_pub->publish(radar2sentry);
+        }
+
+        void fly_callback(const std::shared_ptr<vision_interface::msg::FlyPoints> msg)
+        {
+            if(match_info.self_color==2){
+                fly_enemy_point = cv::Point2f(msg->fly_enemy_x, msg->fly_enemy_y);
+                fly_ally_point = cv::Point2f(msg->fly_ally_x, msg->fly_ally_y);
+            }
+            else if(match_info.self_color==0){  
+            fly_enemy_point = cv::Point2f(28 - msg->fly_enemy_x, 15 - msg->fly_enemy_y);
+            fly_ally_point = cv::Point2f(28 - msg->fly_ally_x, 15 - msg->fly_ally_y);
+            }
+        }
+        rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr detect_result_sub;
+        rclcpp::Subscription<vision_interface::msg::DetectResult>::SharedPtr camera_detect_sub;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_map_pub;
+        rclcpp::Publisher<vision_interface::msg::Radar2Sentry>::SharedPtr radar2sentry_pub;
+        rclcpp::Subscription<vision_interface::msg::MatchInfo>::SharedPtr match_info_sub;//打标用
+        rclcpp::Subscription<vision_interface::msg::FlyPoints>::SharedPtr fly_sub;//飞机坐标用
+        // rclcpp::Subscription<vision_interface::msg::CameraResult>::SharedPtr radio_sub;//radio坐标
+
+        double blue_time[6];//单位s
+        double red_time[6];//单位s
+
+        double blue_update[6];
+        double red_update[6];
+
+        cv::Point2f blue_point[6];
+        cv::Point2f red_point[6];
+
+        cv::Point2f fly_enemy_point;
+        cv::Point2f fly_ally_point;
+        
+        vision_interface::msg::MatchInfo match_info;
+        cv::Mat map;
+        int count = 0;//20帧保存一次
+        };
+}  // namespace tdt_radar
+
+int main(int argc, char * argv[]){
+    rclcpp::init(argc, argv);
+    auto node_options = rclcpp::NodeOptions(); // 创建NodeOptions实例
+    rclcpp::spin(std::make_shared<tdt_radar::DebugMap>(node_options)); // 传递NodeOptions实例
+    rclcpp::shutdown();
+    return 0;
+}

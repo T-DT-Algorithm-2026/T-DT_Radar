@@ -1,0 +1,14 @@
+build/
+log/
+install/
+.cache/
+
+config/merged_bag/*
+
+*.engine
+
+ros2bags/
+
+rect_1/
+rect_2/
+saved_images/
